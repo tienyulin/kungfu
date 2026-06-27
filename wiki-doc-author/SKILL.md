@@ -15,6 +15,12 @@ description: 產出餵進 LLM 知識 wiki（llm-wiki processor）的源頭文件
 文件是給**語意搜尋（semantic search，向量比對語意）和 AI agent** 看的，不只給人。所以「過關」不是
 「把範本填滿」，而是讓對面那個 agent 查得到、看得懂。
 
+> **語言：全部用專案的 canonical 語言寫（預設中文）。** wiki 是**單語語料** —— README 摘要、endpoint
+> 描述（含 OpenAPI 的 `summary=`，寫在 code 裡）、知識文件，都用同一種語言。原因：跨語言檢索（短文本）
+> 弱，查詢端 agent 查詢前會把問題翻成這個語言，所以語料混語言會對不上。確定性 OpenAPI 匯入不經 LLM、
+> 不會幫你翻譯，所以 `summary=` 一定要在 code 就寫成 canonical 語言。團隊用哪個語言由部署的
+> `WIKI_QUERY_LANG` 決定。
+
 ## 決策樹：要記錄什麼？（先判斷，再走對應 Step 2 範本）
 
 ```
