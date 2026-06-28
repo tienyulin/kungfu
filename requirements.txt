@@ -1,0 +1,6 @@
+# dev / lint toolchain (skill scripts themselves are pure stdlib, no runtime deps)
+black==26.5.1
+flake8==7.3.0
+pylint==4.0.6
+mypy==2.1.0
+pre-commit==4.3.0
