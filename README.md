@@ -38,6 +38,40 @@ LLM Wiki 平台共用的 **Claude Code skills**，獨立成 repo 讓任何專案
 
 把需要的 skill 資料夾（含 `scripts/`）複製進專案的 `.claude/skills/<name>/`，Claude Code 會自動載入。
 
+## 外部 / 第三方 skill（內網 GitLab mirror）
+
+除了本 repo 自家的 skill，`marketplace.json` 也能列**外部開源 skill**，團隊就能從同一個
+marketplace 一次裝齊，不用各自去找上游。公司內網作法：把上游 repo 拉成內網 GitLab 的
+**pull mirror**，marketplace 指那個 mirror（不出公司）。
+
+目前已收錄：
+
+| plugin | 上游 | 說明 |
+|---|---|---|
+| `superpowers` | [obra/superpowers](https://github.com/obra/superpowers) | brainstorming、subagent 開發+code review、系統化 debug、red/green TDD、寫 skill。 |
+
+要再加一個外部 skill，在 `marketplace.json` 的 `plugins` 加一筆，`source` 用 **`url` 形式**
+指 mirror 的 `.git`（**不要**用 `github`+`repo`，那只給公開 GitHub）：
+
+```jsonc
+{
+  "name": "<plugin-name>",
+  "source": { "source": "url", "url": "https://gitlab.<你的公司>/<group>/<repo>.git" },
+  "description": "External — …（註明 mirror 自哪個上游）",
+  "author": { "name": "<上游作者>" },
+  "category": "development",
+  "homepage": "https://github.com/<上游>"
+}
+```
+
+- **沒有 `skills` 欄**：外部 plugin 的 skill 由它自己的 repo 結構提供，本 repo 不列本地路徑。
+- **沒設 `sha` = 跟 mirror 預設分支**：`/plugin marketplace update` 拉 mirror 最後同步到的版本。
+  要鎖版本就加 `"sha": "<commit>"`（但之後 update 不會自己往前，得手動改）。
+- **更新鏈**：上游 GitHub → GitLab mirror 排程同步 → 團隊 `/plugin marketplace update`。
+- 安裝：`/plugin install <plugin-name>@llm-wiki-skills`。
+
+> ⚠️ 不 pin `sha` = 自動吃 mirror 同步到的任何 commit（含上游被改）。要穩定供應鏈就 pin。
+
 ## 寫新 skill
 
 用 `skill-author` skill 讓 AI agent 照標準產出（含註冊 marketplace）；或人工照
