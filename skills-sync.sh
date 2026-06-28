@@ -12,8 +12,8 @@
 set -euo pipefail
 
 # Swap GITLAB_URL for your internal GitLab mirror of this repo once it exists.
-GITLAB_URL="https://gitlab.internal.example.com/mirrors/llm-wiki-skills.git"
-MARKET="llm-wiki-skills"
+GITLAB_URL="https://gitlab.internal.example.com/mirrors/ai-agent-skills.git"
+MARKET="ai-agent-skills"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MARKETPLACE_JSON="$SCRIPT_DIR/.claude-plugin/marketplace.json"
@@ -42,7 +42,7 @@ self_test() {
   {"name":"wiki-doc-author","source":"./","skills":["./wiki-doc-author"]},
   {"name":"sop-to-spec","source":"./","skills":["./sop-to-spec"]},
   {"name":"skill-author","source":"./","skills":["./skill-author"]},
-  {"name":"llm-wiki-skills","source":"./","skills":["./wiki-doc-author","./sop-to-spec","./skill-author"]},
+  {"name":"ai-agent-skills","source":"./","skills":["./wiki-doc-author","./sop-to-spec","./skill-author"]},
   {"name":"superpowers","source":{"source":"url","url":"x"}},
   {"name":"andrej-karpathy-skills","source":{"source":"url","url":"y"}}
 ]}
