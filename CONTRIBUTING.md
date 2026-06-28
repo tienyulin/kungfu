@@ -48,7 +48,7 @@
 
 ## 5. 註冊進 marketplace（必做，否則裝不到）
 
-在 `.claude-plugin/marketplace.json` 的 `plugins` 加一個項目，並加進 `llm-wiki-skills` bundle：
+在 `.claude-plugin/marketplace.json` 的 `plugins` 加一個項目，並加進 `ai-agent-skills` bundle：
 
 ```jsonc
 {
@@ -63,7 +63,7 @@
   "skills": ["./<skill-name>"]
 }
 ```
-- 同時把 `"./<skill-name>"` 加進 bundle plugin `llm-wiki-skills` 的 `skills` 陣列
+- 同時把 `"./<skill-name>"` 加進 bundle plugin `ai-agent-skills` 的 `skills` 陣列
   （這樣全裝 bundle 的 user，update 後就會自動拿到這個新 skill）。
 - **不要設 `version`** —— 省略它，Claude 就用 git commit SHA 當版本：每次 push 都算新版，user
   `/plugin marketplace update` + update 即拿最新，零手動 bump。（設了 version 反而要每次手動改，漏改 = 收不到更新。）
@@ -76,8 +76,8 @@ python skill-author/scripts/validate_skill.py            # 驗全部，或帶 <s
 
 # 本地安裝實測（測完移除，別污染設定）
 claude plugin marketplace add "$PWD"
-claude plugin install <skill-name>@llm-wiki-skills
-claude plugin marketplace remove llm-wiki-skills
+claude plugin install <skill-name>@ai-agent-skills
+claude plugin marketplace remove ai-agent-skills
 ```
 > 官方 `skills-ref`（<https://github.com/agentskills/agentskills>）是 pip 套件、需外網安裝，**內網不適用**；
 > 上面這支自帶驗證器涵蓋同樣檢查、零相依。本檔的規則都已內聯，不需要連 agentskills.io 也能照做。

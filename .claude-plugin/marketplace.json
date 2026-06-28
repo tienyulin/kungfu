@@ -1,10 +1,10 @@
 {
-  "name": "llm-wiki-skills",
+  "name": "ai-agent-skills",
   "owner": {
     "name": "tienyulin"
   },
   "metadata": {
-    "description": "Skills for the LLM Wiki: author processor-ready source docs and convert SOPs into specs."
+    "description": "Team AI agent skills — a shared Claude Code marketplace any project/agent can install from. Includes the LLM Wiki authoring skills plus general-purpose and mirrored external skills."
   },
   "plugins": [
     {
@@ -38,10 +38,10 @@
       "skills": ["./skill-author"]
     },
     {
-      "name": "llm-wiki-skills",
+      "name": "ai-agent-skills",
       "source": "./",
       "strict": false,
-      "description": "Bundle — installs every LLM Wiki skill at once (wiki-doc-author + sop-to-spec + skill-author).",
+      "description": "Bundle — installs this repo's own skills at once (wiki-doc-author + sop-to-spec + skill-author).",
       "author": { "name": "tienyulin" },
       "keywords": ["wiki", "docs", "sop", "bundle"],
       "category": "workflow",

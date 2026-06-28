@@ -1,8 +1,10 @@
-# llm-wiki-skills
+# ai-agent-skills
 
-LLM Wiki 平台共用的 **Claude Code skills**，獨立成 repo 讓任何專案/agent 取用。
-這個 repo 本身就是一個 **Claude Code plugin marketplace**，**公司內網 GitLab 也能用**
-（不需要 GitHub 或公開 marketplace）。
+團隊共用的 **Claude Code / AI agent skills** 集散地，獨立成 repo 讓任何專案/agent 取用 ——
+**不限 LLM Wiki**，各種 skill 都能放進來給大家用。這個 repo 本身就是一個 **Claude Code plugin
+marketplace**，**公司內網 GitLab 也能用**（不需要 GitHub 或公開 marketplace）。
+
+本 repo 自家的 skill：
 
 | skill | 做什麼 |
 |---|---|
@@ -10,8 +12,8 @@ LLM Wiki 平台共用的 **Claude Code skills**，獨立成 repo 讓任何專案
 | [`sop-to-spec`](sop-to-spec/SKILL.md) | 把維運 SOP（DBA runbook、infra 程序…）轉成「人能審、AI 能照著實作三層 FastAPI 服務」的 spec。 |
 | [`skill-author`](skill-author/SKILL.md) | 在本 repo 新增/修改一個**可安裝**的 skill —— 照標準產 SKILL.md、註冊進 marketplace。讓 AI agent 自己會寫 skill。 |
 
-另外收錄兩個**外部開源 skill**（mirror 進內網 GitLab）：`superpowers`、`andrej-karpathy-skills`
-—— 見下方〈外部 / 第三方 skill〉。
+加上**外部開源 skill**（mirror 進內網 GitLab）：`superpowers`、`andrej-karpathy-skills`
+—— 見下方〈外部 / 第三方 skill〉。要放新的 skill（自家寫的或外部 mirror 的）都歡迎，見〈維護者〉。
 
 ---
 
@@ -19,7 +21,7 @@ LLM Wiki 平台共用的 **Claude Code skills**，獨立成 repo 讓任何專案
 
 一條指令把**所有 skill 裝齊／更新到最新** —— 內建的 + 外部 mirror 全包。
 **不用 clone 任何 repo**：`marketplace add` 會把整個 marketplace repo（含同步腳本）下載到
-`~/.claude/plugins/marketplaces/llm-wiki-skills/`，直接從那裡跑。
+`~/.claude/plugins/marketplaces/ai-agent-skills/`，直接從那裡跑。
 
 ### 第一次設定
 
@@ -28,10 +30,10 @@ LLM Wiki 平台共用的 **Claude Code skills**，獨立成 repo 讓任何專案
 #    —— 跟平常 clone 公司 repo 一樣，背後就是 git clone。
 
 # 1) 加 marketplace（會一併下載 skills-sync.sh）
-claude plugin marketplace add https://gitlab.<你的公司>/<group>/llm-wiki-skills.git
+claude plugin marketplace add https://gitlab.<你的公司>/<group>/ai-agent-skills.git
 
 # 2) 一鍵裝齊全部 skill
-bash ~/.claude/plugins/marketplaces/llm-wiki-skills/skills-sync.sh
+bash ~/.claude/plugins/marketplaces/ai-agent-skills/skills-sync.sh
 
 # 3) 生效
 /reload-plugins            # 在 claude session 裡；或重啟 claude
@@ -43,7 +45,7 @@ claude plugin list         # 應看到全部 skill plugin
 ### 之後更新：同一條
 
 ```bash
-bash ~/.claude/plugins/marketplaces/llm-wiki-skills/skills-sync.sh
+bash ~/.claude/plugins/marketplaces/ai-agent-skills/skills-sync.sh
 ```
 
 腳本內建 `marketplace add || update`，會**先 git-pull 刷新** marketplace（含 marketplace.json 和腳本本身），
@@ -54,14 +56,14 @@ bash ~/.claude/plugins/marketplaces/llm-wiki-skills/skills-sync.sh
   **不用記、不會漏**（即使你手上是舊腳本也一樣，因為它「先刷新再讀清單」）。bundle 會自動跳過，
   避免和它涵蓋的個別 skill 重複載入。
 - 更新到的版本：本地 skill 跟 marketplace **每個新 commit**；外部 mirror 跟上游 **bump 的版本號**。
-- 嫌路徑長可加 alias：`alias skills-sync='bash ~/.claude/plugins/marketplaces/llm-wiki-skills/skills-sync.sh'`。
+- 嫌路徑長可加 alias：`alias skills-sync='bash ~/.claude/plugins/marketplaces/ai-agent-skills/skills-sync.sh'`。
 
 ### 進階：只裝某幾個 / 離線
 
 ```bash
 # 精挑單裝（不想全裝時）
-/plugin install wiki-doc-author@llm-wiki-skills      # 只要寫 wiki 文件的
-/plugin install llm-wiki-skills@llm-wiki-skills       # bundle：一次裝內建三個
+/plugin install wiki-doc-author@ai-agent-skills      # 只要寫 wiki 文件的
+/plugin install ai-agent-skills@ai-agent-skills       # bundle：一次裝內建三個
 ```
 
 - **bundle 或 granular 擇一**：裝了 bundle 就別再單裝裡面的個別 skill —— 會重複載入（不報錯，但重複）。
