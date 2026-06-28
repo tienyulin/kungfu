@@ -46,6 +46,15 @@
       "keywords": ["wiki", "docs", "sop", "bundle"],
       "category": "workflow",
       "skills": ["./wiki-doc-author", "./sop-to-spec", "./skill-author"]
+    },
+    {
+      "name": "superpowers",
+      "source": { "source": "url", "url": "https://gitlab.internal.example.com/mirrors/superpowers.git" },
+      "description": "External — brainstorming, subagent-driven dev with code review, systematic debugging, red/green TDD, and skill authoring. Mirrored from obra/superpowers into the internal GitLab; swap the url to your GitLab mirror. No sha = follows the mirror's default branch, so `/plugin marketplace update` pulls whatever the mirror last synced.",
+      "author": { "name": "obra" },
+      "keywords": ["tdd", "debugging", "brainstorming", "external"],
+      "category": "development",
+      "homepage": "https://github.com/obra/superpowers"
     }
   ]
 }
