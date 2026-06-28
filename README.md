@@ -8,6 +8,23 @@ LLM Wiki 平台共用的 **Claude Code skills**，獨立成 repo 讓任何專案
 | [`sop-to-spec`](sop-to-spec/SKILL.md) | 把維運 SOP（DBA runbook、infra 程序…）轉成「人能審、AI 能照著實作三層 FastAPI 服務」的 spec。 |
 | [`skill-author`](skill-author/SKILL.md) | 在本 repo 新增/修改一個**可安裝**的 skill —— 照標準產 SKILL.md、註冊進 marketplace。讓 AI agent 自己會寫 skill。 |
 
+## 團隊一鍵同步（推薦）
+
+一條指令把**所有 skill 裝齊／更新到最新** —— 內建的（wiki-doc-author / sop-to-spec /
+skill-author）**和指向其他 repo 的外部 mirror**（superpowers / andrej-karpathy-skills）全包：
+
+```bash
+bash .claude/skills/skills-sync.sh
+```
+
+- 裝跟更新都這一條（fresh 機器會裝、已裝的會帶到最新版），跑完照提示 `/reload-plugins` 或重啟生效。
+- 清單**讀 `marketplace.json`**（唯一真相）→ 之後 marketplace 加新 skill，大家重跑這條就自動補上，
+  **不用記、不會漏**。bundle 會自動跳過以免和它涵蓋的個別 skill 重複載入。
+- 用前把 `skills-sync.sh` 開頭的 `GITLAB_URL` 換成你們內網 GitLab mirror 的 `.git`。
+- 離線驗證篩選邏輯：`bash .claude/skills/skills-sync.sh --self-test`。
+
+底下是手動逐個安裝的細節（想精挑時用）。
+
 ## 安裝（Claude Code plugin）
 
 這個 repo 本身就是一個 **Claude Code plugin marketplace**，所以可以像其他 skill 一樣下載安裝 ——
