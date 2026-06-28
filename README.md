@@ -58,6 +58,23 @@ bash ~/.claude/plugins/marketplaces/ai-agent-skills/skills-sync.sh
 - 更新到的版本：本地 skill 跟 marketplace **每個新 commit**；外部 mirror 跟上游 **bump 的版本號**。
 - 嫌路徑長可加 alias：`alias skills-sync='bash ~/.claude/plugins/marketplaces/ai-agent-skills/skills-sync.sh'`。
 
+### 跨 agent（Gemini CLI / Codex CLI / Cline）
+
+同一條 `skills-sync.sh` 也會把**自家 skill** 同步給其他 agent —— 你不用為每個 agent 各維護一份。
+**SKILL.md 是跨 agent 共用格式**（Claude Code、Codex CLI、Gemini CLI 都原生讀），所以做法是
+**symlink 同一份來源**進各 agent 位置，內容零複製、改一處全動。腳本會**自動偵測**你機器上裝了哪些
+agent（看家目錄），只同步偵測到的：
+
+| agent | 同步到 | 怎麼吃 |
+|---|---|---|
+| Gemini CLI | `~/.agents/skills/<skill>`（symlink） | Gemini 原生把 `~/.agents/skills` 當 user skills 讀 |
+| Codex CLI | `~/.codex/skills/<skill>`（symlink） | Codex 原生讀 SKILL.md |
+| Cline | `~/.cline/rules/<skill>.md`（生成） | Cline 不讀 SKILL.md，故生一個 **pointer rule**（skill 名＋描述＋「需要時讀該 SKILL.md」），不內嵌全文以免脹 context |
+
+- 只想同步 agent、不碰 Claude plugin：`bash skills-sync.sh agents`。
+- 加新自家 skill（bare SKILL.md 目錄）會自動納入，不用改腳本。
+- 範圍：只同步**本 repo 自家 skill**；外部 mirror（superpowers/karpathy）是整包 plugin，上游各自已支援多 agent，不由這裡轉。
+
 ### 進階：只裝某幾個 / 離線
 
 ```bash
