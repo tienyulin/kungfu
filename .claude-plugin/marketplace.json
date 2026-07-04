@@ -41,7 +41,7 @@
       "name": "ai-agent-skills",
       "source": "./",
       "strict": false,
-      "description": "Bundle — installs this repo's own skills at once (wiki-doc-author + sop-to-spec + skill-author).",
+      "description": "Bundle — installs ALL of this repo's own skills at once (the full list is this entry's skills array; new skills added to it arrive automatically via marketplace auto-update).",
       "author": { "name": "tienyulin" },
       "keywords": ["wiki", "docs", "sop", "bundle"],
       "category": "workflow",
