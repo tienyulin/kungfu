@@ -14,6 +14,9 @@
 | `reversible` 🟡 | 可被另一操作撤銷（SOP 有回退步驟） | `dry_run` 預設 `true`；執行 response 必含回退所需資訊（操作前狀態） |
 | `irreversible` 🔴 | SOP 標示不可逆/需審批/警告 | `dry_run` 預設 `true` ＋ 必填 `confirm` 固定 token ＋ 必填 `approval_id`；缺一回 428 |
 
+兩邊都不符（SOP 既無回退步驟也無警告）→ 依領域常識判定，判定依據列入未決事項
+（例：join replica 無回退步驟但 `replicaof no one` 顯然可撤 → reversible ＋ U 條目）。
+
 SOP 操作耗時數分鐘以上（停機、重啟、大量資料）→ 明定 sync 或 202+job 模式，寫出選擇理由。
 
 ---
@@ -49,6 +52,8 @@ SOP 全是 reversible 就用 reversible 示範，不要硬升級成不可逆）
 - 所有「會動到東西」的操作預設只試算不執行（dry_run）
 - 不可逆操作要打兩個通關密語：固定確認字串 ＋ 變更審批單號，缺一不執行
 - 每個操作（含試算、被拒絕的）都留審計紀錄：誰、何時、對什麼、結果
+- 這個 API「不防護」的事（白話列出殘餘風險，例：兩個人同時操作不會互相擋、
+  同步進度要自己回頭查）—— 讓審批者知道防護的邊界在哪
 
 ## A5. 不自動化的事（仍需人工）
 | SOP 步驟 | 為什麼不自動化 | API 給的替代支援 |
@@ -89,6 +94,9 @@ dry_run 的走法（照抄進 spec）：
 // 錯誤（統一 exception handler）：{"detail": str, "error_code": str|null}
 ```
 
+`checks` 鍵名慣例：`PC-<n>_<snake_case 短名>`（例 `PC-1_quorum`），每端點在其
+response 範例中窮舉自己的鍵 —— 鍵名即測試斷言的字面值。
+
 **全域型別約定**：時間欄位一律 ISO8601 秒精度 naive UTC；bool 欄位永遠出現；
 比較性詞彙（最新、之內）給可計算定義含平手規則。
 
@@ -109,7 +117,10 @@ spec 裡直接寫展開後的字面值。
 - 測試 seam：提供 `reset_singletons()`
 - `main.py` lifespan 呼叫一次 service provider warm-up；real 模式缺連線設定 → boot fail-hard
 
-**同步模型與並發**：明寫 sync/202 與理由、並發防護（狀態機擋 or 「未防護＋風險說明」）、冪等行為。
+**同步模型與並發**：明寫 sync/202 與理由、並發防護（狀態機擋 or 「未防護＋風險說明」）、
+冪等行為、**執行中途失敗語意**（外部系統在執行/輪詢途中斷線或逾時：回什麼 HTTP、
+狀態算什麼、audit result 記什麼 —— 只定義「開始前」與「成功後」兩態的 spec 會讓
+實作者發明第三態）。
 
 ### §1 Domain Model
 實體欄位與型別 → 直接變成 pydantic model 與 mock 狀態。
@@ -146,7 +157,8 @@ SOP 有故障排除表 → 整張搬入（error_code → 條件 → HTTP → det
 ### §7 審計
 欄位 schema、寫入時機（每個 mutation request 恰好一筆；401/422 在 service 前擋掉不留）、
 result 封閉枚舉 `success` / `dry_run` / `rejected:<有 error_code 用它，沒有用
-snake_case 短原因>` / `error:<msg>`、各 operation 欄位對應表、審計固定文案字面值
+snake_case 短原因>` / `error:<msg>`（rejected 的完整值域**每端點窮舉成表**，不留
+實作者自創格式的空間）、各 operation 欄位對應表、審計固定文案字面值
 （集中 `models/schemas.py`，同 §0 風險閘門常數）。儲存機制要明寫：mock 模式 =
 repository 內記憶體 list（測試可讀斷言）；真實後端由 SOP 或使用者指定，SOP 沒講就
 列入未決事項。

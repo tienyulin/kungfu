@@ -136,7 +136,9 @@ tags: [oracle, recovery]
 tutorial（帶著做）/ how-to（解決問題）/ reference（查閱事實）/ explanation（概念）。
 
 **Retrofit 既有 README**：保留原內容，頂部插 frontmatter、把第一段改寫成合格摘要即可，
-不另開新檔（frontmatter 在 GitHub 會渲染成表格，無害）。
+不另開新檔（frontmatter 在 GitHub 會渲染成表格，無害）。既有的散裝知識檔（`runbooks/`
+之類非 `docs/` 的 .md）→ **搬進 `docs/`**（不是複製 —— 單一事實來源；CI 只蒐集
+README + `docs/`）。
 
 ## Step 3 —（僅 Mode A）匯出 OpenAPI + 保鮮
 
@@ -144,7 +146,8 @@ FastAPI：`python "${CLAUDE_SKILL_DIR}/scripts/gen_openapi.py" --app app.main:ap
 `openapi.json`（不適用會 exit 0 提示走 Mode B）。其他框架的匯出指令見
 [references/frameworks.md](references/frameworks.md)。
 
-把本 skill 目錄的 `scripts/` 三支複製進**該服務目錄**的 `scripts/`；
+把本 skill 目錄的 `scripts/` **四檔**複製進**該服務目錄**的 `scripts/`（三支工具 +
+`frontmatter.schema.json` —— lint 執行時讀同目錄的 schema，漏了會炸）；
 `.pre-commit-config.yaml` 放 **repo root**（pre-commit 只認 root；已有就 append hooks），
 monorepo 時 hook 的 `entry` 與 `--app` 用該服務的相對路徑。每次 commit 自動重生 + 擋缺漏：
 
@@ -154,7 +157,9 @@ repos:
     hooks:
       - id: gen-openapi            # 非 FastAPI 換成 frameworks.md 對應指令
         name: regenerate openapi.json
-        entry: python scripts/gen_openapi.py --app app.main:app
+        # PYTHONPATH=. 必要：少了它 app import 失敗，而工具「不適用就 exit 0」
+        # 的優雅降級會把失敗誤裝成「走 Mode B」，hook 形同虛設
+        entry: env PYTHONPATH=. python scripts/gen_openapi.py --app app.main:app
         language: system
         pass_filenames: false
         always_run: true
@@ -215,6 +220,8 @@ PY
 curl 'localhost:8002/search_apis?query=退款給客戶'
 curl 'localhost:8002/search_knowledge?query=每晚扣款&type=reference'
 ```
+`search_*` 推完即時可搜；`list_knowledge`/`get_knowledge` 讀的彙總視圖要等批次
+`rebuild-concepts` 才更新 —— 驗證一律用 search，別拿 list/get 判斷推送失敗。
 
 ## 工具（本 skill `scripts/`，純 stdlib）
 

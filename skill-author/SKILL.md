@@ -70,7 +70,8 @@ description: <做什麼 + 何時用>。Triggers - "<中文觸發句>"、"<englis
 ```
 
 **② 把 `"./<name>"` 加進既有 bundle plugin（`"name": "ai-agent-skills"` 那個條目）的
-`skills` 陣列**——它長這樣，只動它的 `skills`：
+`skills` 陣列**——它長這樣，只動它的 `skills`（bundle 的 description 刻意不枚舉成員
+名單，不用改）：
 ```json
 {
   "name": "ai-agent-skills",
@@ -96,11 +97,11 @@ claude plugin marketplace list | grep ai-agent-skills
 ```
 - **已註冊**（團隊成員機器的常態）→ **跳過實測**：不要 add/remove —— remove 會把
   使用者正在用的 bundle 連 plugins 一起拔掉。validator + PR CI 已足夠。
-- **未註冊**（乾淨環境）→ 實測後移除：
+- **未註冊**（乾淨環境）→ 實測後移除（中途失敗也要跑最後一行，別把設定殘留在 user scope）：
 ```bash
 claude plugin marketplace add "$PWD"
 claude plugin install <name>@ai-agent-skills    # <name>@<marketplace.json 頂層 name>
-claude plugin list | grep <name>                # 該行應含 enabled
+claude plugin list | grep -A3 <name>            # Status 行應為 enabled（不在名稱同一行）
 claude plugin marketplace remove ai-agent-skills   # 會連同其 plugins 一起移除
 ```
 
