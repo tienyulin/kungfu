@@ -63,8 +63,9 @@
   "skills": ["./<skill-name>"]
 }
 ```
-- 同時把 `"./<skill-name>"` 加進 bundle plugin `ai-agent-skills` 的 `skills` 陣列
-  （這樣全裝 bundle 的 user，update 後就會自動拿到這個新 skill）。
+- 同時把 `"./<skill-name>"` 加進 bundle plugin `ai-agent-skills` 的 `skills` 陣列 ——
+  **merge 進 main 即全隊自動拿到**（成員裝的是 bundle + marketplace auto-update，session
+  啟動自動帶新 skill），不用通知任何人重裝。
 - **不要設 `version`** —— 省略它，Claude 就用 git commit SHA 當版本：每次 push 都算新版，user
   `/plugin marketplace update` + update 即拿最新，零手動 bump。（設了 version 反而要每次手動改，漏改 = 收不到更新。）
 - **跨 agent 自動納入**：只要 skill 是 repo root 下含 `SKILL.md` 的目錄，`skills-sync.sh` 的跨 agent

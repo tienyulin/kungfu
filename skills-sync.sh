@@ -1,42 +1,83 @@
 #!/usr/bin/env bash
-# skills-sync.sh — one command to put EVERY skill where every agent can use it.
+# skills-sync.sh — run ONCE per machine; updates arrive automatically afterwards.
 #
-#  • Claude Code  : install/update each plugin in marketplace.json (local skills +
-#                   external mirror plugins). marketplace.json is the single source
-#                   of truth, so adding a skill there is enough — nobody forgets it.
+#  • Claude Code  : install the BUNDLE plugin (this repo's own skills as one plugin)
+#                   plus the external mirror plugins, then enable marketplace
+#                   auto-update. From then on every Claude Code startup refreshes the
+#                   marketplace and updates installed plugins — a merged change OR a
+#                   NEW skill (added to the bundle) reaches everyone with zero action.
 #  • Gemini / Codex / Cline : sync this repo's OWN skills (bare SKILL.md dirs) into
 #                   each agent. SKILL.md is read natively by Claude Code, Codex CLI
 #                   and Gemini CLI, so we just SYMLINK the one source dir into each
 #                   agent's skills location — zero content duplication. Cline can't
 #                   read SKILL.md, so we generate a thin pointer rule from it.
+#                   Symlinks track marketplace updates automatically; only a brand-new
+#                   skill needs a re-run here (to create its symlink).
 #
 # Usage:
-#   bash skills-sync.sh              # Claude plugins + cross-agent sync (auto-detect)
+#   bash skills-sync.sh              # Claude plugins + auto-update + cross-agent sync
 #   bash skills-sync.sh agents       # only the cross-agent sync step
-#   bash skills-sync.sh --self-test  # offline checks (bundle filter + cross-agent)
+#   bash skills-sync.sh --self-test  # offline checks (plugin plan + auto-update + cross-agent)
 set -euo pipefail
 
 # Swap GITLAB_URL for your internal GitLab mirror of this repo once it exists.
 GITLAB_URL="https://gitlab.internal.example.com/mirrors/ai-agent-skills.git"
 MARKET="ai-agent-skills"
+CLAUDE_SETTINGS_FILE="${CLAUDE_SETTINGS_FILE:-$HOME/.claude/settings.json}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MARKETPLACE_JSON="$SCRIPT_DIR/.claude-plugin/marketplace.json"
 
-# Print the plugin names to install: every entry EXCEPT the bundle. The bundle is
-# a local "./" source listing more than one skill; installing it AND its member
-# skills would double-load the same skill. Everything else (the individual local
-# skills and the external mirror plugins) gets installed.
-plugins_to_install() {
+# Print the plugin plan as "INSTALL <name>" / "RETIRE <name>" lines.
+# INSTALL: the bundle (source "./" listing >1 skill) + external mirror plugins +
+#          any local single-skill plugin NOT covered by the bundle.
+# RETIRE:  local single-skill plugins whose skill the bundle already ships —
+#          installing both would double-load the skill, and individually installed
+#          plugins don't pick up NEW skills; the bundle does.
+plugin_plan() {
   python3 - "$1" <<'PY'
 import json, sys
 data = json.load(open(sys.argv[1]))
-for p in data.get("plugins", []):
-    src = p.get("source")
+plugins = data.get("plugins", [])
+bundle_skills = set()
+for p in plugins:
     skills = p.get("skills", [])
-    is_bundle = (src == "./" and isinstance(skills, list) and len(skills) > 1)
-    if not is_bundle:
-        print(p["name"])
+    if p.get("source") == "./" and isinstance(skills, list) and len(skills) > 1:
+        bundle_skills.update(skills)
+for p in plugins:
+    skills = p.get("skills", [])
+    is_local_single = p.get("source") == "./" and isinstance(skills, list) and len(skills) == 1
+    covered = is_local_single and skills[0] in bundle_skills
+    print(("RETIRE" if covered else "INSTALL") + " " + p["name"])
+PY
+}
+
+# Enable marketplace auto-update non-interactively: Claude Code resolves autoUpdate
+# from settings extraKnownMarketplaces first (overrides the /plugin UI toggle and
+# the third-party default of off), so merge {"autoUpdate": true} into the user
+# settings entry. `claude plugin marketplace add` writes that entry too; create it
+# (with the git source) when it doesn't exist yet.
+enable_auto_update() {
+  python3 - "$CLAUDE_SETTINGS_FILE" "$MARKET" "$GITLAB_URL" <<'PY'
+import json, os, sys
+path, market, url = sys.argv[1], sys.argv[2], sys.argv[3]
+settings = {}
+if os.path.exists(path):
+    settings = json.load(open(path))
+entry = settings.setdefault("extraKnownMarketplaces", {}).setdefault(
+    market, {"source": {"source": "git", "url": url}}
+)
+if entry.get("autoUpdate") is True:
+    print("already on")
+    sys.exit(0)
+entry["autoUpdate"] = True
+os.makedirs(os.path.dirname(path), exist_ok=True)
+tmp = path + ".tmp"
+with open(tmp, "w") as f:
+    json.dump(settings, f, indent=2)
+    f.write("\n")
+os.replace(tmp, path)
+print("enabled")
 PY
 }
 
@@ -119,19 +160,40 @@ self_test() {
   {"name":"wiki-doc-author","source":"./","skills":["./wiki-doc-author"]},
   {"name":"sop-to-spec","source":"./","skills":["./sop-to-spec"]},
   {"name":"skill-author","source":"./","skills":["./skill-author"]},
+  {"name":"loner","source":"./","skills":["./loner"]},
   {"name":"ai-agent-skills","source":"./","skills":["./wiki-doc-author","./sop-to-spec","./skill-author"]},
   {"name":"superpowers","source":{"source":"url","url":"x"}},
   {"name":"andrej-karpathy-skills","source":{"source":"url","url":"y"}}
 ]}
 JSON
   local got want
-  got="$(plugins_to_install "$tmp/mp.json" | sort | tr '\n' ' ')"
+  got="$(plugin_plan "$tmp/mp.json" | sort | tr '\n' ';')"
+  want="INSTALL ai-agent-skills;INSTALL andrej-karpathy-skills;INSTALL loner;INSTALL superpowers;RETIRE skill-author;RETIRE sop-to-spec;RETIRE wiki-doc-author;"
+  if [ "$got" != "$want" ]; then
+    rm -rf "$tmp"
+    echo "self-test FAIL (plugin plan)"; echo "  got:  [$got]"; echo "  want: [$want]"; exit 1
+  fi
+
+  # auto-update merge: creates the entry, preserves other keys, idempotent.
+  local out1 out2 fail=0
+  printf '{"model":"keep-me","extraKnownMarketplaces":{"other":{"source":{"source":"github","repo":"x/y"}}}}\n' > "$tmp/settings.json"
+  out1="$(CLAUDE_SETTINGS_FILE="$tmp/settings.json" enable_auto_update)"
+  out2="$(CLAUDE_SETTINGS_FILE="$tmp/settings.json" enable_auto_update)"
+  python3 - "$tmp/settings.json" <<'PY' || fail=1
+import json, sys
+s = json.load(open(sys.argv[1]))
+assert s["model"] == "keep-me", "clobbered unrelated key"
+assert s["extraKnownMarketplaces"]["other"]["source"]["repo"] == "x/y", "clobbered other marketplace"
+mk = s["extraKnownMarketplaces"]["ai-agent-skills"]
+assert mk["autoUpdate"] is True, "autoUpdate not set"
+assert mk["source"]["url"].endswith(".git"), "source not created"
+PY
+  [ "$out1" = "enabled" ] && [ "$out2" = "already on" ] || { echo "  FAIL: auto-update not idempotent (got '$out1'/'$out2')"; fail=1; }
   rm -rf "$tmp"
-  want="andrej-karpathy-skills skill-author sop-to-spec superpowers wiki-doc-author "
-  if [ "$got" = "$want" ]; then
-    echo "self-test OK — bundle skipped, 5 plugins selected"
+  if [ "$fail" = 0 ]; then
+    echo "self-test OK — plugin plan (bundle installs, covered singles retire) + auto-update merge"
   else
-    echo "self-test FAIL"; echo "  got:  [$got]"; echo "  want: [$want]"; exit 1
+    exit 1
   fi
 }
 
@@ -179,9 +241,15 @@ esac
 echo "→ marketplace: add or update ($MARKET)"
 claude plugin marketplace add "$GITLAB_URL" 2>/dev/null || claude plugin marketplace update "$MARKET"
 
-echo "→ install/update plugins listed in marketplace.json"
-while IFS= read -r name; do
+echo "→ plugins（bundle 取代逐裝；舊逐裝的先移除避免同 skill 雙載）"
+while IFS=' ' read -r action name; do
   [ -n "$name" ] || continue
+  if [ "$action" = "RETIRE" ]; then
+    # migration from the pre-bundle layout; a no-op when it was never installed.
+    claude plugin uninstall "$name@$MARKET" 2>/dev/null \
+      && echo "  − $name（改由 bundle 提供）"
+    continue
+  fi
   echo "  • $name"
   # install covers a fresh machine; update brings an already-installed one to latest.
   # If both fail (e.g. an external mirror is unreachable / not set up yet), say so
@@ -190,8 +258,11 @@ while IFS= read -r name; do
   claude plugin install "$name@$MARKET" 2>/dev/null && ok=1
   claude plugin update  "$name@$MARKET" 2>/dev/null && ok=1
   [ "$ok" = 1 ] || echo "    ⚠ $name 未能安裝/更新（mirror 不可達或尚未設定？已跳過）"
-done < <(plugins_to_install "$MARKETPLACE_JSON")
+done < <(plugin_plan "$MARKETPLACE_JSON")
+
+echo "→ marketplace auto-update：$(enable_auto_update)（之後每次啟動自動更新，不用再跑本腳本）"
 
 sync_agents
 
 echo "✓ done — Claude 端跑 /reload-plugins 或重啟；其他 agent 重開即可"
+echo "  之後自家 skills 新增/修改都自動到；重跑本腳本只剩：新機器、同步到新 agent、marketplace 新收錄外部 plugin"

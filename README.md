@@ -17,46 +17,57 @@ marketplace**，**公司內網 GitLab 也能用**（不需要 GitHub 或公開 m
 
 ---
 
-# 使用者：團隊一鍵同步（推薦）
+# 使用者：跑一次，之後全自動（推薦）
 
-一條指令把**所有 skill 裝齊／更新到最新** —— 內建的 + 外部 mirror 全包。
+一條指令跑**一次**，把所有 skill 裝齊 + 打開自動更新 —— 之後 marketplace 有**修改或新增**
+skill，你什麼都不用做，**每次開新 Claude Code session 自動帶到最新**。
 **不用 clone 任何 repo**：`marketplace add` 會把整個 marketplace repo（含同步腳本）下載到
 `~/.claude/plugins/marketplaces/ai-agent-skills/`，直接從那裡跑。
 
-### 第一次設定
+### 第一次設定（每台機器一次）
 
 ```bash
-# 0) 前置（每台機器一次）：裝好 Claude Code、設好對內網 GitLab 的 git auth（token / SSH）
+# 0) 前置：裝好 Claude Code、設好對內網 GitLab 的 git auth（token / SSH）
 #    —— 跟平常 clone 公司 repo 一樣，背後就是 git clone。
 
 # 1) 加 marketplace（會一併下載 skills-sync.sh）
 claude plugin marketplace add https://gitlab.<你的公司>/<group>/ai-agent-skills.git
 
-# 2) 一鍵裝齊全部 skill
+# 2) 一鍵裝齊 + 開自動更新
 bash ~/.claude/plugins/marketplaces/ai-agent-skills/skills-sync.sh
 
 # 3) 生效
 /reload-plugins            # 在 claude session 裡；或重啟 claude
 
 # 4) 確認
-claude plugin list         # 應看到全部 skill plugin
+claude plugin list         # 應看到 bundle + 外部 mirror plugins
 ```
 
-### 之後更新：同一條
+### 之後更新：不用動作
 
-```bash
-bash ~/.claude/plugins/marketplaces/ai-agent-skills/skills-sync.sh
-```
+腳本做了兩件事，讓更新從此自動：
 
-腳本內建 `marketplace add || update`，會**先 git-pull 刷新** marketplace（含 marketplace.json 和腳本本身），
-再讀**新**清單裝/更新。所以：
+- **裝的是 bundle plugin**（`ai-agent-skills` = 本 repo 自家 skill 整包）而不是逐個 skill。
+  bundle 的內容清單住在 marketplace 裡 → repo **新增**一個 skill，隨 marketplace 刷新
+  自動出現在你這，**不需要任何安裝動作**（逐裝做不到這點：auto-update 只更新已裝的，
+  新 plugin 不會自己裝進來）。舊逐裝的使用者重跑一次腳本會自動遷移（移除逐裝、改裝 bundle）。
+- **開了 marketplace auto-update**（寫進你的 `~/.claude/settings.json` 的
+  `extraKnownMarketplaces` 條目；第三方 marketplace 預設是關的）。之後**每次 Claude Code
+  啟動**自動 git-pull marketplace + 更新已裝 plugins；有更新會提示跑 `/reload-plugins`。
 
-- **裝跟更新是同一條**；fresh 機器會裝、已裝的 `plugin update` 帶到最新版。
-- 清單**讀 `marketplace.json`**（唯一真相）→ marketplace 加了新 skill，大家重跑這條就自動補上，
-  **不用記、不會漏**（即使你手上是舊腳本也一樣，因為它「先刷新再讀清單」）。bundle 會自動跳過，
-  避免和它涵蓋的個別 skill 重複載入。
-- 更新到的版本：本地 skill 跟 marketplace **每個新 commit**；外部 mirror 跟上游 **bump 的版本號**。
-- 嫌路徑長可加 alias：`alias skills-sync='bash ~/.claude/plugins/marketplaces/ai-agent-skills/skills-sync.sh'`。
+重跑 `bash skills-sync.sh` 只剩三個情境：**新機器初裝**、**要把 skills 同步到新的
+agent**（Gemini/Codex/Cline，見下節）、marketplace **新收錄外部 mirror plugin**
+（新 plugin 不會自己裝，bundle 只涵蓋自家 skill）。自家 skill 的新增/修改**永遠不用重跑**。
+
+### 版本策略
+
+- 本 repo 的 plugin **沒有 `version` 欄位** → git commit SHA 就是版本 → **每個 merge 進
+  main 的 commit 都算新版**，auto-update 直接帶到 HEAD。「人人最新」就是這樣達成的。
+- 日後若要**受控發版**（不想每個 commit 都推到全隊）：給 bundle 加 `version` 欄位，
+  merge 時手動 bump 才算新版 —— 一個欄位切換兩種模式。
+- 要 **org-wide 強制**（成員不可自行關掉）：請 IT 在 managed-settings.json 部署
+  `extraKnownMarketplaces`（含 `"autoUpdate": true`）+ `enabledPlugins`，見官方
+  「Manage plugins for your organization」。
 
 ### 跨 agent（Gemini CLI / Codex CLI / Cline）
 
@@ -73,6 +84,9 @@ agent（看家目錄），只同步偵測到的：
 
 - 只想同步 agent、不碰 Claude plugin：`bash skills-sync.sh agents`。
 - 加新自家 skill（bare SKILL.md 目錄）會自動納入，不用改腳本。
+- **更新怎麼跟**：symlink 指向 marketplace 下載目錄 → marketplace 自動更新後,Gemini/Codex
+  讀到的內容**跟著新**,不用重跑。只有 repo **新增** skill 時需要重跑一次（補新 symlink /
+  Cline rule）—— 這是跨 agent 端唯一的手動情境。
 - 範圍：只同步**本 repo 自家 skill**；外部 mirror（superpowers/karpathy）是整包 plugin，上游各自已支援多 agent，不由這裡轉。
 
 ### 進階：只裝某幾個 / 離線
@@ -80,10 +94,11 @@ agent（看家目錄），只同步偵測到的：
 ```bash
 # 精挑單裝（不想全裝時）
 /plugin install wiki-doc-author@ai-agent-skills      # 只要寫 wiki 文件的
-/plugin install ai-agent-skills@ai-agent-skills       # bundle：一次裝內建三個
 ```
 
-- **bundle 或 granular 擇一**：裝了 bundle 就別再單裝裡面的個別 skill —— 會重複載入（不報錯，但重複）。
+- **bundle 或 granular 擇一**：裝了 bundle（腳本預設）就別再單裝裡面的個別 skill ——
+  會重複載入（不報錯，但重複）。單裝的 plugin 更新照樣自動，但 repo **新增**的 skill
+  不會自己出現（那是 bundle 的特權）。
 - **完全離線、不想用 plugin**：把需要的 skill 資料夾（含 `scripts/`）複製進專案的
   `.claude/skills/<name>/`，Claude Code 會自動載入。
 
@@ -124,8 +139,9 @@ agent（看家目錄），只同步偵測到的：
 
 - **沒有 `skills` 欄**：外部 plugin 的 skill 由它自己的 repo 結構提供，本 repo 不列本地路徑。
 - **沒設 `sha` = 跟 mirror 預設分支**；要鎖版本就加 `"sha": "<commit>"`（之後 update 不會自己往前，得手動改）。
-- **更新鏈**：上游 GitHub → GitLab mirror 排程同步 → 團隊重跑 `skills-sync.sh`。
-- 加完 `skills-sync.sh` 會自動納入（讀 marketplace.json），使用者不用改動作。
+- **更新鏈**：上游 GitHub → GitLab mirror 排程同步 → 成員的 marketplace auto-update 自動帶到
+  （已裝該 plugin 的人）。**新收錄**的外部 plugin 是新 plugin，auto-update 不會自己裝 ——
+  請成員跑一次 `skills-sync.sh`（腳本讀 marketplace.json 自動補裝）。
 
 > ⚠️ 不 pin `sha` = 自動吃 mirror 同步到的任何 commit（含上游被改）。要穩定供應鏈就 pin。
 
