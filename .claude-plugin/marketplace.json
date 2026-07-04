@@ -66,23 +66,23 @@
       ]
     },
     {
-      "name": "api-scaffold",
+      "name": "api-template-dev",
       "source": "./",
       "strict": false,
-      "description": "Scaffold a new three-layer FastAPI service (api/service/repository + mock, devcontainer, lint/CI, tests) from the company API template — from zero to green tests and a one-command mock startup. Template specifics live in a regenerable facts layer with a rescan procedure.",
+      "description": "Develop three-layer FastAPI services on the company API template — start a new service by cloning the template (architecture, devcontainer, lint/CI and built-in utilities like DB clients and mailers already in place), then add endpoints following the layered architecture, reusing built-in tools instead of reinventing them. Template specifics live in a regenerable facts layer with a rescan procedure.",
       "author": {
         "name": "tienyulin"
       },
       "keywords": [
         "fastapi",
-        "scaffold",
         "template",
         "three-layer",
-        "devcontainer"
+        "devcontainer",
+        "development"
       ],
       "category": "workflow",
       "skills": [
-        "./api-scaffold"
+        "./api-template-dev"
       ]
     },
     {
@@ -104,7 +104,7 @@
         "./wiki-doc-author",
         "./sop-to-spec",
         "./skill-author",
-        "./api-scaffold"
+        "./api-template-dev"
       ]
     },
     {
