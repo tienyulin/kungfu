@@ -5,7 +5,8 @@
 > **整檔重產**（保持本檔的節結構）。SKILL.md 的方法論不用動。
 
 ## Contents
-- 取得方式
+- 取得方式（clone + 改名清單 + 示範端點）
+- 內建工具
 - 目錄樹與各層職責
 - 命名慣例
 - DI 模式（core/deps.py）
@@ -19,10 +20,34 @@
 - lint / test / CI
 - 預設值
 
-## 取得方式
+## 取得方式（clone + 改名清單 + 示範端點）
 
-proxy 是參考實作、不是可 clone 的 template repo → **照本檔逐檔生成**。
-（rescan 時若公司 template 是 clone-and-rename 型，此節改寫成 clone 指令 + 改名清單。）
+公司做法 = **clone template repo 直接開發**（架構與工具已就位）：
+
+- clone 指令：`git clone <公司 template repo URL> <service-name>`
+  （**URL 待 rescan 填**；v1 拿不到公司 template 時的 fallback：照本檔目錄樹逐檔生成）
+- **改名清單**（clone 後把 template 佔位名全換成新服務名；rescan 時逐檔確認）：
+  `devcontainer.json` 的 name/service、`docker-compose.yml` 的 service/container_name/port、
+  `Dockerfile` 的 EXPOSE、`.env.example` 與 `core/config.py` 的 env 前綴、
+  `main.py` 的 FastAPI title、`README.md` 的 frontmatter `source_app` 與 H1、
+  `pyproject.toml` 內含專案名的欄位
+- **示範端點**：template 內附的 example router/service/repository/tests
+  （rescan 時標明哪些檔）→ 起手時砍掉，只留架構與工具
+
+## 內建工具
+
+template 已內建、**開發時一律用現成**的能力（SKILL.md「內建工具優先」查這張表）。
+
+> v1 proxy 無內建工具庫 —— **本節主要由 rescan 對公司 template 登錄**。每個工具一列：
+
+| 工具 | 位置（模組/類） | 用途 | 怎麼接（DI provider / 直接 import） | mock 方式 |
+|---|---|---|---|---|
+| （rescan 填：DB 連線 client） | | | | |
+| （rescan 填：寄信 mailer） | | | | |
+| （rescan 填：其他…） | | | | |
+
+登錄準則：位置與接法寫**字面值**（import 路徑、provider 名）；每個工具的 mock
+開關/替身怎麼給要寫，否則「mock 是一等公民」斷在這。
 
 ## 目錄樹與各層職責
 
