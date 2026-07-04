@@ -12,56 +12,136 @@
       "source": "./",
       "strict": false,
       "description": "Produce the source docs an app feeds into the LLM Wiki (processor) — a compliant README for any kind (API / cronjob / worker / knowledge), plus a fresh openapi.json for OpenAPI-capable apps. Self-contained, bundled stdlib tools.",
-      "author": { "name": "tienyulin" },
-      "keywords": ["wiki", "docs", "openapi", "readme", "authoring"],
+      "author": {
+        "name": "tienyulin"
+      },
+      "keywords": [
+        "wiki",
+        "docs",
+        "openapi",
+        "readme",
+        "authoring"
+      ],
       "category": "workflow",
-      "skills": ["./wiki-doc-author"]
+      "skills": [
+        "./wiki-doc-author"
+      ]
     },
     {
       "name": "sop-to-spec",
       "source": "./",
       "strict": false,
       "description": "Convert an operations SOP (DBA runbook, infra procedure, deployment checklist) into a spec a human can approve and an AI agent can implement a three-layer FastAPI service from.",
-      "author": { "name": "tienyulin" },
-      "keywords": ["sop", "spec", "fastapi", "runbook"],
+      "author": {
+        "name": "tienyulin"
+      },
+      "keywords": [
+        "sop",
+        "spec",
+        "fastapi",
+        "runbook"
+      ],
       "category": "workflow",
-      "skills": ["./sop-to-spec"]
+      "skills": [
+        "./sop-to-spec"
+      ]
     },
     {
       "name": "skill-author",
       "source": "./",
       "strict": false,
       "description": "Add or modify an installable Claude Code skill in this repo — produce a spec-compliant SKILL.md, bundle its scripts/references, and register it in the marketplace. Use when authoring a new skill or editing an existing one.",
-      "author": { "name": "tienyulin" },
-      "keywords": ["skill", "authoring", "meta", "marketplace"],
+      "author": {
+        "name": "tienyulin"
+      },
+      "keywords": [
+        "skill",
+        "authoring",
+        "meta",
+        "marketplace"
+      ],
       "category": "workflow",
-      "skills": ["./skill-author"]
+      "skills": [
+        "./skill-author"
+      ]
+    },
+    {
+      "name": "api-scaffold",
+      "source": "./",
+      "strict": false,
+      "description": "Scaffold a new three-layer FastAPI service (api/service/repository + mock, devcontainer, lint/CI, tests) from the company API template — from zero to green tests and a one-command mock startup. Template specifics live in a regenerable facts layer with a rescan procedure.",
+      "author": {
+        "name": "tienyulin"
+      },
+      "keywords": [
+        "fastapi",
+        "scaffold",
+        "template",
+        "three-layer",
+        "devcontainer"
+      ],
+      "category": "workflow",
+      "skills": [
+        "./api-scaffold"
+      ]
     },
     {
       "name": "ai-agent-skills",
       "source": "./",
       "strict": false,
       "description": "Bundle — installs ALL of this repo's own skills at once (the full list is this entry's skills array; new skills added to it arrive automatically via marketplace auto-update).",
-      "author": { "name": "tienyulin" },
-      "keywords": ["wiki", "docs", "sop", "bundle"],
+      "author": {
+        "name": "tienyulin"
+      },
+      "keywords": [
+        "wiki",
+        "docs",
+        "sop",
+        "bundle"
+      ],
       "category": "workflow",
-      "skills": ["./wiki-doc-author", "./sop-to-spec", "./skill-author"]
+      "skills": [
+        "./wiki-doc-author",
+        "./sop-to-spec",
+        "./skill-author",
+        "./api-scaffold"
+      ]
     },
     {
       "name": "superpowers",
-      "source": { "source": "url", "url": "https://gitlab.internal.example.com/mirrors/superpowers.git" },
+      "source": {
+        "source": "url",
+        "url": "https://gitlab.internal.example.com/mirrors/superpowers.git"
+      },
       "description": "External — brainstorming, subagent-driven dev with code review, systematic debugging, red/green TDD, and skill authoring. Mirrored from obra/superpowers into the internal GitLab; swap the url to your GitLab mirror. No sha = follows the mirror's default branch, so `/plugin marketplace update` pulls whatever the mirror last synced.",
-      "author": { "name": "obra" },
-      "keywords": ["tdd", "debugging", "brainstorming", "external"],
+      "author": {
+        "name": "obra"
+      },
+      "keywords": [
+        "tdd",
+        "debugging",
+        "brainstorming",
+        "external"
+      ],
       "category": "development",
       "homepage": "https://github.com/obra/superpowers"
     },
     {
       "name": "andrej-karpathy-skills",
-      "source": { "source": "url", "url": "https://gitlab.internal.example.com/mirrors/andrej-karpathy-skills.git" },
+      "source": {
+        "source": "url",
+        "url": "https://gitlab.internal.example.com/mirrors/andrej-karpathy-skills.git"
+      },
       "description": "External — behavioral guidelines to reduce common LLM coding mistakes (Think Before Coding, Simplicity, …). Mirrored from forrestchang/andrej-karpathy-skills into the internal GitLab; swap the url to your GitLab mirror. No sha = follows the mirror's default branch.",
-      "author": { "name": "forrestchang" },
-      "keywords": ["coding", "guidelines", "quality", "external"],
+      "author": {
+        "name": "forrestchang"
+      },
+      "keywords": [
+        "coding",
+        "guidelines",
+        "quality",
+        "external"
+      ],
       "category": "development",
       "homepage": "https://github.com/forrestchang/andrej-karpathy-skills"
     }
