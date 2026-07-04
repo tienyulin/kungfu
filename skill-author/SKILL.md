@@ -5,67 +5,114 @@ description: 在這個 ai-agent-skills repo 裡新增或修改一個 Claude Code
 
 # skill-author
 
-教 agent 在本 repo 新增一個**可安裝**的 skill。一份讀完就能做（自包含）；完整人類版規範另見 repo 根的
-`CONTRIBUTING.md`，但照本檔做即可。
+在本 repo 新增一個**可安裝**的 skill。心智模型：一個 skill = 一個資料夾
+（`<name>/SKILL.md` ＋ 選填 `scripts/`、`references/`）放在 repo root，再在
+`.claude-plugin/marketplace.json` 註冊。
 
-> 心智模型：一個 skill = 一個資料夾（`<name>/SKILL.md` + 選填 `scripts/`/`references/`/`assets/`）放在
-> **repo root**，再在 `.claude-plugin/marketplace.json` 註冊成 plugin。安裝走 `/plugin install`。
+**先確認位置**：所有指令都要在 ai-agent-skills repo root 下執行 —— 判別法：cwd 有
+`.claude-plugin/marketplace.json`。（這個 repo 常是別的專案的 submodule，路徑通常是
+`<專案>/.claude/skills/`；每條指令前 `cd` 過去或用 `cd … &&` 前綴。）
+
+**修改既有 skill**：跳過 Step 1、3（已註冊），直接改內容 → Step 4 驗證（已裝過的機器
+install 實測也跳過，見 Step 4）。用途/description 有變 → 同步改 marketplace 條目的英譯
+description。改名 = 當新增走全流程 ＋ 刪舊目錄與 marketplace 舊條目。
+
+**git 收尾不在本 skill 範圍**：照 repo 慣例 branch → PR；merge 進 main 後全隊才會自動拿到
+（marketplace auto-update）。本 repo 若是別的專案的 submodule，提醒使用者該專案照慣例
+bump submodule pointer，否則該 checkout 內載入的仍是舊版。
 
 ## Step 1 — 命名 + 建目錄
-- `name`：kebab-case、≤64 字、只小寫英數+連字號、不可頭尾/連續連字號、**須等於目錄名**。
-- `mkdir <name>`（在 repo root），裡面放 `SKILL.md`（＋需要時 `scripts/`、`references/`）。
 
-## Step 2 — 寫 SKILL.md（frontmatter + body）
-frontmatter（官方欄位）：
+- `name`：kebab-case、≤64 字、須等於目錄名（其餘格式規則 validator 會擋，不用背）。
+- repo root 下 `mkdir <name>`，放 `SKILL.md`（＋需要時 `scripts/`、`references/`）。
+
+## Step 2 — 寫 SKILL.md
+
+frontmatter 只要兩欄：
+
 ```yaml
 ---
 name: <name>                 # = 目錄名
-description: <做什麼 + 何時用 + 觸發詞>。Triggers - "<中文觸發>"、"<english>"、"/<name>"。
-# 選填：license、compatibility（≤500，僅特殊環境需求才寫）、metadata（版本不放這，見 Step 4）
+description: <做什麼 + 何時用>。Triggers - "<中文觸發句>"、"<english trigger>"、"/<name>"。
 ---
 ```
-- **description（最關鍵）**：≤1024 字，講 *what + when*，**第三人稱、稍微 pushy**（Claude 易 under-trigger），
-  結尾統一 `Triggers -` 列具體中英觸發句。它決定 skill 會不會被選中。
-- **body**：≤500 行 / <5000 tokens。寫到讀完即可執行 —— 決策樹/步驟、輸入輸出範例、邊界、完成定義。
-  - 太長 → 拆進 `references/`（agent 需要才載）；引用用**相對路徑、只深一層**（`references/X.md`），不要 `../`、不要深鏈。
-  - **prose 用中文**，專有名詞英文＋首次出現一句解釋。
-- **scripts/**（若需工具）：**純 stdlib、零相依**、錯誤訊息清楚；安裝時隨 plugin 複製，**不可引用 skill 目錄外**的檔。
 
-## Step 3 — 自包含檢查
-skill 不靠 repo 其他檔也能運作（工具在自己的 `scripts/`、細節在自己的 `references/`）。不要互相指來指去。
+**description 決定 skill 會不會被選中**，是最關鍵的一欄：
+- 第三人稱、≤1024 字，講 what + when，結尾 `Triggers -` 列具體中英觸發句。
+- 「稍微 pushy」= 把使用時機寫寬、觸發句寫多（Claude 傾向 under-trigger）。
+  例：「開發者要寫或修這些文件時用」勝過「可用於文件撰寫」。
 
-## Step 4 — 註冊進 marketplace（**必做，否則裝不到**）
-編輯 `.claude-plugin/marketplace.json`：在 `plugins` 陣列加一個項目，**並**把 `"./<name>"` 加進 bundle
-plugin `ai-agent-skills` 的 `skills`：
-```jsonc
+**body**（≤500 行，超過就拆進 `references/`）：
+- 寫到「讀完即可執行」：步驟依執行順序排、給可照抄的範本/指令、結尾放完成定義。
+  **結構照本檔與 repo 既有 skill**（開頭心智模型 → Step 1..N → 完成定義）。
+- 只寫 Claude 不知道的事（專案慣例、格式、字面值）；通識解釋、行銷句、版本沿革都不放。
+- prose 中文，專有名詞英文＋首次出現一句解釋。
+- 引用只深一層（`references/X.md`），不要 `../`。
+- `scripts/`：純 stdlib、零相依、錯誤訊息清楚；不可引用 skill 目錄外的檔
+  （安裝時只複製 skill 目錄）。
+
+## Step 3 — 註冊進 marketplace（必做，否則裝不到）
+
+`.claude-plugin/marketplace.json`（**純 JSON，不能有註解**）要改**兩處**：
+
+**① `plugins` 陣列加自身項目**（照既有條目的欄位風格；`category`/`keywords` 自由字串）：
+```json
 {
   "name": "<name>",
   "source": "./",
   "strict": false,
-  "description": "...",
-  "author": { "name": "tienyulin" },           // 不設 version → 每次 commit 自動算新版（用 git SHA）
+  "description": "<frontmatter description 的英譯（濃縮版即可）>",
+  "author": { "name": "tienyulin" },
   "keywords": ["..."],
   "category": "workflow",
   "skills": ["./<name>"]
 }
 ```
 
-## Step 5 — 驗證
-```bash
-# 1) 離線驗證器（純 stdlib、無外連）— frontmatter/命名/marketplace 註冊一起檢查
-python skill-author/scripts/validate_skill.py <name>      # 或不帶參數驗全部
-#   （官方 skills-ref 是 pip 套件、需外網，內網不適用；上面這支不需要。）
+**② 把 `"./<name>"` 加進既有 bundle plugin（`"name": "ai-agent-skills"` 那個條目）的
+`skills` 陣列**——它長這樣，只動它的 `skills`：
+```json
+{
+  "name": "ai-agent-skills",
+  "source": "./",
+  "description": "Bundle — installs this repo's own skills at once (…)",
+  "skills": ["./wiki-doc-author", "./sop-to-spec", "./skill-author", "./<name>"]
+}
+```
+成員裝的是 bundle ＋ marketplace auto-update：skill 進 bundle、merge 進 main，
+全隊下次開 session 自動拿到。**不設 `version` 欄** —— 沒有它，git commit SHA 就是
+版本，每個 commit 都算新版；設了反而要手動 bump，漏 bump = 收不到更新。
 
-# 2) 本地安裝實測（測完移除，別污染設定）
+## Step 4 — 驗證
+
+```bash
+# 1) 離線 validator（頂替需外網的官方 skills-ref；含 marketplace 註冊/bundle/version 檢查）
+python3 skill-author/scripts/validate_skill.py <name>     # 或不帶參數驗全部
+```
+
+2) 本地安裝實測 —— **先查這台機器有沒有已註冊的同名 marketplace**：
+```bash
+claude plugin marketplace list | grep ai-agent-skills
+```
+- **已註冊**（團隊成員機器的常態）→ **跳過實測**：不要 add/remove —— remove 會把
+  使用者正在用的 bundle 連 plugins 一起拔掉。validator + PR CI 已足夠。
+- **未註冊**（乾淨環境）→ 實測後移除：
+```bash
 claude plugin marketplace add "$PWD"
-claude plugin install <name>@ai-agent-skills
-claude plugin list | grep <name>          # 應 enabled
-claude plugin marketplace remove ai-agent-skills
+claude plugin install <name>@ai-agent-skills    # <name>@<marketplace.json 頂層 name>
+claude plugin list | grep <name>                # 該行應含 enabled
+claude plugin marketplace remove ai-agent-skills   # 會連同其 plugins 一起移除
 ```
 
 ## 完成定義
-- 目錄名 = `name` = kebab；`skills-ref validate` 過。
-- description 有 what+when+`Triggers -`、第三人稱、稍 pushy。
-- SKILL.md ≤500 行、自包含；scripts 純 stdlib。
-- 已加進 `marketplace.json`（自身 plugin + bundle）—— **不設 `version`**，commit 即更新。
-- 本地 install 實測 enabled。
+
+validator 擋的（跑 `validate_skill.py <name>` 全綠即代表）：
+- [ ] 目錄名 = frontmatter `name`（kebab/長度）
+- [ ] description 有 `Triggers -` 觸發句
+- [ ] marketplace.json 兩處都改（自身 plugin ＋ bundle `skills`）、無 `version` 欄
+
+自查的（validator 不驗語意）：
+- [ ] description 第三人稱、what+when、觸發句中英都有
+- [ ] body 讀完即可執行；≤500 行（validator 只警告，超過就拆 references/）
+- [ ] scripts 純 stdlib、不引用 skill 目錄外的檔
+- [ ] 乾淨環境才做的 install 實測（已註冊 marketplace 的機器跳過，見 Step 4）

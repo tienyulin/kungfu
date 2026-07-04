@@ -61,7 +61,8 @@ def _check_desc(skill_dir, desc):
     if len(desc) > MAX_DESC:
         return [f"{skill_dir}: description >{MAX_DESC} 字"], []
     if "Triggers -" not in desc and "Triggers-" not in desc:
-        return [], [f"{skill_dir}: description 建議用 `Triggers -` 標籤列觸發句"]
+        # repo convention, enforced: the trigger list is what makes skills fire
+        return [f"{skill_dir}: description 缺 `Triggers -` 觸發句標籤（本 repo 慣例必填）"], []
     return [], []
 
 
@@ -87,22 +88,39 @@ def _check_marketplace(root, skills):
     """Check every skill is registered in marketplace.json and paths resolve; returns errs."""
     mp = os.path.join(root, ".claude-plugin", "marketplace.json")
     if not os.path.isfile(mp):
-        return []
+        # A silent pass here would green-light a skill that can't be installed —
+        # this is almost always "ran from the wrong directory".
+        return [f"找不到 {mp} —— 請從 ai-agent-skills repo root 執行本工具"]
     try:
         with open(mp, encoding="utf-8") as f:
             m = json.load(f)
     except (OSError, json.JSONDecodeError) as ex:
         return [f"marketplace.json 不是合法 JSON: {ex}"]
     errs = []
-    registered = set()
+    standalone: set[str] = set()  # skills with their own single-skill plugin (installable by name)
+    bundled: set[str] = set()  # skills shipped by the bundle plugin (how members get updates)
     for p in m.get("plugins", []):
-        for sp in p.get("skills", []):
-            registered.add(sp.lstrip("./").rstrip("/"))
-            if not os.path.isfile(os.path.join(sp, "SKILL.md")):
+        if p.get("source") != "./":
+            continue  # external mirror plugins: skills live in their own repo
+        if "version" in p:
+            errs.append(
+                f"marketplace plugin '{p.get('name')}': 有 version 欄 —— 本 repo 慣例不設"
+                "（commit SHA 即版本），設了要手動 bump、漏 bump = 全隊收不到更新"
+            )
+        plugin_skills = p.get("skills", [])
+        for sp in plugin_skills:
+            clean = sp.removeprefix("./").rstrip("/")
+            (bundled if len(plugin_skills) > 1 else standalone).add(clean)
+            if not os.path.isfile(os.path.join(root, clean, "SKILL.md")):
                 errs.append(f"marketplace plugin '{p.get('name')}': skills 路徑 {sp} 無 SKILL.md")
     for s in skills:
-        if s not in registered:
-            errs.append(f"{s}: 未註冊進 marketplace.json（加一個 plugin + 進 bundle）")
+        if s not in standalone and s not in bundled:
+            errs.append(f"{s}: 未註冊進 marketplace.json（加自身 plugin + 進 bundle，兩處）")
+            continue
+        if s not in standalone:
+            errs.append(f"{s}: 缺自身 plugin 條目（單獨 `plugin install {s}@…` 會失敗）")
+        if s not in bundled:
+            errs.append(f"{s}: 沒加進 bundle 的 skills 陣列（成員拿不到自動更新）")
     return errs
 
 
@@ -125,9 +143,9 @@ def main(argv):
         errs += e
         warns += w
 
-    # marketplace registration (only on a full run from repo root)
-    if len(argv) <= 1:
-        errs += _check_marketplace(root, skills)
+    # marketplace registration — also for a single-skill run: an unregistered
+    # skill "passing" was the main false-green this tool could produce.
+    errs += _check_marketplace(root, skills)
 
     for w in warns:
         print(f"  ⚠ {w}")
