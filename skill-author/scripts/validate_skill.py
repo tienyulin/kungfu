@@ -97,8 +97,8 @@ def _check_marketplace(root, skills):
     except (OSError, json.JSONDecodeError) as ex:
         return [f"marketplace.json 不是合法 JSON: {ex}"]
     errs = []
-    standalone = set()  # skills with their own single-skill plugin (installable by name)
-    bundled = set()  # skills shipped by the bundle plugin (how members get updates)
+    standalone: set[str] = set()  # skills with their own single-skill plugin (installable by name)
+    bundled: set[str] = set()  # skills shipped by the bundle plugin (how members get updates)
     for p in m.get("plugins", []):
         if p.get("source") != "./":
             continue  # external mirror plugins: skills live in their own repo
