@@ -249,12 +249,30 @@ sync_agents() {
   elif [ -d "$home/Cline" ]; then
     cline_base="$home/Cline"
   fi
-  if [ -d "$home/.cline" ]; then
-    cline_dir="$home/.cline/rules"
-  elif [ -n "$cline_base" ]; then
+  # App layout (base/Rules) wins: the VS Code extension only reads
+  # <base>/Rules; ~/.cline is the CLI's state dir. On machines with BOTH,
+  # writing to ~/.cline/rules makes every rule invisible to the extension.
+  if [ -n "$cline_base" ]; then
     cline_dir="$cline_base/Rules"
+  elif [ -d "$home/.cline" ]; then
+    cline_dir="$home/.cline/rules"
   fi
   [ -n "$cline_dir" ] && { mkdir -p "$cline_dir"; did=1; }
+  # one-time migration: earlier versions preferred ~/.cline/rules — clear OUR
+  # files out of there (pointer rules, constitution symlink/copy); user files stay.
+  if [ -n "$cline_base" ] && [ -d "$home/.cline/rules" ]; then
+    local mig
+    for mig in "$home/.cline/rules"/*.md; do
+      [ -f "$mig" ] || continue
+      if [ "$(basename "$mig")" = "agent-rules-constitution.md" ] \
+         || [ "$(basename "$mig")" = "agent-rules-situational-paths.md" ] \
+         || grep -q "ai-agent-skills 的指標規則" "$mig" 2>/dev/null; then
+        rm -f "$mig"
+        echo "  − ~/.cline/rules/$(basename "$mig")（遷移到 $cline_dir）"
+      fi
+    done
+    rmdir "$home/.cline/rules" 2>/dev/null || true
+  fi
 
   if [ "$did" = 0 ]; then
     echo "→ 跨 agent：未偵測到 Gemini / Codex / Cline / OpenCode，略過（只處理了 Claude）"
@@ -607,6 +625,20 @@ self_test_agents() {
   mkdir -p "$sb/h3/.config/opencode"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h3"; sync_agents >/dev/null )
   [ -L "$sb/h3/.agents/skills/demo-skill" ] || { echo "  FAIL: opencode ~/.agents symlink"; fail=1; }
+
+  # case 4b: BOTH Cline layouts present (~/.cline CLI state dir + Documents/Cline
+  # app base) → app layout wins (extension only reads <base>/Rules); our old
+  # files in ~/.cline/rules migrate away; the user's own file there is kept.
+  mkdir -p "$sb/h9/Documents/Cline" "$sb/h9/.cline/rules"
+  printf '# Skill: old\n\nold.\n\n完整步驟在 `%s/demo-skill/SKILL.md`。（這是指向 ai-agent-skills 的指標規則）\n' "$sb/src" > "$sb/h9/.cline/rules/demo-skill.md"
+  printf '# my own cline rule\n' > "$sb/h9/.cline/rules/keep-me.md"
+  ( SCRIPT_DIR="$sb/src"; HOME="$sb/h9"; sync_agents >/dev/null )
+  grep -q "demo-skill" "$sb/h9/Documents/Cline/Rules/demo-skill.md" 2>/dev/null \
+    || { echo "  FAIL: both-layouts rules not in Documents/Cline/Rules"; fail=1; }
+  [ -f "$sb/h9/.cline/rules/demo-skill.md" ] \
+    && { echo "  FAIL: old pointer rule not migrated out of ~/.cline/rules"; fail=1; }
+  [ -f "$sb/h9/.cline/rules/keep-me.md" ] \
+    || { echo "  FAIL: user's own ~/.cline rule removed"; fail=1; }
 
   # case 5: --constitution → hooks everywhere: Codex hooks.json, Gemini
   # settings.json hook (+ wrapper actually executed), OpenCode instructions[],
