@@ -188,11 +188,11 @@ situational_paths_body() {
     [ -f "$rules/$n.md" ] && echo "- $n: $rules/$n.md"
   done
   # judgment bridge（可選）：通用判斷增量＋路由表。repo 不在（隊友沒裝）就靜默跳過。
-  # 內容在 --constitution 執行時解析嵌入；BRIDGE.md 更新後重跑一次 --constitution。
+  # 內容在 --constitution 執行時解析嵌入；INDEX.md 更新後重跑一次 --constitution。
   local j="${JUDGMENT_DIR:-$HOME/Project/judgment}"
-  if [ -f "$j/BRIDGE.md" ]; then
+  if [ -f "$j/INDEX.md" ]; then
     echo
-    sed "s|@JUDGMENT@|$j|g" "$j/BRIDGE.md"
+    sed "s|@JUDGMENT@|$j|g" "$j/INDEX.md"
   fi
 }
 
@@ -677,9 +677,9 @@ old embedded stuff
   printf 'my gemini notes\n\n%s\n' "$OLDBLOCK" > "$sb/h4/.gemini/GEMINI.md"
   printf '{"theme": "dark"}\n' > "$sb/h4/.gemini/settings.json"
   printf '{"model": "keep-me"}\n' > "$sb/h4/.config/opencode/opencode.json"
-  # judgment bridge fixture: 有 BRIDGE.md → 解析後嵌入 paths file；placeholder 換成實路徑
+  # judgment bridge fixture: 有 INDEX.md → 解析後嵌入 paths file；placeholder 換成實路徑
   mkdir -p "$sb/jm"
-  printf '# BRIDGE\nroute: @JUDGMENT@/domains/DEMO.md\n' > "$sb/jm/BRIDGE.md"
+  printf '# INDEX\nroute: @JUDGMENT@/domains/DEMO.md\n' > "$sb/jm/INDEX.md"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h4"; CONSTITUTION=1; JUDGMENT_DIR="$sb/jm"; sync_agents >/dev/null )
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h4"; CONSTITUTION=1; JUDGMENT_DIR="$sb/jm"; sync_agents >/dev/null )
   grep -q "route: $sb/jm/domains/DEMO.md" "$sb/h4/.agents/agent-rules-situational-paths.md" 2>/dev/null \
