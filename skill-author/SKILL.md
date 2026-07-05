@@ -60,10 +60,6 @@ description: <做什麼 + 何時用>。Triggers - "<中文觸發句>"、"<englis
 - **弱模型相容（必讀）**：團隊執行模型能力參差，skill 要寫到最弱的模型也走得完 ——
   現在去讀 [references/weak-model-rules.md](references/weak-model-rules.md)，
   五條硬規則（低自由度、封閉分流、機器 gate、進度 checklist、未定義=停）逐條套用。
-- skill 若要跑**需要 repo 相依**的驗證指令（pytest、lint、import repo 程式碼）→
-  把 `skill-author/scripts/envrun.sh` 複製進新 skill 的 `scripts/`，這類指令一律
-  `bash scripts/envrun.sh <指令>`（自動判定 devcontainer / host，起不了會 exit 2 要你問使用者）。
-  envrun.sh 各份 copy 必須 byte-identical（validator 會擋），改一份要 cp 到全部。
 - 只寫 Claude 不知道的事（專案慣例、格式、字面值）；通識解釋、行銷句、版本沿革都不放。
 - prose 中文，專有名詞英文＋首次出現一句解釋。
 - 引用只深一層（`references/X.md`），不要 `../`。
@@ -134,7 +130,6 @@ validator 擋的（跑 `validate_skill.py <name>` 全綠即代表）：
 - [ ] 目錄名 = frontmatter `name`（kebab/長度）
 - [ ] description 有 `Triggers -` 觸發句
 - [ ] marketplace.json 兩處都改（自身 plugin ＋ bundle `skills`）、無 `version` 欄
-- [ ] envrun.sh 各份 copy byte-identical（有複製它的 skill 才適用）
 
 自查的（validator 不驗語意）：
 - [ ] description 第三人稱、what+when、觸發句中英都有

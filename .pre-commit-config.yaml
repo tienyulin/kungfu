@@ -47,7 +47,7 @@ repos:
         always_run: true
       - id: envrun-self-test
         name: envrun self-test
-        entry: bash wiki-doc-author/scripts/envrun.sh --self-test
+        entry: bash skill-author/scripts/envrun.sh --self-test
         language: system
         pass_filenames: false
         always_run: true

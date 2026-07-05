@@ -17,15 +17,15 @@
 #   6. Otherwise exit 2 and print the options (install CLI / start via
 #      VS Code / ENVRUN_HOST=1). Never silently falls back to the host.
 #
-# Usage: bash scripts/envrun.sh <command...>
-#        bash scripts/envrun.sh --self-test
+# Usage: bash skill-author/scripts/envrun.sh <command...>
+#        bash skill-author/scripts/envrun.sh --self-test
 # Env vars for the command must be passed as arguments, not as a prefix:
-#   bash scripts/envrun.sh env K=V <command...>     # works in every branch
-#   K=V bash scripts/envrun.sh <command...>         # LOST when exec'ing into a container
+#   envrun.sh env K=V <command...>     # works in every branch
+#   K=V envrun.sh <command...>         # LOST when exec'ing into a container
 #
-# NOTE: identical copies of this file live in several skills' scripts/ dirs;
-# validate_skill.py enforces they stay byte-identical (within the skills repo —
-# copies pasted into target repos are unmanaged). Edit one, copy to all.
+# NOTE: this lives only in skill-author (skill authoring is what needs the
+# skills repo devcontainer). If it is ever copied into another skill's
+# scripts/, validate_skill.py enforces the copies stay byte-identical.
 set -euo pipefail
 
 self_test() {

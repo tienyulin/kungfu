@@ -153,11 +153,11 @@ agent（看家目錄），只同步偵測到的：
 ### 開發環境（devcontainer）
 
 本 repo 帶 `.devcontainer/`（python 3.14 + `requirements.txt` 的 lint/測試工具鏈，
-跟 CI 同款）。VS Code「Reopen in Container」或 `devcontainer up --workspace-folder .` 即可用；
-不想手動管，驗證指令一律 `bash skill-author/scripts/envrun.sh <指令>` —— 它自動判定
+跟 CI 同款）——寫/改 skill 的驗證（validator、lint）就在隔離環境跑。VS Code
+「Reopen in Container」或 `devcontainer up --workspace-folder .` 即可用；不想手動管，
+驗證指令一律 `bash skill-author/scripts/envrun.sh <指令>` —— 它自動判定
 「已在容器內 / 容器在跑 / 沒起（自動起）/ repo 沒 devcontainer（host 直跑）」，
-起不了會 exit 2 印選項。同一份 `envrun.sh` 也複製在各 skill 的 `scripts/` 供目標 repo
-驗證用（copies 必須 byte-identical，`validate_skill.py` 會擋）。
+起不了會 exit 2 印選項。
 
 ### 企業 allow-list（給 IT，選用）
 
