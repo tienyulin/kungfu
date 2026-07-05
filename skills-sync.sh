@@ -21,7 +21,7 @@
 #                   fresh, mirroring Claude Code's own SessionStart hook plugin):
 #                     Codex    ~/.codex/hooks.json           SessionStart command (stdout → context)
 #                     Gemini   ~/.gemini/settings.json        SessionStart hook (JSON additionalContext)
-#                     Cline    ~/Documents/Cline/Rules/Hooks/TaskStart  (contextModification;
+#                     Cline    ~/Documents/Cline/Hooks/TaskStart  (contextModification;
 #                              hooks are macOS/Linux only; a ~/.cline-only layout falls back
 #                              to a rules-dir symlink)
 #                     OpenCode ~/.config/opencode/opencode.json  instructions[] entries — its
@@ -345,8 +345,16 @@ PYEOF
     fi
     if [ -n "$cline_dir" ]; then
       if [ -d "$home/Documents/Cline" ]; then
-        # documented global hooks dir; hooks are macOS/Linux only.
-        local chooks="$home/Documents/Cline/Rules/Hooks" cts
+        # global hooks dir is <base>/Hooks, SIBLING of Rules/Workflows (the app
+        # scaffolds it; confirmed by cline#9994) — NOT Rules/Hooks as some blog
+        # posts claim. Hooks are macOS/Linux only.
+        local chooks="$home/Documents/Cline/Hooks" cts
+        # migrate our files out of the wrong dir earlier versions wrote to
+        local oldhooks="$home/Documents/Cline/Rules/Hooks" oldf
+        for oldf in "$oldhooks/TaskStart" "$oldhooks/PreToolUse"; do
+          [ -f "$oldf" ] && grep -q "agent-rules managed" "$oldf" && rm -f "$oldf"
+        done
+        rmdir "$oldhooks" 2>/dev/null || true
         mkdir -p "$chooks"; cts="$chooks/TaskStart"
         if [ -f "$cts" ] && ! grep -q "agent-rules managed" "$cts"; then
           echo "  ⚠ Cline：$cts 已存在且不是本腳本產生的（Cline 每個 hook 只能一支腳本）— 不覆蓋；請手動在你的 TaskStart 裡 cat '$const_src'"
@@ -394,8 +402,8 @@ SHEOF
         echo "  Gemini   → ~/.gemini/settings.json BeforeTool（deny）"
       fi
       if [ -n "$cline_dir" ] && [ -d "$home/Documents/Cline" ]; then
-        local cpre="$home/Documents/Cline/Rules/Hooks/PreToolUse"
-        mkdir -p "$home/Documents/Cline/Rules/Hooks"
+        local cpre="$home/Documents/Cline/Hooks/PreToolUse"
+        mkdir -p "$home/Documents/Cline/Hooks"
         if [ -f "$cpre" ] && ! grep -q "agent-rules managed" "$cpre"; then
           echo "  ⚠ Cline：$cpre 已存在且不是本腳本產生的 — 不覆蓋；請在你的 PreToolUse 裡自行呼叫 python3 '$guard' --agent cline"
         else
@@ -649,23 +657,28 @@ PY
   grep -q "SAFETY: $sb/src/agent-rules/rules/SAFETY.md" "$sb/h4/.agents/agent-rules-situational-paths.md" 2>/dev/null \
     || { echo "  FAIL: shared situational paths file missing"; fail=1; }
 
-  # case 6: Cline with Documents/Cline layout → TaskStart hook script, executable,
-  # actually runs and injects; a foreign TaskStart is never clobbered.
-  mkdir -p "$sb/h5/Documents/Cline"
+  # case 6: Cline with Documents/Cline layout → hooks land in <base>/Hooks
+  # (sibling of Rules, per cline#9994), run correctly, and our files in the
+  # old wrong dir (Rules/Hooks) are migrated away; foreign TaskStart never
+  # clobbered.
+  mkdir -p "$sb/h5/Documents/Cline/Rules/Hooks"
+  printf '#!/bin/sh\n# agent-rules managed\necho old\n' > "$sb/h5/Documents/Cline/Rules/Hooks/TaskStart"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h5"; CONSTITUTION=1; sync_agents >/dev/null )
-  cts="$sb/h5/Documents/Cline/Rules/Hooks/TaskStart"
+  cts="$sb/h5/Documents/Cline/Hooks/TaskStart"
   [ -x "$cts" ] || { echo "  FAIL: cline TaskStart hook missing or not executable"; fail=1; }
   echo '{}' | "$cts" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["cancel"] is False and "LAW-MARKER-42" in d["contextModification"]' \
     || { echo "  FAIL: cline TaskStart output wrong"; fail=1; }
-  cpre="$sb/h5/Documents/Cline/Rules/Hooks/PreToolUse"
+  cpre="$sb/h5/Documents/Cline/Hooks/PreToolUse"
   [ -x "$cpre" ] || { echo "  FAIL: cline PreToolUse guard missing or not executable"; fail=1; }
   echo '{"toolName":"executeCommand","parameters":{"command":"rm -rf /"}}' | "$cpre" \
     | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["cancel"] is True' \
     || { echo "  FAIL: cline PreToolUse guard did not cancel rm -rf"; fail=1; }
-  mkdir -p "$sb/h6/Documents/Cline/Rules/Hooks"
-  printf '#!/bin/sh\necho user-hook\n' > "$sb/h6/Documents/Cline/Rules/Hooks/TaskStart"
+  [ -e "$sb/h5/Documents/Cline/Rules/Hooks/TaskStart" ] \
+    && { echo "  FAIL: our file in old wrong hooks dir not migrated away"; fail=1; }
+  mkdir -p "$sb/h6/Documents/Cline/Hooks"
+  printf '#!/bin/sh\necho user-hook\n' > "$sb/h6/Documents/Cline/Hooks/TaskStart"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h6"; CONSTITUTION=1; sync_agents >/dev/null )
-  grep -q "user-hook" "$sb/h6/Documents/Cline/Rules/Hooks/TaskStart" \
+  grep -q "user-hook" "$sb/h6/Documents/Cline/Hooks/TaskStart" \
     || { echo "  FAIL: foreign cline TaskStart clobbered"; fail=1; }
 
   rm -rf "$sb"
