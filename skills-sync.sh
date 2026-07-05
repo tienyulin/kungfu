@@ -6,18 +6,29 @@
 #                   auto-update. From then on every Claude Code startup refreshes the
 #                   marketplace and updates installed plugins — a merged change OR a
 #                   NEW skill (added to the bundle) reaches everyone with zero action.
-#  • Gemini / Codex / Cline : sync this repo's OWN skills (bare SKILL.md dirs) into
-#                   each agent. SKILL.md is read natively by Claude Code, Codex CLI
-#                   and Gemini CLI, so we just SYMLINK the one source dir into each
-#                   agent's skills location — zero content duplication. Cline can't
+#  • Gemini / Codex / Cline / OpenCode : sync this repo's OWN skills (bare SKILL.md
+#                   dirs) into each agent. SKILL.md is read natively by Claude Code,
+#                   Codex CLI, Gemini CLI and OpenCode, so we just SYMLINK the one
+#                   source dir into each agent's skills location — zero content
+#                   duplication (Gemini and OpenCode both read the neutral
+#                   ~/.agents/skills, so they share the same symlinks). Cline can't
 #                   read SKILL.md, so we generate a thin pointer rule from it.
 #                   Symlinks track marketplace updates automatically; only a brand-new
 #                   skill needs a re-run here (to create its symlink).
+#  • --constitution (OPT-IN, default off): also write agent-rules/rules/CONSTITUTION.md
+#                   into each detected agent's GLOBAL rules file — Codex ~/.codex/AGENTS.md,
+#                   Gemini ~/.gemini/GEMINI.md, OpenCode ~/.config/opencode/AGENTS.md
+#                   (managed marker block, idempotent, never touches your own content),
+#                   Cline <rules dir>/agent-rules-constitution.md (generated copy).
+#                   Off by default because these are personal dotfiles. The block is a
+#                   snapshot — re-run with --constitution after the constitution changes.
 #
 # Usage:
-#   bash skills-sync.sh              # Claude plugins + auto-update + cross-agent sync
-#   bash skills-sync.sh agents       # only the cross-agent sync step
-#   bash skills-sync.sh --self-test  # offline checks (plugin plan + auto-update + cross-agent)
+#   bash skills-sync.sh                       # Claude plugins + auto-update + cross-agent sync
+#   bash skills-sync.sh --constitution        # same + write constitution into agent rules files
+#   bash skills-sync.sh agents                # only the cross-agent sync step
+#   bash skills-sync.sh agents --constitution # cross-agent sync + constitution
+#   bash skills-sync.sh --self-test           # offline checks (plugin plan + auto-update + cross-agent)
 set -euo pipefail
 
 # Swap GITLAB_URL for your internal GitLab mirror of this repo once it exists.
@@ -27,6 +38,7 @@ CLAUDE_SETTINGS_FILE="${CLAUDE_SETTINGS_FILE:-$HOME/.claude/settings.json}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MARKETPLACE_JSON="$SCRIPT_DIR/.claude-plugin/marketplace.json"
+CONSTITUTION="${CONSTITUTION:-0}"   # set by --constitution; opt-in, default off
 
 # Print the plugin plan as "INSTALL <name>" / "RETIRE <name>" lines.
 # INSTALL: the bundle (source "./" listing >1 skill) + external mirror plugins +
@@ -107,15 +119,47 @@ print(f"{name}\t{desc}")
 PY
 }
 
+# Write the constitution into one agent's global rules file inside a managed
+# marker block — idempotent, appends on first run, replaces only the block after;
+# everything the user wrote outside the markers is preserved byte-for-byte.
+write_constitution_block() {  # $1 = target rules file
+  python3 - "$1" "$SCRIPT_DIR/agent-rules/rules/CONSTITUTION.md" <<'PY'
+import os, sys
+path, src = sys.argv[1], sys.argv[2]
+begin = "<!-- agent-rules-constitution:begin (managed by skills-sync.sh --constitution; edits inside are overwritten) -->"
+end = "<!-- agent-rules-constitution:end -->"
+block = begin + "\n" + open(src, encoding="utf-8").read().rstrip() + "\n" + end
+content = open(path, encoding="utf-8").read() if os.path.exists(path) else ""
+if begin in content and end in content:
+    content = content.split(begin)[0] + block + content.split(end, 1)[1]
+elif content.strip():
+    content = content.rstrip() + "\n\n" + block + "\n"
+else:
+    content = block + "\n"
+os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+tmp = path + ".tmp"
+with open(tmp, "w", encoding="utf-8") as f:
+    f.write(content)
+os.replace(tmp, path)
+PY
+}
+
 # Symlink each own skill into every agent whose home dir exists. Only agents the
 # user actually has are touched — we never create config for an agent you don't use.
 sync_agents() {
   local home="$HOME" did=0
-  local gemini=0 codex=0 cline_dir=""
+  local gemini=0 codex=0 opencode=0 agents_dir=0 cline_dir=""
 
   # Gemini CLI reads ~/.agents/skills natively (neutral interop dir); also ~/.gemini.
   if [ -d "$home/.gemini" ] || [ -d "$home/.agents" ]; then
-    mkdir -p "$home/.agents/skills"; gemini=1; did=1
+    gemini=1
+  fi
+  # OpenCode reads ~/.agents/skills natively too (plus ~/.config/opencode/skills).
+  if [ -d "$home/.config/opencode" ]; then
+    opencode=1
+  fi
+  if [ "$gemini" = 1 ] || [ "$opencode" = 1 ]; then
+    mkdir -p "$home/.agents/skills"; agents_dir=1; did=1
   fi
   # Codex CLI: ~/.codex/skills
   if [ -d "$home/.codex" ]; then
@@ -130,7 +174,7 @@ sync_agents() {
   [ -n "$cline_dir" ] && { mkdir -p "$cline_dir"; did=1; }
 
   if [ "$did" = 0 ]; then
-    echo "→ 跨 agent：未偵測到 Gemini / Codex / Cline，略過（只處理了 Claude）"
+    echo "→ 跨 agent：未偵測到 Gemini / Codex / Cline / OpenCode，略過（只處理了 Claude）"
     return 0
   fi
 
@@ -138,8 +182,8 @@ sync_agents() {
   local skill src nm ds
   for skill in $(own_skill_dirs); do
     src="$SCRIPT_DIR/$skill"
-    [ "$gemini" = 1 ] && ln -sfn "$src" "$home/.agents/skills/$skill"
-    [ "$codex" = 1 ]  && ln -sfn "$src" "$home/.codex/skills/$skill"
+    [ "$agents_dir" = 1 ] && ln -sfn "$src" "$home/.agents/skills/$skill"
+    [ "$codex" = 1 ]      && ln -sfn "$src" "$home/.codex/skills/$skill"
     if [ -n "$cline_dir" ]; then
       IFS=$'\t' read -r nm ds < <(skill_meta "$src/SKILL.md")
       # pointer rule, not full copy — keeps Cline's always-on context lean.
@@ -148,9 +192,37 @@ sync_agents() {
     fi
     echo "  • $skill"
   done
-  [ "$gemini" = 1 ]   && echo "  Gemini → ~/.agents/skills"
-  [ "$codex" = 1 ]    && echo "  Codex  → ~/.codex/skills"
-  [ -n "$cline_dir" ] && echo "  Cline  → $cline_dir （pointer rule）"
+  [ "$gemini" = 1 ]   && echo "  Gemini   → ~/.agents/skills"
+  [ "$opencode" = 1 ] && echo "  OpenCode → ~/.agents/skills（原生讀取，與 Gemini 共用）"
+  [ "$codex" = 1 ]    && echo "  Codex    → ~/.codex/skills"
+  [ -n "$cline_dir" ] && echo "  Cline    → $cline_dir （pointer rule）"
+
+  # Constitution: OPT-IN — these are personal dotfiles, so nothing is written
+  # unless --constitution was passed. Managed block = re-runnable, user content kept.
+  if [ "$CONSTITUTION" = 1 ]; then
+    local const_src="$SCRIPT_DIR/agent-rules/rules/CONSTITUTION.md"
+    if [ ! -f "$const_src" ]; then
+      echo "  ⚠ --constitution：找不到 $const_src，跳過"
+      return 0
+    fi
+    echo "→ 憲法（--constitution）：寫入偵測到的 agent 的全域 rules（managed block；憲法更新後重跑本旗標才會跟著新）"
+    if [ "$codex" = 1 ]; then
+      write_constitution_block "$home/.codex/AGENTS.md"
+      echo "  Codex    → ~/.codex/AGENTS.md"
+    fi
+    if [ -d "$home/.gemini" ]; then
+      write_constitution_block "$home/.gemini/GEMINI.md"
+      echo "  Gemini   → ~/.gemini/GEMINI.md"
+    fi
+    if [ "$opencode" = 1 ]; then
+      write_constitution_block "$home/.config/opencode/AGENTS.md"
+      echo "  OpenCode → ~/.config/opencode/AGENTS.md"
+    fi
+    if [ -n "$cline_dir" ]; then
+      cp "$const_src" "$cline_dir/agent-rules-constitution.md"
+      echo "  Cline    → $cline_dir/agent-rules-constitution.md"
+    fi
+  fi
 }
 
 self_test() {
@@ -199,10 +271,11 @@ PY
 
 self_test_agents() {
   local sb; sb="$(mktemp -d)" fail=0
-  mkdir -p "$sb/src/demo-skill"
+  mkdir -p "$sb/src/demo-skill" "$sb/src/agent-rules/rules"
   printf -- '---\nname: demo-skill\ndescription: 測試用 skill。\n---\n# body\n' > "$sb/src/demo-skill/SKILL.md"
+  printf -- '# 憲法\nLAW-MARKER-42\n' > "$sb/src/agent-rules/rules/CONSTITUTION.md"
 
-  # case 1: all three agent homes present
+  # case 1: all agent homes present (constitution OFF by default)
   mkdir -p "$sb/h1/.gemini" "$sb/h1/.codex" "$sb/h1/.cline"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h1"; sync_agents >/dev/null )
   [ -L "$sb/h1/.agents/skills/demo-skill" ] || { echo "  FAIL: gemini ~/.agents symlink"; fail=1; }
@@ -212,6 +285,8 @@ self_test_agents() {
     || { echo "  FAIL: cline rule missing name"; fail=1; }
   grep -q "$sb/src/demo-skill/SKILL.md" "$sb/h1/.cline/rules/demo-skill.md" 2>/dev/null \
     || { echo "  FAIL: cline rule missing source path"; fail=1; }
+  [ -e "$sb/h1/.codex/AGENTS.md" ] && { echo "  FAIL: constitution written without --constitution"; fail=1; }
+  [ -e "$sb/h1/.gemini/GEMINI.md" ] && { echo "  FAIL: gemini constitution written without flag"; fail=1; }
 
   # case 2: no agent homes → nothing created
   mkdir -p "$sb/h2"
@@ -223,15 +298,48 @@ self_test_agents() {
   [ "$(readlink "$sb/h1/.codex/skills/demo-skill" 2>/dev/null)" = "$sb/src/demo-skill" ] \
     || { echo "  FAIL: not idempotent"; fail=1; }
 
+  # case 4: OpenCode detected via ~/.config/opencode → shares ~/.agents/skills
+  mkdir -p "$sb/h3/.config/opencode"
+  ( SCRIPT_DIR="$sb/src"; HOME="$sb/h3"; sync_agents >/dev/null )
+  [ -L "$sb/h3/.agents/skills/demo-skill" ] || { echo "  FAIL: opencode ~/.agents symlink"; fail=1; }
+
+  # case 5: --constitution → managed block in every detected rules file,
+  # user content preserved, idempotent (single block after double run)
+  mkdir -p "$sb/h4/.codex" "$sb/h4/.gemini" "$sb/h4/.config/opencode" "$sb/h4/.cline"
+  printf 'my own codex rules\n' > "$sb/h4/.codex/AGENTS.md"
+  ( SCRIPT_DIR="$sb/src"; HOME="$sb/h4"; CONSTITUTION=1; sync_agents >/dev/null )
+  ( SCRIPT_DIR="$sb/src"; HOME="$sb/h4"; CONSTITUTION=1; sync_agents >/dev/null )
+  grep -q "my own codex rules" "$sb/h4/.codex/AGENTS.md" 2>/dev/null \
+    || { echo "  FAIL: constitution clobbered user content"; fail=1; }
+  grep -q "LAW-MARKER-42" "$sb/h4/.codex/AGENTS.md" 2>/dev/null \
+    || { echo "  FAIL: codex constitution block missing"; fail=1; }
+  [ "$(grep -c "agent-rules-constitution:begin" "$sb/h4/.codex/AGENTS.md" 2>/dev/null)" = 1 ] \
+    || { echo "  FAIL: constitution block not idempotent"; fail=1; }
+  grep -q "LAW-MARKER-42" "$sb/h4/.gemini/GEMINI.md" 2>/dev/null \
+    || { echo "  FAIL: gemini constitution missing"; fail=1; }
+  grep -q "LAW-MARKER-42" "$sb/h4/.config/opencode/AGENTS.md" 2>/dev/null \
+    || { echo "  FAIL: opencode constitution missing"; fail=1; }
+  grep -q "LAW-MARKER-42" "$sb/h4/.cline/rules/agent-rules-constitution.md" 2>/dev/null \
+    || { echo "  FAIL: cline constitution copy missing"; fail=1; }
+
   rm -rf "$sb"
   if [ "$fail" = 0 ]; then
-    echo "self-test OK — agents: symlinks + cline rule + skip-absent + idempotent"
+    echo "self-test OK — agents: symlinks + cline rule + skip-absent + idempotent + opencode + constitution(opt-in/preserve/idempotent)"
   else
     exit 1
   fi
 }
 
-case "${1:-}" in
+MODE=""
+for arg in "$@"; do
+  case "$arg" in
+    --constitution)      CONSTITUTION=1 ;;
+    --self-test|agents)  MODE="$arg" ;;
+    *) echo "unknown argument: $arg（可用：agents、--constitution、--self-test）" >&2; exit 1 ;;
+  esac
+done
+
+case "$MODE" in
   --self-test) self_test; self_test_agents; exit 0 ;;
   agents)      sync_agents; exit 0 ;;
 esac
