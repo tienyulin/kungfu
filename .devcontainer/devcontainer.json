@@ -1,5 +1,5 @@
 {
-  "name": "ai-agent-skills",
+  "name": "kungfu",
   "image": "mcr.microsoft.com/devcontainers/python:3.14",
   "postCreateCommand": "pip install -r requirements.txt",
   "customizations": {

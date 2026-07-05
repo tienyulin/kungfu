@@ -40,8 +40,8 @@
 set -euo pipefail
 
 # Swap GITLAB_URL for your internal GitLab mirror of this repo once it exists.
-GITLAB_URL="https://gitlab.internal.example.com/mirrors/ai-agent-skills.git"
-MARKET="ai-agent-skills"
+GITLAB_URL="https://gitlab.internal.example.com/mirrors/kungfu.git"
+MARKET="kungfu"
 CLAUDE_SETTINGS_FILE="${CLAUDE_SETTINGS_FILE:-$HOME/.claude/settings.json}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -273,7 +273,7 @@ sync_agents() {
       [ -f "$mig" ] || continue
       if [ "$(basename "$mig")" = "agent-rules-constitution.md" ] \
          || [ "$(basename "$mig")" = "agent-rules-situational-paths.md" ] \
-         || grep -q "ai-agent-skills 的指標規則" "$mig" 2>/dev/null; then
+         || grep -q "kungfu 的指標規則" "$mig" 2>/dev/null; then
         rm -f "$mig"
         echo "  − ~/.cline/rules/$(basename "$mig")（遷移到 ${cline_dir}）"
       fi
@@ -295,7 +295,7 @@ sync_agents() {
     if [ -n "$cline_dir" ]; then
       IFS=$'\t' read -r nm ds < <(skill_meta "$src/SKILL.md")
       # pointer rule, not full copy — keeps Cline's always-on context lean.
-      printf '# Skill: %s\n\n%s\n\n完整步驟在 `%s/SKILL.md`。要做這件事時，先讀該檔再照做（這是指向 ai-agent-skills 的指標規則，內容以該 SKILL.md 為準）。\n' \
+      printf '# Skill: %s\n\n%s\n\n完整步驟在 `%s/SKILL.md`。要做這件事時，先讀該檔再照做（這是指向 kungfu 的指標規則，內容以該 SKILL.md 為準）。\n' \
         "${nm:-$skill}" "$ds" "$src" > "$cline_dir/$skill.md"
     fi
     echo "  • $skill"
@@ -317,7 +317,7 @@ sync_agents() {
   if [ -n "$cline_dir" ]; then
     for f in "$cline_dir"/*.md; do
       [ -f "$f" ] || continue
-      grep -q "ai-agent-skills 的指標規則" "$f" || continue
+      grep -q "kungfu 的指標規則" "$f" || continue
       p="$(grep -o "$SCRIPT_DIR/[^\`]*SKILL\.md" "$f" | head -1)"
       [ -n "$p" ] && [ ! -f "$p" ] && { rm -f "$f"; echo "  − $(basename "$f")（stale Cline pointer rule）"; }
     done
@@ -532,14 +532,14 @@ PYLINT
   {"name":"sop-to-spec","source":"./","skills":["./sop-to-spec"]},
   {"name":"skill-author","source":"./","skills":["./skill-author"]},
   {"name":"loner","source":"./","skills":["./loner"]},
-  {"name":"ai-agent-skills","source":"./","skills":["./wiki-doc-author","./sop-to-spec","./skill-author"]},
+  {"name":"kungfu","source":"./","skills":["./wiki-doc-author","./sop-to-spec","./skill-author"]},
   {"name":"superpowers","source":{"source":"url","url":"x"}},
   {"name":"andrej-karpathy-skills","source":{"source":"url","url":"y"}}
 ]}
 JSON
   local got want
   got="$(plugin_plan "$tmp/mp.json" | sort | tr '\n' ';')"
-  want="INSTALL ai-agent-skills;INSTALL andrej-karpathy-skills;INSTALL loner;INSTALL superpowers;RETIRE skill-author;RETIRE sop-to-spec;RETIRE wiki-doc-author;"
+  want="INSTALL andrej-karpathy-skills;INSTALL kungfu;INSTALL loner;INSTALL superpowers;RETIRE skill-author;RETIRE sop-to-spec;RETIRE wiki-doc-author;"
   if [ "$got" != "$want" ]; then
     rm -rf "$tmp"
     echo "self-test FAIL (plugin plan)"; echo "  got:  [$got]"; echo "  want: [$want]"; exit 1
@@ -555,7 +555,7 @@ import json, sys
 s = json.load(open(sys.argv[1]))
 assert s["model"] == "keep-me", "clobbered unrelated key"
 assert s["extraKnownMarketplaces"]["other"]["source"]["repo"] == "x/y", "clobbered other marketplace"
-mk = s["extraKnownMarketplaces"]["ai-agent-skills"]
+mk = s["extraKnownMarketplaces"]["kungfu"]
 assert mk["autoUpdate"] is True, "autoUpdate not set"
 assert mk["source"]["url"].endswith(".git"), "source not created"
 PY
@@ -638,7 +638,7 @@ self_test_agents() {
   # removed; a user's own symlink pointing elsewhere is kept.
   ln -s "$sb/src/renamed-away" "$sb/h1/.codex/skills/renamed-away"
   ln -s "$sb/elsewhere/thing" "$sb/h1/.codex/skills/users-own"
-  printf '# Skill: gone\n\ngone.\n\n完整步驟在 `%s/gone-skill/SKILL.md`。（這是指向 ai-agent-skills 的指標規則）\n' "$sb/src" > "$sb/h1/.cline/rules/gone-skill.md"
+  printf '# Skill: gone\n\ngone.\n\n完整步驟在 `%s/gone-skill/SKILL.md`。（這是指向 kungfu 的指標規則）\n' "$sb/src" > "$sb/h1/.cline/rules/gone-skill.md"
   printf '# my note\n' > "$sb/h1/.cline/rules/my-note.md"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h1"; sync_agents >/dev/null )
   [ -L "$sb/h1/.codex/skills/renamed-away" ] && { echo "  FAIL: stale symlink not pruned"; fail=1; }
@@ -655,7 +655,7 @@ self_test_agents() {
   # app base) → app layout wins (extension only reads <base>/Rules); our old
   # files in ~/.cline/rules migrate away; the user's own file there is kept.
   mkdir -p "$sb/h9/Documents/Cline" "$sb/h9/.cline/rules"
-  printf '# Skill: old\n\nold.\n\n完整步驟在 `%s/demo-skill/SKILL.md`。（這是指向 ai-agent-skills 的指標規則）\n' "$sb/src" > "$sb/h9/.cline/rules/demo-skill.md"
+  printf '# Skill: old\n\nold.\n\n完整步驟在 `%s/demo-skill/SKILL.md`。（這是指向 kungfu 的指標規則）\n' "$sb/src" > "$sb/h9/.cline/rules/demo-skill.md"
   printf '# my own cline rule\n' > "$sb/h9/.cline/rules/keep-me.md"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h9"; sync_agents >/dev/null )
   grep -q "demo-skill" "$sb/h9/Documents/Cline/Rules/demo-skill.md" 2>/dev/null \

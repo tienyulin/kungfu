@@ -32,8 +32,8 @@
    (a) 起手一個假新服務 (b) 在既有服務加一個「查 DB + 寄通知信」端點,列出「必須猜」
    之處(HIGH = 兩個合理 agent 分岔)。HIGH > 0 → 補 facts 重審。
 6. **出貨**:skills repo = 本 skill 的安裝來源(`claude plugin marketplace list` 看
-   ai-agent-skills 指向哪個 git repo;本地目錄在 `~/.claude/plugins/marketplaces/
-   ai-agent-skills/`)。該 repo 慣例 branch → PR → merge(細節見其 CONTRIBUTING.md);
+   kungfu 指向哪個 git repo;本地目錄在 `~/.claude/plugins/marketplaces/
+   kungfu/`)。該 repo 慣例 branch → PR → merge(細節見其 CONTRIBUTING.md);
    merge 後成員經 marketplace auto-update 自動帶到(把它當 submodule 的專案另 bump
    pointer)。
 

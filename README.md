@@ -1,4 +1,4 @@
-# ai-agent-skills
+# Kungfu 🥋
 
 團隊共用的 **AI agent skills marketplace**。一個 repo、兩件事：
 
@@ -18,11 +18,11 @@
 # 0) 前置：裝好 Claude Code、設好對內網 GitLab 的 git auth（token / SSH）
 
 # 1) 加 marketplace（會把整個 repo 含同步腳本下載到
-#    ~/.claude/plugins/marketplaces/ai-agent-skills/，不用自己 clone）
-claude plugin marketplace add https://gitlab.<你的公司>/<group>/ai-agent-skills.git
+#    ~/.claude/plugins/marketplaces/kungfu/，不用自己 clone）
+claude plugin marketplace add https://gitlab.<你的公司>/<group>/kungfu.git
 
 # 2) 一鍵裝齊 + 開自動更新
-bash ~/.claude/plugins/marketplaces/ai-agent-skills/skills-sync.sh
+bash ~/.claude/plugins/marketplaces/kungfu/skills-sync.sh
 
 # 3) 生效與確認
 /reload-plugins            # 在 claude session 裡；或重啟 claude
@@ -33,7 +33,7 @@ claude plugin list         # 應看到 bundle + agent-rules + 外部 mirror plug
 
 **還想接其他 agent**（Gemini / Codex / Cline / OpenCode）？之後任何時候跟 Claude 說
 **`/agent-rules-setup`**，它自己知道腳本在哪、會問你要接多深。手動派：
-`bash ~/.claude/plugins/marketplaces/ai-agent-skills/skills-sync.sh --constitution`。
+`bash ~/.claude/plugins/marketplaces/kungfu/skills-sync.sh --constitution`。
 
 之後**不用再動**：marketplace auto-update 讓每次開新 session 自動帶到最新
 （機制見〈更新怎麼跟〉）。
@@ -43,8 +43,8 @@ claude plugin list         # 應看到 bundle + agent-rules + 外部 mirror plug
 不需要裝 Claude Code。自己 clone 一份、跑 `agents` 模式即可：
 
 ```bash
-git clone https://gitlab.<你的公司>/<group>/ai-agent-skills.git ~/ai-agent-skills
-bash ~/ai-agent-skills/skills-sync.sh agents --constitution
+git clone https://gitlab.<你的公司>/<group>/kungfu.git ~/kungfu
+bash ~/kungfu/skills-sync.sh agents --constitution
 ```
 
 - skills（pointer rule／symlink）、憲法 hook、SAFETY guard 全部照裝——這段完全不用
@@ -162,7 +162,7 @@ bash ~/ai-agent-skills/skills-sync.sh agents --constitution
    hook plugin——新 plugin 不會自己裝；腳本讀 marketplace.json 自動補齊）
 
 重跑方式：跟 Claude 說 `/agent-rules-setup`，或
-`bash ~/.claude/plugins/marketplaces/ai-agent-skills/skills-sync.sh`（加 `--constitution`
+`bash ~/.claude/plugins/marketplaces/kungfu/skills-sync.sh`（加 `--constitution`
 含跨 agent 憲法/guard；`agents` 模式只碰跨 agent 不動 Claude plugins）。
 
 ### 版本策略
@@ -183,7 +183,7 @@ agent，不由這裡轉。
 
 ### 進階：只裝某幾個 / 離線
 
-- 精挑單裝：`/plugin install wiki-doc-author@ai-agent-skills`。**bundle 或 granular
+- 精挑單裝：`/plugin install wiki-doc-author@kungfu`。**bundle 或 granular
   擇一**——裝了 bundle 別再單裝成員 skill（會重複載入）；單裝更新照樣自動，但新 skill
   不會自己出現（bundle 特權）。
 - 完全離線：把 skill 資料夾（含 `scripts/`）複製進專案 `.claude/skills/<name>/`，
