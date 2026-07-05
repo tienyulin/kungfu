@@ -11,6 +11,13 @@ marketplace**，**公司內網 GitLab 也能用**（不需要 GitHub 或公開 m
 | [`wiki-doc-author`](wiki-doc-author/SKILL.md) | 產出餵進 wiki processor 的源頭文件 —— API（README + openapi.json）、cronjob/worker/CLI、純知識，都一份 README 搞定。一個檔讀完就能做，附純 stdlib 工具（`scripts/`）。 |
 | [`sop-to-spec`](sop-to-spec/SKILL.md) | 把維運 SOP（DBA runbook、infra 程序…）轉成「人能審、AI 能照著實作三層 FastAPI 服務」的 spec。 |
 | [`skill-author`](skill-author/SKILL.md) | 在本 repo 新增/修改一個**可安裝**的 skill —— 照標準產 SKILL.md、註冊進 marketplace。讓 AI agent 自己會寫 skill。 |
+| `agent-rules-*`（[bugfix](agent-rules-bugfix/SKILL.md)、[feature](agent-rules-feature/SKILL.md)、[refactor](agent-rules-refactor/SKILL.md)、[investigate](agent-rules-investigate/SKILL.md)、[review](agent-rules-review/SKILL.md)） | 五種任務的**固定作業流程（playbook）**：每步有必填輸出模板、封閉分流、機器 gate 驗證，寫到最弱的模型也走得完。依任務關鍵字自動觸發。 |
+
+外加一個**常駐 plugin**（不是 skill）：
+
+| plugin | 做什麼 |
+|---|---|
+| [`agent-rules`](agent-rules/rules/CONSTITUTION.md) | **SessionStart hook** 每個 session 開頭自動注入 12 條硬規則憲法（證據先於宣稱、先重現再修、最小 diff、三振停手…）＋回合終檢，另附三個情境檔（[DECISIONS](agent-rules/rules/DECISIONS.md)／[SAFETY](agent-rules/rules/SAFETY.md)／[ANTIPATTERNS](agent-rules/rules/ANTIPATTERNS.md)）。做成 hook 而非 skill 是因為 skill 不保證被載入、hook 保證。由 Claude Fable 5 session 蒸餾而成，目標是讓較弱的模型也守紀律。 |
 
 加上**外部開源 skill**（mirror 進內網 GitLab）：`superpowers`、`andrej-karpathy-skills`
 —— 見下方〈外部 / 第三方 skill〉。要放新的 skill（自家寫的或外部 mirror 的）都歡迎，見〈維護者〉。
@@ -56,8 +63,9 @@ claude plugin list         # 應看到 bundle + 外部 mirror plugins
   啟動**自動 git-pull marketplace + 更新已裝 plugins；有更新會提示跑 `/reload-plugins`。
 
 重跑 `bash skills-sync.sh` 只剩三個情境：**新機器初裝**、**要把 skills 同步到新的
-agent**（Gemini/Codex/Cline，見下節）、marketplace **新收錄外部 mirror plugin**
-（新 plugin 不會自己裝，bundle 只涵蓋自家 skill）。自家 skill 的新增/修改**永遠不用重跑**。
+agent**（Gemini/Codex/Cline，見下節）、marketplace **新收錄 bundle 以外的新 plugin**
+（外部 mirror 或常駐 hook plugin 如 `agent-rules`——新 plugin 不會自己裝，bundle 只涵蓋
+自家 skill；腳本讀 marketplace.json 會自動補裝）。自家 skill 的新增/修改**永遠不用重跑**。
 
 ### 版本策略
 
@@ -88,6 +96,10 @@ agent（看家目錄），只同步偵測到的：
   讀到的內容**跟著新**,不用重跑。只有 repo **新增** skill 時需要重跑一次（補新 symlink /
   Cline rule）—— 這是跨 agent 端唯一的手動情境。
 - 範圍：只同步**本 repo 自家 skill**；外部 mirror（superpowers/karpathy）是整包 plugin，上游各自已支援多 agent，不由這裡轉。
+- `agent-rules` 憲法是 **Claude Code hook 機制**，跨 agent 同步不到 —— Gemini/Codex/Cline
+  只會拿到五個 playbook skills。要讓其他 agent 也吃憲法：把
+  [`agent-rules/rules/CONSTITUTION.md`](agent-rules/rules/CONSTITUTION.md) 貼進該工具的
+  rules 檔（Cline 的 `.clinerules`、Codex 的 `AGENTS.md` 等）。
 
 ### 進階：只裝某幾個 / 離線
 
