@@ -1,9 +1,9 @@
 ---
-name: agent-rules-feature
-description: 加新功能的固定流程 — 先寫可驗收清單再寫碼、抄既有 pattern、做最小版本、逐項驗證。任何新增功能、新端點、新指令、新元件、「讓它能做 X」的任務都用。Triggers - "加功能"、"新增"、"實作"、"做一個"、"支援 X"、"add"、"build"、"implement"、"create"、"support"、"/agent-rules-feature"。
+name: dev-feature
+description: 加新功能的固定流程 — 先寫可驗收清單再寫碼、抄既有 pattern、做最小版本、逐項驗證。任何新增功能、新端點、新指令、新元件、「讓它能做 X」的任務都用。Triggers - "加功能"、"新增"、"實作"、"做一個"、"支援 X"、"add"、"build"、"implement"、"create"、"support"、"/dev-feature"。
 ---
 
-# agent-rules-feature
+# dev-feature
 
 **開工前：把下面的進度清單照抄進你的回覆，每完成一步打勾再做下一步。**
 遇到本 skill 沒定義的情況：停下來問使用者，不要自行發明。

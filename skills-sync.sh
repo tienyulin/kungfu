@@ -267,6 +267,29 @@ sync_agents() {
     fi
     echo "  • $skill"
   done
+  # prune OUR stale entries (skills renamed/removed upstream): only symlinks
+  # pointing INTO this repo with a vanished target, and only pointer rules we
+  # generated — anything the user made themselves is left alone.
+  local d link tgt f p
+  for d in "$home/.agents/skills" "$home/.codex/skills"; do
+    [ -d "$d" ] || continue
+    for link in "$d"/*; do
+      [ -L "$link" ] || continue
+      tgt="$(readlink "$link")"
+      case "$tgt" in
+        "$SCRIPT_DIR"/*) [ -e "$tgt" ] || { rm -f "$link"; echo "  − $(basename "$link")（已改名/移除，清掉 stale symlink）"; } ;;
+      esac
+    done
+  done
+  if [ -n "$cline_dir" ]; then
+    for f in "$cline_dir"/*.md; do
+      [ -f "$f" ] || continue
+      grep -q "ai-agent-skills 的指標規則" "$f" || continue
+      p="$(grep -o "$SCRIPT_DIR/[^\`]*SKILL\.md" "$f" | head -1)"
+      [ -n "$p" ] && [ ! -f "$p" ] && { rm -f "$f"; echo "  − $(basename "$f")（stale Cline pointer rule）"; }
+    done
+  fi
+
   [ "$gemini" = 1 ]   && echo "  Gemini   → ~/.agents/skills"
   [ "$opencode" = 1 ] && echo "  OpenCode → ~/.agents/skills（原生讀取，與 Gemini 共用）"
   [ "$codex" = 1 ]    && echo "  Codex    → ~/.codex/skills"
@@ -530,6 +553,18 @@ self_test_agents() {
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h1"; sync_agents >/dev/null )
   [ "$(readlink "$sb/h1/.codex/skills/demo-skill" 2>/dev/null)" = "$sb/src/demo-skill" ] \
     || { echo "  FAIL: not idempotent"; fail=1; }
+
+  # case 3b: stale prune — our dangling symlink and stale Cline pointer rule are
+  # removed; a user's own symlink pointing elsewhere is kept.
+  ln -s "$sb/src/renamed-away" "$sb/h1/.codex/skills/renamed-away"
+  ln -s "$sb/elsewhere/thing" "$sb/h1/.codex/skills/users-own"
+  printf '# Skill: gone\n\ngone.\n\n完整步驟在 `%s/gone-skill/SKILL.md`。（這是指向 ai-agent-skills 的指標規則）\n' "$sb/src" > "$sb/h1/.cline/rules/gone-skill.md"
+  printf '# my note\n' > "$sb/h1/.cline/rules/my-note.md"
+  ( SCRIPT_DIR="$sb/src"; HOME="$sb/h1"; sync_agents >/dev/null )
+  [ -L "$sb/h1/.codex/skills/renamed-away" ] && { echo "  FAIL: stale symlink not pruned"; fail=1; }
+  [ -L "$sb/h1/.codex/skills/users-own" ] || { echo "  FAIL: user's own symlink pruned"; fail=1; }
+  [ -f "$sb/h1/.cline/rules/gone-skill.md" ] && { echo "  FAIL: stale cline rule not pruned"; fail=1; }
+  [ -f "$sb/h1/.cline/rules/my-note.md" ] || { echo "  FAIL: user's own cline rule pruned"; fail=1; }
 
   # case 4: OpenCode detected via ~/.config/opencode → shares ~/.agents/skills
   mkdir -p "$sb/h3/.config/opencode"

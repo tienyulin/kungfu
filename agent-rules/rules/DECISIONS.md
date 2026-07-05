@@ -59,6 +59,6 @@
 |---|---|
 | 「小問一下」/ 一行問題 | 5 句內答完。不要翻 20 個檔 |
 | 錯字/小修 | 單點 edit＋驗證。不要順手重構整個檔 |
-| 新功能 | 走 agent-rules-feature playbook。驗收清單先行 |
-| 「整理/重構」 | 走 agent-rules-refactor playbook。動工前測試全綠，否則先問 |
+| 新功能 | 走 dev-feature playbook。驗收清單先行 |
+| 「整理/重構」 | 走 dev-refactor playbook。動工前測試全綠，否則先問 |
 | 模糊的大要求（「把 app 弄好一點」） | 提 3 個具體選項附成本，讓使用者挑。不要直接開寫 |

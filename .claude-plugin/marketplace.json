@@ -102,7 +102,7 @@
       "category": "development"
     },
     {
-      "name": "agent-rules-bugfix",
+      "name": "dev-bugfix",
       "source": "./",
       "strict": false,
       "description": "Fixed bug-fix procedure for any model tier — reproduce first, root-cause one-liner, minimal fix, machine-gated verification, fill-in report templates. Prevents 'should work now' fake completions.",
@@ -116,11 +116,11 @@
       ],
       "category": "development",
       "skills": [
-        "./agent-rules-bugfix"
+        "./dev-bugfix"
       ]
     },
     {
-      "name": "agent-rules-feature",
+      "name": "dev-feature",
       "source": "./",
       "strict": false,
       "description": "Fixed feature-building procedure — acceptance checklist before code, copy existing patterns, smallest version, verify every checklist item with a command.",
@@ -134,11 +134,11 @@
       ],
       "category": "development",
       "skills": [
-        "./agent-rules-feature"
+        "./dev-feature"
       ]
     },
     {
-      "name": "agent-rules-refactor",
+      "name": "dev-refactor",
       "source": "./",
       "strict": false,
       "description": "Fixed refactor procedure — tests green before starting, one mechanical transform at a time with tests after each step, zero-behavior-change audit before reporting.",
@@ -151,11 +151,11 @@
       ],
       "category": "development",
       "skills": [
-        "./agent-rules-refactor"
+        "./dev-refactor"
       ]
     },
     {
-      "name": "agent-rules-investigate",
+      "name": "dev-investigate",
       "source": "./",
       "strict": false,
       "description": "Fixed investigation procedure — the deliverable is an answer with file:line evidence and a confidence label, never a code edit; found problems are reported, not fixed.",
@@ -169,11 +169,11 @@
       ],
       "category": "development",
       "skills": [
-        "./agent-rules-investigate"
+        "./dev-investigate"
       ]
     },
     {
-      "name": "agent-rules-review",
+      "name": "dev-review",
       "source": "./",
       "strict": false,
       "description": "Fixed code-review procedure — real diff only, correctness>security>failure-paths>contracts priority, every finding needs a concrete trigger, one line per finding, no praise padding, ends with a verdict.",
@@ -187,7 +187,7 @@
       ],
       "category": "development",
       "skills": [
-        "./agent-rules-review"
+        "./dev-review"
       ]
     },
     {
@@ -228,11 +228,11 @@
         "./sop-to-spec",
         "./skill-author",
         "./api-template-dev",
-        "./agent-rules-bugfix",
-        "./agent-rules-feature",
-        "./agent-rules-refactor",
-        "./agent-rules-investigate",
-        "./agent-rules-review",
+        "./dev-bugfix",
+        "./dev-feature",
+        "./dev-refactor",
+        "./dev-investigate",
+        "./dev-review",
         "./agent-rules-setup"
       ]
     },
