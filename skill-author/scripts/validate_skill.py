@@ -124,6 +124,28 @@ def _check_marketplace(root, skills):
     return errs
 
 
+def _check_envrun_copies(root):
+    """envrun.sh is duplicated across skills' scripts/ dirs (a skill can't
+    reference files outside its own dir); the copies must stay byte-identical
+    or they silently drift. Returns errs."""
+    paths = sorted(
+        os.path.join(d, "scripts", "envrun.sh")
+        for d in os.listdir(root)
+        if os.path.isdir(d)
+        and d not in SKIP
+        and os.path.isfile(os.path.join(d, "scripts", "envrun.sh"))
+    )
+    blobs = set()
+    for p in paths:
+        with open(p, "rb") as f:
+            blobs.add(f.read())
+    if len(blobs) <= 1:
+        return []
+    return [
+        "envrun.sh 各份不同步（必須 byte-identical；改一份後 cp 到其他每一份）: " + ", ".join(paths)
+    ]
+
+
 def main(argv):
     """Validate all skills (or one named dir) + marketplace registration; return exit code."""
     root = os.getcwd()
@@ -146,6 +168,7 @@ def main(argv):
     # marketplace registration — also for a single-skill run: an unregistered
     # skill "passing" was the main false-green this tool could produce.
     errs += _check_marketplace(root, skills)
+    errs += _check_envrun_copies(root)
 
     for w in warns:
         print(f"  ⚠ {w}")
