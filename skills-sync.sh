@@ -720,6 +720,14 @@ PY
   grep -q "user-hook" "$sb/h6/Documents/Cline/Hooks/TaskStart" \
     || { echo "  FAIL: foreign cline TaskStart clobbered"; fail=1; }
 
+  # case 7b: no `claude` CLI on PATH → main flow degrades to agents-only sync,
+  # exits 0 with the skip message, writes nothing without agent dirs
+  mkdir -p "$sb/h8"
+  out="$(HOME="$sb/h8" PATH="/usr/bin:/bin" bash "$SCRIPT_DIR/skills-sync.sh" 2>&1)" \
+    || { echo "  FAIL: no-claude flow exited non-zero"; fail=1; }
+  echo "$out" | grep -q "找不到 claude CLI" || { echo "  FAIL: no-claude skip message missing"; fail=1; }
+  [ -e "$sb/h8/.agents" ] && { echo "  FAIL: no-claude flow created agent dirs"; fail=1; }
+
   # case 7: Linux layout (~/Cline, no Documents) → hooks land in ~/Cline/Hooks,
   # rules in ~/Cline/Rules
   mkdir -p "$sb/h7/Cline"
@@ -755,6 +763,17 @@ case "$MODE" in
 esac
 
 [ -f "$MARKETPLACE_JSON" ] || { echo "marketplace.json not found at $MARKETPLACE_JSON" >&2; exit 1; }
+
+# No Claude Code on this machine (Cline/Codex/Gemini-only teammate): the whole
+# Claude-plugin section needs the `claude` CLI, but cross-agent sync and the
+# constitution/guard wiring don't — run just those and exit cleanly. The hooks
+# point into THIS clone and self-refresh it, so freshness works without Claude.
+if ! command -v claude >/dev/null 2>&1; then
+  echo "→ 找不到 claude CLI —— 跳過 Claude plugin 安裝（純 Cline/Codex/Gemini 成員模式）"
+  sync_agents
+  echo "✓ done — 其他 agent 重開 session 即生效；之後裝了 Claude Code 再重跑本腳本補上 plugin 部分"
+  exit 0
+fi
 
 echo "→ marketplace: add or update ($MARKET)"
 claude plugin marketplace add "$GITLAB_URL" 2>/dev/null || claude plugin marketplace update "$MARKET"
