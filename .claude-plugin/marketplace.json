@@ -191,6 +191,24 @@
       ]
     },
     {
+      "name": "agent-rules-setup",
+      "source": "./",
+      "strict": false,
+      "description": "Runs this marketplace's skills-sync.sh for the user — installs the team skills and wires the agent-rules constitution + SAFETY guard into other agents (Codex/Gemini/Cline/OpenCode). The user never needs to know where the script lives; the skill locates it.",
+      "author": {
+        "name": "tienyulin"
+      },
+      "keywords": [
+        "setup",
+        "sync",
+        "agent-rules"
+      ],
+      "category": "workflow",
+      "skills": [
+        "./agent-rules-setup"
+      ]
+    },
+    {
       "name": "ai-agent-skills",
       "source": "./",
       "strict": false,
@@ -214,7 +232,8 @@
         "./agent-rules-feature",
         "./agent-rules-refactor",
         "./agent-rules-investigate",
-        "./agent-rules-review"
+        "./agent-rules-review",
+        "./agent-rules-setup"
       ]
     },
     {

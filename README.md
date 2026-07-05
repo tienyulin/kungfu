@@ -12,6 +12,7 @@ marketplace**，**公司內網 GitLab 也能用**（不需要 GitHub 或公開 m
 | [`sop-to-spec`](sop-to-spec/SKILL.md) | 把維運 SOP（DBA runbook、infra 程序…）轉成「人能審、AI 能照著實作三層 FastAPI 服務」的 spec。 |
 | [`skill-author`](skill-author/SKILL.md) | 在本 repo 新增/修改一個**可安裝**的 skill —— 照標準產 SKILL.md、註冊進 marketplace。讓 AI agent 自己會寫 skill。 |
 | `agent-rules-*`（[bugfix](agent-rules-bugfix/SKILL.md)、[feature](agent-rules-feature/SKILL.md)、[refactor](agent-rules-refactor/SKILL.md)、[investigate](agent-rules-investigate/SKILL.md)、[review](agent-rules-review/SKILL.md)） | 五種任務的**固定作業流程（playbook）**：每步有必填輸出模板、封閉分流、機器 gate 驗證，寫到最弱的模型也走得完。依任務關鍵字自動觸發。 |
+| [`agent-rules-setup`](agent-rules-setup/SKILL.md) | 叫 Claude 代跑 `skills-sync.sh`——裝齊 skills、把憲法＋SAFETY guard 接進其他 agent。**使用者不用知道腳本在哪**，skill 自己找。說「/agent-rules-setup」就好。 |
 
 外加一個**常駐 plugin**（不是 skill）：
 
@@ -62,7 +63,10 @@ claude plugin list         # 應看到 bundle + 外部 mirror plugins
   `extraKnownMarketplaces` 條目；第三方 marketplace 預設是關的）。之後**每次 Claude Code
   啟動**自動 git-pull marketplace + 更新已裝 plugins；有更新會提示跑 `/reload-plugins`。
 
-重跑 `bash skills-sync.sh` 只剩三個情境：**新機器初裝**、**要把 skills 同步到新的
+腳本永遠住在 `~/.claude/plugins/marketplaces/ai-agent-skills/skills-sync.sh`
+（`marketplace add` 下載的位置；下文簡寫 `skills-sync.sh` 都指這個路徑，
+或直接叫 Claude 跑 —— 說「/agent-rules-setup」即可，skill 自己知道路徑）。
+重跑它只剩三個情境：**新機器初裝**、**要把 skills 同步到新的
 agent**（Gemini/Codex/Cline/OpenCode，見下節）、marketplace **新收錄 bundle 以外的新 plugin**
 （外部 mirror 或常駐 hook plugin 如 `agent-rules`——新 plugin 不會自己裝，bundle 只涵蓋
 自家 skill；腳本讀 marketplace.json 會自動補裝）。自家 skill 的新增/修改**永遠不用重跑**；
@@ -92,7 +96,8 @@ agent（看家目錄），只同步偵測到的：
 | Codex CLI | `~/.codex/skills/<skill>`（symlink） | Codex 原生讀 SKILL.md |
 | Cline | `~/.cline/rules/<skill>.md`（生成） | Cline 不讀 SKILL.md，故生一個 **pointer rule**（skill 名＋描述＋「需要時讀該 SKILL.md」），不內嵌全文以免脹 context |
 
-- 只想同步 agent、不碰 Claude plugin：`bash skills-sync.sh agents`。
+- 只想同步 agent、不碰 Claude plugin：
+  `bash ~/.claude/plugins/marketplaces/ai-agent-skills/skills-sync.sh agents`。
 - 加新自家 skill（bare SKILL.md 目錄）會自動納入，不用改腳本。
 - **更新怎麼跟**：symlink 指向 marketplace 下載目錄 → marketplace 自動更新後,Gemini/Codex
   讀到的內容**跟著新**,不用重跑。只有 repo **新增** skill 時需要重跑一次（補新 symlink /
@@ -103,8 +108,11 @@ agent（看家目錄），只同步偵測到的：
   ——因為要寫你的個人 dotfile）：
 
   ```bash
-  bash skills-sync.sh --constitution          # 完整流程 + 憲法
-  bash skills-sync.sh agents --constitution   # 只跨 agent + 憲法
+  # 最省事：叫 Claude 跑 —— 「/agent-rules-setup」或「幫我把 agent-rules 接到其他 agent」
+  # 手動跑（腳本住在 marketplace 下載目錄）：
+  SYNC=~/.claude/plugins/marketplaces/ai-agent-skills/skills-sync.sh
+  bash "$SYNC" --constitution          # 完整流程 + 憲法 + guard
+  bash "$SYNC" agents --constitution   # 只跨 agent + 憲法 + guard
   ```
 
   只碰偵測到的 agent，**用各家 hook 機制在 session 開頭注入**——跟 Claude Code 的
