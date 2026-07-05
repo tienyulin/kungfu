@@ -5,6 +5,30 @@ description: 產出餵進 LLM 知識 wiki（llm-wiki processor）的源頭文件
 
 # wiki-doc-author
 
+**開工前：把下面的進度清單照抄進你的回覆，每完成一步打勾再做下一步。**
+遇到本 skill 與 references 都沒定義的情況：停下來問使用者，不要自行發明。
+
+```
+進度：
+- [ ] Step 1 認種類（決策樹分流，monorepo 先定 source_app 切法）
+- [ ] Step 2 README + docs/ 寫完（散裝知識檔搬進 docs/ 後【刪原檔】），lint_frontmatter pass
+- [ ] 事實溯源自查：README/docs 裡每個 env 名、數字、URL、行為描述都在 repo 或使用者輸入
+      找得到出處；查無的已改寫成「待補：<問題>」並列出要問使用者的清單
+- [ ] Step 3（僅 Mode A）openapi 匯出 + completeness 乾淨 + pre-commit 接好
+- [ ] Step 4 CI 接好（或規劃）；本地 push/搜尋驗證（選配）
+```
+
+**內容鐵律：wiki 是事實語料，寫錯比寫少嚴重。** 文件內容只能來自 repo 可觀察事實
+（code、設定、註解）或使用者親口提供；查無的細節在**正文原地**寫「（待補：<要問什麼>）」
+佔位，**禁止發明一個像樣的值再標待補**（發明的 env 名看起來像真的，比空缺更毒），
+更**禁止用「常見做法/合理假設」補**（例：來源寫「重試 2 次」就寫 2 次，不要腦補成
+指數退避）。
+
+**範圍鐵律：本 skill 只建/改文件**（README、`docs/*.md`、`scripts/` 文件工具、
+pre-commit 設定）。**絕不刪除、移動或修改 repo 的程式碼與其他檔案** ——
+「搬進 docs/ 後刪原檔」只適用散裝的 .md 知識檔，程式碼（含 cron 腳本、設定檔）
+一律原地不動。
+
 **心智模型：processor 只有兩個來源 —— `openapi.json` 與 `README`。**
 每個要被記錄的元件寫一份 README；只有「是 HTTP API 且框架能匯出 OpenAPI」才額外附
 `openapi.json`（endpoint 走確定性匯入，不手抄）。其餘什麼都不用。
@@ -61,6 +85,7 @@ frontmatter 三欄：`type`（受控值只有 `api | tutorial | how-to | referen
 
 - 差：「這是 Payments API」「nightly job」
 - 好：「對已存信用卡扣款、退款給客戶」「每晚 02:00 對到期帳單扣款並寫結果到 billing.results」
+- 拿不準就照這個公式填：「對 <對象> 做 <動作>（<關鍵細節：時間/冪等/去向>）。<誰在什麼情況> 會用到。」
 
 **範本 1 — API（Mode A，endpoint 由 openapi.json 帶，README 不寫）**
 ```markdown

@@ -5,6 +5,18 @@ description: 在這個 ai-agent-skills repo 裡新增或修改一個 Claude Code
 
 # skill-author
 
+**開工前：把下面的進度清單照抄進你的回覆，每完成一步打勾再做下一步。**
+遇到本 skill 與 references 都沒定義的情況：停下來問使用者，不要自行發明。
+
+```
+進度：
+- [ ] 確認 cwd = repo root（.claude-plugin/marketplace.json 存在）
+- [ ] Step 1 命名 + 建目錄
+- [ ] Step 2 SKILL.md（frontmatter + body；弱模型五規則套過）
+- [ ] Step 3 marketplace.json 兩處
+- [ ] Step 4 validator 全綠（+ 乾淨環境才 install 實測）
+```
+
 在本 repo 新增一個**可安裝**的 skill。心智模型：一個 skill = 一個資料夾
 （`<name>/SKILL.md` ＋ 選填 `scripts/`、`references/`）放在 repo root，再在
 `.claude-plugin/marketplace.json` 註冊。
@@ -45,6 +57,9 @@ description: <做什麼 + 何時用>。Triggers - "<中文觸發句>"、"<englis
 **body**（≤500 行，超過就拆進 `references/`）：
 - 寫到「讀完即可執行」：步驟依執行順序排、給可照抄的範本/指令、結尾放完成定義。
   **結構照本檔與 repo 既有 skill**（開頭心智模型 → Step 1..N → 完成定義）。
+- **弱模型相容（必讀）**：團隊執行模型能力參差，skill 要寫到最弱的模型也走得完 ——
+  現在去讀 [references/weak-model-rules.md](references/weak-model-rules.md)，
+  五條硬規則（低自由度、封閉分流、機器 gate、進度 checklist、未定義=停）逐條套用。
 - 只寫 Claude 不知道的事（專案慣例、格式、字面值）；通識解釋、行銷句、版本沿革都不放。
 - prose 中文，專有名詞英文＋首次出現一句解釋。
 - 引用只深一層（`references/X.md`），不要 `../`。
@@ -115,5 +130,7 @@ validator 擋的（跑 `validate_skill.py <name>` 全綠即代表）：
 自查的（validator 不驗語意）：
 - [ ] description 第三人稱、what+when、觸發句中英都有
 - [ ] body 讀完即可執行；≤500 行（validator 只警告，超過就拆 references/）
+- [ ] 弱模型五規則過（weak-model-rules.md）：關鍵步驟有逐字可抄物或機器 gate、
+      判斷點封閉分流、多步驟有進度 checklist、有「未定義=停」護欄
 - [ ] scripts 純 stdlib、不引用 skill 目錄外的檔
 - [ ] 乾淨環境才做的 install 實測（已註冊 marketplace 的機器跳過，見 Step 4）
