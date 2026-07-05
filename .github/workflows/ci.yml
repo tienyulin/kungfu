@@ -30,4 +30,4 @@ jobs:
           python wiki-doc-author/scripts/openapi_completeness.py --self-test
           python wiki-doc-author/scripts/lint_frontmatter.py --self-test
       - name: envrun self-test
-        run: bash wiki-doc-author/scripts/envrun.sh --self-test
+        run: bash skill-author/scripts/envrun.sh --self-test
