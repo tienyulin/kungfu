@@ -15,13 +15,16 @@
 #                   read SKILL.md, so we generate a thin pointer rule from it.
 #                   Symlinks track marketplace updates automatically; only a brand-new
 #                   skill needs a re-run here (to create its symlink).
-#  • --constitution (OPT-IN, default off): also write agent-rules/rules/CONSTITUTION.md
-#                   into each detected agent's GLOBAL rules file — Codex ~/.codex/AGENTS.md,
-#                   Gemini ~/.gemini/GEMINI.md, OpenCode ~/.config/opencode/AGENTS.md
-#                   (managed marker block, idempotent, never touches your own content),
-#                   Cline <rules dir>/agent-rules-constitution.md (generated copy).
-#                   Off by default because these are personal dotfiles. The block is a
-#                   snapshot — re-run with --constitution after the constitution changes.
+#  • --constitution (OPT-IN, default off): hook agent-rules/rules/CONSTITUTION.md
+#                   into each detected agent's global rules, preferring the agent's
+#                   NATIVE include mechanism so content stays fresh automatically:
+#                     Gemini   ~/.gemini/GEMINI.md          @import lines in a managed block
+#                     OpenCode ~/.config/opencode/opencode.json  instructions[] entries
+#                     Cline    <rules dir>/                 symlink + paths file
+#                     Codex    ~/.codex/AGENTS.md           embedded snapshot (no include
+#                                                           mechanism; re-run to refresh)
+#                   Off by default because these are personal dotfiles. Managed blocks
+#                   are idempotent and never touch content outside the markers.
 #
 # Usage:
 #   bash skills-sync.sh                       # Claude plugins + auto-update + cross-agent sync
@@ -119,26 +122,16 @@ print(f"{name}\t{desc}")
 PY
 }
 
-# Write the constitution into one agent's global rules file inside a managed
-# marker block — idempotent, appends on first run, replaces only the block after;
-# everything the user wrote outside the markers is preserved byte-for-byte.
-# The block ends with the ABSOLUTE PATHS of the situational rule files
-# (DECISIONS / SAFETY / ANTIPATTERNS) — the constitution tells the agent WHEN to
-# read them, this footer tells it WHERE (the same job Claude Code's hook does by
-# echoing ${CLAUDE_PLUGIN_ROOT} paths; without it those references would dangle).
-write_constitution_block() {  # $1 = target rules file
-  python3 - "$1" "$SCRIPT_DIR/agent-rules/rules" <<'PY'
+# Merge a managed marker block into a file — idempotent, appends on first run,
+# replaces only the block afterwards; user content outside the markers is
+# preserved byte-for-byte.
+merge_managed_block() {  # $1 = target file; $2 = block body (multi-line string)
+  python3 - "$1" "$2" <<'PY'
 import os, sys
-path, rules_dir = sys.argv[1], sys.argv[2]
+path, body = sys.argv[1], sys.argv[2]
 begin = "<!-- agent-rules-constitution:begin (managed by skills-sync.sh --constitution; edits inside are overwritten) -->"
 end = "<!-- agent-rules-constitution:end -->"
-body = open(os.path.join(rules_dir, "CONSTITUTION.md"), encoding="utf-8").read().rstrip()
-footer_lines = ["", "## 情境檔路徑（上面「情境檔」節說何時讀，這裡是去哪讀 — 用讀檔工具開）"]
-for name in ("DECISIONS", "SAFETY", "ANTIPATTERNS"):
-    p = os.path.join(rules_dir, name + ".md")
-    if os.path.exists(p):
-        footer_lines.append(f"- {name}: {p}")
-block = begin + "\n" + body + "\n" + "\n".join(footer_lines) + "\n" + end
+block = begin + "\n" + body.rstrip() + "\n" + end
 content = open(path, encoding="utf-8").read() if os.path.exists(path) else ""
 if begin in content and end in content:
     content = content.split(begin)[0] + block + content.split(end, 1)[1]
@@ -151,6 +144,48 @@ tmp = path + ".tmp"
 with open(tmp, "w", encoding="utf-8") as f:
     f.write(content)
 os.replace(tmp, path)
+PY
+}
+
+# Situational-paths listing: the constitution says WHEN to read DECISIONS /
+# SAFETY / ANTIPATTERNS, this says WHERE — the same job Claude Code's hook does
+# by echoing ${CLAUDE_PLUGIN_ROOT} paths. Files stay read-on-demand by design;
+# only their paths are always-on.
+situational_paths_body() {
+  local rules="$SCRIPT_DIR/agent-rules/rules" n
+  echo "## 情境檔路徑（憲法「情境檔」節說何時讀，這裡是去哪讀 — 用讀檔工具開）"
+  for n in DECISIONS SAFETY ANTIPATTERNS; do
+    [ -f "$rules/$n.md" ] && echo "- $n: $rules/$n.md"
+  done
+}
+
+# Add instruction file paths to OpenCode's global opencode.json `instructions`
+# array — its native multi-file mechanism (merged with AGENTS.md at load time),
+# so we never touch the user's AGENTS.md at all. Idempotent; other keys kept.
+opencode_add_instructions() {  # $1 = opencode.json path; $2.. = instruction paths
+  python3 - "$@" <<'PY'
+import json, os, sys
+path, paths = sys.argv[1], sys.argv[2:]
+cfg = {}
+if os.path.exists(path):
+    try:
+        cfg = json.load(open(path, encoding="utf-8"))
+    except Exception:
+        print("  ⚠ 解析不了 " + path + "（jsonc/註解？）— 請手動把這些路徑加進 instructions: " + ", ".join(paths))
+        sys.exit(0)
+arr = cfg.setdefault("instructions", [])
+changed = False
+for p in paths:
+    if p not in arr:
+        arr.append(p)
+        changed = True
+if changed:
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+    os.replace(tmp, path)
 PY
 }
 
@@ -208,31 +243,46 @@ sync_agents() {
   [ -n "$cline_dir" ] && echo "  Cline    → $cline_dir （pointer rule）"
 
   # Constitution: OPT-IN — these are personal dotfiles, so nothing is written
-  # unless --constitution was passed. Managed block = re-runnable, user content kept.
+  # unless --constitution was passed. Agents with a native include/multi-file
+  # mechanism get a REFERENCE (content stays fresh with marketplace updates);
+  # only Codex, which has no include mechanism, gets an embedded snapshot.
   if [ "$CONSTITUTION" = 1 ]; then
     local const_src="$SCRIPT_DIR/agent-rules/rules/CONSTITUTION.md"
     if [ ! -f "$const_src" ]; then
       echo "  ⚠ --constitution：找不到 $const_src，跳過"
       return 0
     fi
-    echo "→ 憲法（--constitution）：寫入偵測到的 agent 的全域 rules（managed block；憲法更新後重跑本旗標才會跟著新）"
+    echo "→ 憲法（--constitution）：接進偵測到的 agent（原生 include 用引用、自動跟新；Codex 無 include 機制、嵌入快照）"
+
+    # shared situational-paths file, regenerated on every run — lives in the
+    # neutral ~/.agents dir; only created when a reference-reading agent exists.
+    local paths_file="$home/.agents/agent-rules-situational-paths.md"
+    if [ -d "$home/.gemini" ] || [ "$opencode" = 1 ] || [ -n "$cline_dir" ]; then
+      mkdir -p "$home/.agents"
+      situational_paths_body > "$paths_file"
+    fi
+
     if [ "$codex" = 1 ]; then
-      write_constitution_block "$home/.codex/AGENTS.md"
-      echo "  Codex    → ~/.codex/AGENTS.md"
+      # no include mechanism → full text embedded; re-run this flag to refresh.
+      merge_managed_block "$home/.codex/AGENTS.md" "$(cat "$const_src"; echo; situational_paths_body)"
+      echo "  Codex    → ~/.codex/AGENTS.md（嵌入快照，憲法改版後重跑 --constitution）"
     fi
     if [ -d "$home/.gemini" ]; then
-      write_constitution_block "$home/.gemini/GEMINI.md"
-      echo "  Gemini   → ~/.gemini/GEMINI.md"
+      # GEMINI.md native @import (md-only) → two import lines, auto-fresh.
+      merge_managed_block "$home/.gemini/GEMINI.md" "@$const_src
+@$paths_file"
+      echo "  Gemini   → ~/.gemini/GEMINI.md（@import 引用，自動跟新）"
     fi
     if [ "$opencode" = 1 ]; then
-      write_constitution_block "$home/.config/opencode/AGENTS.md"
-      echo "  OpenCode → ~/.config/opencode/AGENTS.md"
+      opencode_add_instructions "$home/.config/opencode/opencode.json" "$const_src" "$paths_file"
+      echo "  OpenCode → ~/.config/opencode/opencode.json instructions（引用，自動跟新）"
     fi
     if [ -n "$cline_dir" ]; then
-      # same block writer (file starts empty → pure block) so Cline also gets
-      # the situational-paths footer instead of a bare copy with dangling refs.
-      write_constitution_block "$cline_dir/agent-rules-constitution.md"
-      echo "  Cline    → $cline_dir/agent-rules-constitution.md"
+      # rules dir loads every file → symlink the constitution (auto-fresh) and
+      # drop the tiny paths file beside it.
+      ln -sfn "$const_src" "$cline_dir/agent-rules-constitution.md"
+      cp "$paths_file" "$cline_dir/agent-rules-situational-paths.md"
+      echo "  Cline    → $cline_dir（constitution symlink，自動跟新 + paths 檔）"
     fi
   fi
 }
@@ -318,33 +368,51 @@ self_test_agents() {
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h3"; sync_agents >/dev/null )
   [ -L "$sb/h3/.agents/skills/demo-skill" ] || { echo "  FAIL: opencode ~/.agents symlink"; fail=1; }
 
-  # case 5: --constitution → managed block in every detected rules file,
-  # user content preserved, idempotent (single block after double run)
+  # case 5: --constitution → Codex embeds (no include mechanism), Gemini gets
+  # @imports, OpenCode gets instructions[] entries, Cline gets a symlink;
+  # user content preserved everywhere, double run stays idempotent.
   mkdir -p "$sb/h4/.codex" "$sb/h4/.gemini" "$sb/h4/.config/opencode" "$sb/h4/.cline"
   printf 'my own codex rules\n' > "$sb/h4/.codex/AGENTS.md"
+  printf '{"model": "keep-me"}\n' > "$sb/h4/.config/opencode/opencode.json"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h4"; CONSTITUTION=1; sync_agents >/dev/null )
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h4"; CONSTITUTION=1; sync_agents >/dev/null )
+  # Codex: embedded snapshot in managed block
   grep -q "my own codex rules" "$sb/h4/.codex/AGENTS.md" 2>/dev/null \
     || { echo "  FAIL: constitution clobbered user content"; fail=1; }
   grep -q "LAW-MARKER-42" "$sb/h4/.codex/AGENTS.md" 2>/dev/null \
     || { echo "  FAIL: codex constitution block missing"; fail=1; }
   [ "$(grep -c "agent-rules-constitution:begin" "$sb/h4/.codex/AGENTS.md" 2>/dev/null)" = 1 ] \
     || { echo "  FAIL: constitution block not idempotent"; fail=1; }
-  grep -q "LAW-MARKER-42" "$sb/h4/.gemini/GEMINI.md" 2>/dev/null \
-    || { echo "  FAIL: gemini constitution missing"; fail=1; }
-  grep -q "LAW-MARKER-42" "$sb/h4/.config/opencode/AGENTS.md" 2>/dev/null \
-    || { echo "  FAIL: opencode constitution missing"; fail=1; }
-  grep -q "LAW-MARKER-42" "$sb/h4/.cline/rules/agent-rules-constitution.md" 2>/dev/null \
-    || { echo "  FAIL: cline constitution copy missing"; fail=1; }
-  # situational-paths footer: absolute paths to DECISIONS/SAFETY/ANTIPATTERNS in every target
   grep -q "DECISIONS: $sb/src/agent-rules/rules/DECISIONS.md" "$sb/h4/.codex/AGENTS.md" 2>/dev/null \
     || { echo "  FAIL: codex block missing situational paths footer"; fail=1; }
-  grep -q "ANTIPATTERNS: $sb/src/agent-rules/rules/ANTIPATTERNS.md" "$sb/h4/.cline/rules/agent-rules-constitution.md" 2>/dev/null \
-    || { echo "  FAIL: cline file missing situational paths footer"; fail=1; }
+  # Gemini: @import reference, NOT embedded text
+  grep -q "@$sb/src/agent-rules/rules/CONSTITUTION.md" "$sb/h4/.gemini/GEMINI.md" 2>/dev/null \
+    || { echo "  FAIL: gemini @import line missing"; fail=1; }
+  grep -q "LAW-MARKER-42" "$sb/h4/.gemini/GEMINI.md" 2>/dev/null \
+    && { echo "  FAIL: gemini embedded full text instead of @import"; fail=1; }
+  # OpenCode: instructions[] entries, AGENTS.md untouched, other keys kept, no dupes
+  python3 - "$sb/h4/.config/opencode/opencode.json" "$sb/src/agent-rules/rules/CONSTITUTION.md" <<'PY' || { echo "  FAIL: opencode instructions wrong"; fail=1; }
+import json, sys
+cfg = json.load(open(sys.argv[1]))
+assert cfg["model"] == "keep-me", "clobbered other key"
+ins = cfg["instructions"]
+assert ins.count(sys.argv[2]) == 1, "constitution path missing or duplicated"
+assert any(p.endswith("agent-rules-situational-paths.md") for p in ins), "paths file missing"
+PY
+  [ -e "$sb/h4/.config/opencode/AGENTS.md" ] \
+    && { echo "  FAIL: opencode AGENTS.md should be untouched"; fail=1; }
+  # Cline: symlink (auto-fresh) + paths file
+  [ "$(readlink "$sb/h4/.cline/rules/agent-rules-constitution.md" 2>/dev/null)" = "$sb/src/agent-rules/rules/CONSTITUTION.md" ] \
+    || { echo "  FAIL: cline constitution not a symlink to source"; fail=1; }
+  grep -q "ANTIPATTERNS: $sb/src/agent-rules/rules/ANTIPATTERNS.md" "$sb/h4/.cline/rules/agent-rules-situational-paths.md" 2>/dev/null \
+    || { echo "  FAIL: cline situational paths file missing"; fail=1; }
+  # shared paths file generated in ~/.agents
+  grep -q "SAFETY: $sb/src/agent-rules/rules/SAFETY.md" "$sb/h4/.agents/agent-rules-situational-paths.md" 2>/dev/null \
+    || { echo "  FAIL: shared situational paths file missing"; fail=1; }
 
   rm -rf "$sb"
   if [ "$fail" = 0 ]; then
-    echo "self-test OK — agents: symlinks + cline rule + skip-absent + idempotent + opencode + constitution(opt-in/preserve/idempotent)"
+    echo "self-test OK — agents: symlinks + cline rule + skip-absent + idempotent + opencode + constitution(opt-in/native-include/embed-codex/preserve/idempotent)"
   else
     exit 1
   fi
