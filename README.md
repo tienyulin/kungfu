@@ -65,8 +65,9 @@ claude plugin list         # 應看到 bundle + 外部 mirror plugins
 重跑 `bash skills-sync.sh` 只剩四個情境：**新機器初裝**、**要把 skills 同步到新的
 agent**（Gemini/Codex/Cline/OpenCode，見下節）、marketplace **新收錄 bundle 以外的新 plugin**
 （外部 mirror 或常駐 hook plugin 如 `agent-rules`——新 plugin 不會自己裝，bundle 只涵蓋
-自家 skill；腳本讀 marketplace.json 會自動補裝）、**憲法改版且你有用 `--constitution`**
-（見下節，寫進其他 agent 的是快照）。自家 skill 的新增/修改**永遠不用重跑**。
+自家 skill；腳本讀 marketplace.json 會自動補裝）、**憲法改版且你是 Codex 用戶並用了
+`--constitution`**（只有 Codex 是嵌入快照，其他 agent 用原生 include 自動跟新，見下節）。
+自家 skill 的新增/修改**永遠不用重跑**。
 
 ### 版本策略
 
@@ -107,13 +108,21 @@ agent（看家目錄），只同步偵測到的：
   bash skills-sync.sh agents --constitution   # 只跨 agent + 憲法
   ```
 
-  寫入位置（只碰偵測到的 agent；用 managed marker block **冪等**更新，你自己寫的內容
-  一字不動）：Codex `~/.codex/AGENTS.md`、Gemini `~/.gemini/GEMINI.md`、OpenCode
-  `~/.config/opencode/AGENTS.md`、Cline `<rules dir>/agent-rules-constitution.md`（整檔生成）。
-  block 內容＝憲法全文＋**三個情境檔（DECISIONS / SAFETY / ANTIPATTERNS）的絕對路徑**——
-  情境檔照設計是按需讀、不常駐，agent 要用時照路徑自己開（跟 Claude hook 報路徑同一招）。
-  注意：block 是**當下快照**，憲法改版後要再跑一次 `--constitution` 才會更新
-  （Claude Code 的 hook 版不用，跟著 marketplace 自動新）。不想用旗標也可以手動貼
+  只碰偵測到的 agent，**優先用各家原生 include 機制**——憲法檔本體留在 marketplace
+  目錄，rules 端只放引用，marketplace 更新後內容**自動跟新**；只有 Codex 沒有 include
+  機制，才嵌入全文快照：
+
+  | agent | 機制 | 憲法改版後 |
+  |---|---|---|
+  | Gemini | `~/.gemini/GEMINI.md` managed block 裡兩行 `@import` | 自動跟新 |
+  | OpenCode | `~/.config/opencode/opencode.json` 的 `instructions[]` 加路徑（AGENTS.md 完全不碰） | 自動跟新 |
+  | Cline | rules 目錄放憲法 **symlink** ＋情境路徑檔 | 自動跟新 |
+  | Codex | `~/.codex/AGENTS.md` managed block **嵌入全文**（AGENTS.md 無 include 機制） | 重跑一次 `--constitution` |
+
+  managed block／JSON merge 都**冪等**，你自己寫的內容一字不動。情境檔
+  （DECISIONS / SAFETY / ANTIPATTERNS）照設計按需讀、不常駐——隨憲法一起載入的只有
+  **絕對路徑清單**（生成在 `~/.agents/agent-rules-situational-paths.md`），agent 要用時
+  照路徑自己開（跟 Claude hook 報路徑同一招）。不想用旗標也可以手動貼
   [`agent-rules/rules/CONSTITUTION.md`](agent-rules/rules/CONSTITUTION.md)。
 
 ### 進階：只裝某幾個 / 離線
