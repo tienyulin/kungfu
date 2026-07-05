@@ -62,10 +62,11 @@ claude plugin list         # 應看到 bundle + 外部 mirror plugins
   `extraKnownMarketplaces` 條目；第三方 marketplace 預設是關的）。之後**每次 Claude Code
   啟動**自動 git-pull marketplace + 更新已裝 plugins；有更新會提示跑 `/reload-plugins`。
 
-重跑 `bash skills-sync.sh` 只剩三個情境：**新機器初裝**、**要把 skills 同步到新的
-agent**（Gemini/Codex/Cline，見下節）、marketplace **新收錄 bundle 以外的新 plugin**
+重跑 `bash skills-sync.sh` 只剩四個情境：**新機器初裝**、**要把 skills 同步到新的
+agent**（Gemini/Codex/Cline/OpenCode，見下節）、marketplace **新收錄 bundle 以外的新 plugin**
 （外部 mirror 或常駐 hook plugin 如 `agent-rules`——新 plugin 不會自己裝，bundle 只涵蓋
-自家 skill；腳本讀 marketplace.json 會自動補裝）。自家 skill 的新增/修改**永遠不用重跑**。
+自家 skill；腳本讀 marketplace.json 會自動補裝）、**憲法改版且你有用 `--constitution`**
+（見下節，寫進其他 agent 的是快照）。自家 skill 的新增/修改**永遠不用重跑**。
 
 ### 版本策略
 
@@ -77,16 +78,17 @@ agent**（Gemini/Codex/Cline，見下節）、marketplace **新收錄 bundle 以
   `extraKnownMarketplaces`（含 `"autoUpdate": true`）+ `enabledPlugins`，見官方
   「Manage plugins for your organization」。
 
-### 跨 agent（Gemini CLI / Codex CLI / Cline）
+### 跨 agent（Gemini CLI / Codex CLI / Cline / OpenCode）
 
 同一條 `skills-sync.sh` 也會把**自家 skill** 同步給其他 agent —— 你不用為每個 agent 各維護一份。
-**SKILL.md 是跨 agent 共用格式**（Claude Code、Codex CLI、Gemini CLI 都原生讀），所以做法是
+**SKILL.md 是跨 agent 共用格式**（Claude Code、Codex CLI、Gemini CLI、OpenCode 都原生讀），所以做法是
 **symlink 同一份來源**進各 agent 位置，內容零複製、改一處全動。腳本會**自動偵測**你機器上裝了哪些
 agent（看家目錄），只同步偵測到的：
 
 | agent | 同步到 | 怎麼吃 |
 |---|---|---|
 | Gemini CLI | `~/.agents/skills/<skill>`（symlink） | Gemini 原生把 `~/.agents/skills` 當 user skills 讀 |
+| OpenCode | `~/.agents/skills/<skill>`（同一份 symlink） | OpenCode 原生讀 `~/.agents/skills`（也讀 `~/.config/opencode/skills`），與 Gemini 共用零成本；偵測依據 `~/.config/opencode` 存在 |
 | Codex CLI | `~/.codex/skills/<skill>`（symlink） | Codex 原生讀 SKILL.md |
 | Cline | `~/.cline/rules/<skill>.md`（生成） | Cline 不讀 SKILL.md，故生一個 **pointer rule**（skill 名＋描述＋「需要時讀該 SKILL.md」），不內嵌全文以免脹 context |
 
@@ -96,10 +98,21 @@ agent（看家目錄），只同步偵測到的：
   讀到的內容**跟著新**,不用重跑。只有 repo **新增** skill 時需要重跑一次（補新 symlink /
   Cline rule）—— 這是跨 agent 端唯一的手動情境。
 - 範圍：只同步**本 repo 自家 skill**；外部 mirror（superpowers/karpathy）是整包 plugin，上游各自已支援多 agent，不由這裡轉。
-- `agent-rules` 憲法是 **Claude Code hook 機制**，跨 agent 同步不到 —— Gemini/Codex/Cline
-  只會拿到五個 playbook skills。要讓其他 agent 也吃憲法：把
-  [`agent-rules/rules/CONSTITUTION.md`](agent-rules/rules/CONSTITUTION.md) 貼進該工具的
-  rules 檔（Cline 的 `.clinerules`、Codex 的 `AGENTS.md` 等）。
+- `agent-rules` 憲法在 Claude Code 走 **hook 機制**（自動）；其他 agent 預設只拿到五個
+  playbook skills。要讓其他 agent 也吃憲法，加 **`--constitution`** 旗標（**opt-in，預設不做**
+  ——因為要寫你的個人 dotfile）：
+
+  ```bash
+  bash skills-sync.sh --constitution          # 完整流程 + 憲法
+  bash skills-sync.sh agents --constitution   # 只跨 agent + 憲法
+  ```
+
+  寫入位置（只碰偵測到的 agent；用 managed marker block **冪等**更新，你自己寫的內容
+  一字不動）：Codex `~/.codex/AGENTS.md`、Gemini `~/.gemini/GEMINI.md`、OpenCode
+  `~/.config/opencode/AGENTS.md`、Cline `<rules dir>/agent-rules-constitution.md`（整檔生成）。
+  注意：block 是**當下快照**，憲法改版後要再跑一次 `--constitution` 才會更新
+  （Claude Code 的 hook 版不用，跟著 marketplace 自動新）。不想用旗標也可以手動貼
+  [`agent-rules/rules/CONSTITUTION.md`](agent-rules/rules/CONSTITUTION.md)。
 
 ### 進階：只裝某幾個 / 離線
 
