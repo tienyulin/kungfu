@@ -38,6 +38,22 @@ claude plugin list         # 應看到 bundle + agent-rules + 外部 mirror plug
 之後**不用再動**：marketplace auto-update 讓每次開新 session 自動帶到最新
 （機制見〈更新怎麼跟〉）。
 
+### 沒有 Claude Code？（純 Cline / Codex / Gemini 成員）
+
+不需要裝 Claude Code。自己 clone 一份、跑 `agents` 模式即可：
+
+```bash
+git clone https://gitlab.<你的公司>/<group>/ai-agent-skills.git ~/ai-agent-skills
+bash ~/ai-agent-skills/skills-sync.sh agents --constitution
+```
+
+- skills（pointer rule／symlink）、憲法 hook、SAFETY guard 全部照裝——這段完全不用
+  `claude` CLI（直接跑預設模式也行，腳本偵測不到 `claude` 會自動跳過 plugin 段）。
+- **更新一樣全自動**：hook 每次觸發會背景 git pull 這份 clone（6 小時節流），
+  跟有 Claude Code 的人同一套 self-refresh 機制。
+- clone 位置隨意，但**別刪**——hooks 與 symlink 都指向它。之後裝了 Claude Code，
+  重跑一次腳本即補上 plugin 部分。
+
 ---
 
 # 裡面有什麼
