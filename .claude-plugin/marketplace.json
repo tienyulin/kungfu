@@ -86,10 +86,10 @@
       ]
     },
     {
-      "name": "agent-os",
-      "source": "./agent-os",
+      "name": "agent-rules",
+      "source": "./agent-rules",
       "strict": false,
-      "description": "Always-on constitution for weak models — a SessionStart hook injects 12 hard laws (evidence before claims, reproduce before fix, minimal diff, three-strike stop, no hallucinated APIs, tests are read-only, …) plus an end-of-turn checklist into every session. Ships situational rule files (DECISIONS / SAFETY / ANTIPATTERNS). Install alongside the agent-os-* playbook skills; distilled from a Claude Fable 5 session.",
+      "description": "Always-on constitution for weak models — a SessionStart hook injects 12 hard laws (evidence before claims, reproduce before fix, minimal diff, three-strike stop, no hallucinated APIs, tests are read-only, …) plus an end-of-turn checklist into every session. Ships situational rule files (DECISIONS / SAFETY / ANTIPATTERNS). Install alongside the agent-rules-* playbook skills; distilled from a Claude Fable 5 session.",
       "author": {
         "name": "tienyulin"
       },
@@ -102,7 +102,7 @@
       "category": "development"
     },
     {
-      "name": "agent-os-bugfix",
+      "name": "agent-rules-bugfix",
       "source": "./",
       "strict": false,
       "description": "Fixed bug-fix procedure for any model tier — reproduce first, root-cause one-liner, minimal fix, machine-gated verification, fill-in report templates. Prevents 'should work now' fake completions.",
@@ -112,15 +112,15 @@
       "keywords": [
         "bugfix",
         "debugging",
-        "agent-os"
+        "agent-rules"
       ],
       "category": "development",
       "skills": [
-        "./agent-os-bugfix"
+        "./agent-rules-bugfix"
       ]
     },
     {
-      "name": "agent-os-feature",
+      "name": "agent-rules-feature",
       "source": "./",
       "strict": false,
       "description": "Fixed feature-building procedure — acceptance checklist before code, copy existing patterns, smallest version, verify every checklist item with a command.",
@@ -130,15 +130,15 @@
       "keywords": [
         "feature",
         "implementation",
-        "agent-os"
+        "agent-rules"
       ],
       "category": "development",
       "skills": [
-        "./agent-os-feature"
+        "./agent-rules-feature"
       ]
     },
     {
-      "name": "agent-os-refactor",
+      "name": "agent-rules-refactor",
       "source": "./",
       "strict": false,
       "description": "Fixed refactor procedure — tests green before starting, one mechanical transform at a time with tests after each step, zero-behavior-change audit before reporting.",
@@ -147,15 +147,15 @@
       },
       "keywords": [
         "refactor",
-        "agent-os"
+        "agent-rules"
       ],
       "category": "development",
       "skills": [
-        "./agent-os-refactor"
+        "./agent-rules-refactor"
       ]
     },
     {
-      "name": "agent-os-investigate",
+      "name": "agent-rules-investigate",
       "source": "./",
       "strict": false,
       "description": "Fixed investigation procedure — the deliverable is an answer with file:line evidence and a confidence label, never a code edit; found problems are reported, not fixed.",
@@ -165,15 +165,15 @@
       "keywords": [
         "investigate",
         "question",
-        "agent-os"
+        "agent-rules"
       ],
       "category": "development",
       "skills": [
-        "./agent-os-investigate"
+        "./agent-rules-investigate"
       ]
     },
     {
-      "name": "agent-os-review",
+      "name": "agent-rules-review",
       "source": "./",
       "strict": false,
       "description": "Fixed code-review procedure — real diff only, correctness>security>failure-paths>contracts priority, every finding needs a concrete trigger, one line per finding, no praise padding, ends with a verdict.",
@@ -183,11 +183,11 @@
       "keywords": [
         "review",
         "audit",
-        "agent-os"
+        "agent-rules"
       ],
       "category": "development",
       "skills": [
-        "./agent-os-review"
+        "./agent-rules-review"
       ]
     },
     {
@@ -210,11 +210,11 @@
         "./sop-to-spec",
         "./skill-author",
         "./api-template-dev",
-        "./agent-os-bugfix",
-        "./agent-os-feature",
-        "./agent-os-refactor",
-        "./agent-os-investigate",
-        "./agent-os-review"
+        "./agent-rules-bugfix",
+        "./agent-rules-feature",
+        "./agent-rules-refactor",
+        "./agent-rules-investigate",
+        "./agent-rules-review"
       ]
     },
     {

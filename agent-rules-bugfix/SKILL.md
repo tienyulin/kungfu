@@ -1,9 +1,9 @@
 ---
-name: agent-os-bugfix
-description: 修 bug 的固定流程 — 先重現、找根因、最小修復、機器驗證後才准回報完成；每步有必填輸出模板，防「應該好了」式假完成。任何回報錯誤、壞掉、crash、行為不符預期而要修復的任務都用。Triggers - "修 bug"、"壞了"、"報錯"、"掛了"、"不 work"、"fix"、"bug"、"broken"、"error"、"crash"、"doesn't work"、"/agent-os-bugfix"。
+name: agent-rules-bugfix
+description: 修 bug 的固定流程 — 先重現、找根因、最小修復、機器驗證後才准回報完成；每步有必填輸出模板，防「應該好了」式假完成。任何回報錯誤、壞掉、crash、行為不符預期而要修復的任務都用。Triggers - "修 bug"、"壞了"、"報錯"、"掛了"、"不 work"、"fix"、"bug"、"broken"、"error"、"crash"、"doesn't work"、"/agent-rules-bugfix"。
 ---
 
-# agent-os-bugfix
+# agent-rules-bugfix
 
 **開工前：把下面的進度清單照抄進你的回覆，每完成一步打勾再做下一步。**
 遇到本 skill 沒定義的情況：停下來問使用者，不要自行發明。

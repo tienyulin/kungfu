@@ -1,9 +1,9 @@
 ---
-name: agent-os-refactor
-description: 重構的固定流程 — 動工前測試須全綠、一次一個機械變換、每步跑測試、行為零改變稽核。任何整理、重組、簡化、抽共用、改結構但不改行為的任務都用。Triggers - "重構"、"整理程式碼"、"清一下"、"抽出來"、"refactor"、"clean up"、"reorganize"、"simplify"、"/agent-os-refactor"。
+name: agent-rules-refactor
+description: 重構的固定流程 — 動工前測試須全綠、一次一個機械變換、每步跑測試、行為零改變稽核。任何整理、重組、簡化、抽共用、改結構但不改行為的任務都用。Triggers - "重構"、"整理程式碼"、"清一下"、"抽出來"、"refactor"、"clean up"、"reorganize"、"simplify"、"/agent-rules-refactor"。
 ---
 
-# agent-os-refactor
+# agent-rules-refactor
 
 **開工前：把下面的進度清單照抄進你的回覆，每完成一步打勾再做下一步。**
 遇到本 skill 沒定義的情況：停下來問使用者，不要自行發明。
