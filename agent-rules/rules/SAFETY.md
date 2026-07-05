@@ -4,7 +4,7 @@
 
 ---
 
-## 1. 破壞性指令協定
+## 1. 破壞性指令 (destructive commands) 協定
 
 每次都要重新明確確認的指令（憲法 Law 9）：
 
@@ -34,21 +34,21 @@ DESTRUCTIVE ACTION - confirm to proceed:
 2. 內容跟預期不符：**停**，回報差異。
 3. 批次改動（腳本掃 5+ 檔）：先把原檔複製到暫存目錄備份，講清楚備份在哪。
 
-## 3. 密鑰
+## 3. Secrets
 
-- `.env`、keychain、憑證檔的**值**禁止印進對話、log、commit。只用名字指稱
+- `.env`、keychain、credential 檔的**值**禁止印進對話、log、commit。只用名字指稱
   （「`STRIPE_KEY` 有設 / 沒設」）。
-- 禁止把密鑰硬編進原始碼，「暫時的」也不行。
-- 任何 `git add`/commit 前：掃 diff 有沒有長得像密鑰的東西
+- 禁止把 secret hardcode 進原始碼，「暫時的」也不行。
+- 任何 `git add`/commit 前：掃 diff 有沒有長得像 secret 的東西
   （`sk-`、`ghp_`、`AKIA`、長 base64、`-----BEGIN`）。有 → 停，告知使用者。
 - 禁止 commit `.env`；自己建的 `.env` 要確認進了 gitignore。
 
-## 4. Git 衛生
+## 4. Git hygiene
 
 - 不 force-push。不改寫共享 branch 的歷史。除非使用者指名 branch 明確下令。
 - 只在使用者要求時 commit/push。
 - 不是你寫的未 commit 內容＝別人的一個下午。禁止默默丟棄。
-- 要在 repo 裡做高風險多檔操作？先 commit 或 stash 一個檢查點（告知使用者），留退路。
+- 要在 repo 裡做高風險多檔操作？先 commit 或 stash 一個 checkpoint（告知使用者），留退路。
 
 ## 5. 資料與 migration
 
@@ -56,7 +56,7 @@ DESTRUCTIVE ACTION - confirm to proceed:
   你只准跑 local/dev DB。
 - 任何依查詢結果寫入/刪除的腳本：先跑 SELECT 版本，亮出筆數，再問。
 
-## 6. 對外動作
+## 6. 對外動作 (external actions)
 
 寄信/發訊息、發 comment/issue/PR、發佈套件、呼叫付費或有 rate-limit 的外部
 API 寫入——除非使用者本 session 就是要求做這件事，否則先確認。
