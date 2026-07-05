@@ -83,12 +83,23 @@ template 已提供的一律用現成的（照其用法接 DI），**不得自己
 
 ## 驗證迴圈（紅了就修，全綠才算完）
 
+**環境判定交給 envrun，不要自己判斷**：repo `scripts/envrun.sh` 不存在 → 先從本 skill
+的 `scripts/` 複製過去（`${CLAUDE_SKILL_DIR}/scripts/envrun.sh`；`${CLAUDE_SKILL_DIR}`
+沒展開就用本 SKILL.md 所在目錄的絕對路徑）。它自動分流：已在容器內→直跑；repo 沒
+devcontainer 設定（會往上找到 git root）→host 直跑；devcontainer 在跑（VS Code 起的
+也認得）→進容器跑；沒在跑→有 devcontainer CLI 就自動起。要傳環境變數一律寫
+`bash scripts/envrun.sh env K=V <指令>`（例：`bash scripts/envrun.sh env MOCK_DB=true
+pytest -q`；寫成 `MOCK_DB=true bash scripts/envrun.sh …` 進容器時變數會消失）。
+**exit 2 = 它起不了容器**——把它印出的選項原樣轉述給使用者選（只轉述，不代跑），
+禁止自行改用 host；其他非 0 的失敗＝貼實際錯誤輸出、停下問使用者。
+
 ```bash
-pytest -q                                  # 測試全綠
-<facts 的 lint 指令>                        # lint/type/format 照 facts
-<facts 的 openapi 匯出指令>                 # 匯出 openapi.json
-<facts 的 mock 一行起服務指令>              # mock 起服務
-curl localhost:<port>/<健康端點>            # 起得來、打得通
+bash scripts/envrun.sh pytest -q                    # 測試全綠
+bash scripts/envrun.sh <facts 的 lint 指令>          # lint/type/format 照 facts
+bash scripts/envrun.sh <facts 的 openapi 匯出指令>   # 匯出 openapi.json
+# mock 起服務 + 打健康端點：跟服務同一個環境內做（容器內 localhost 才通）
+bash scripts/envrun.sh bash -c \
+  '<facts 的 mock 一行起服務指令> & sleep 3; curl -f localhost:<port>/<健康端點>; rc=$?; kill %1; exit $rc'
 ```
 新服務另核對 devcontainer：service 名/port/postCreate 都改成新服務的。
 

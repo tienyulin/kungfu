@@ -167,12 +167,23 @@ README + `docs/`）。
 
 ## Step 3 —（僅 Mode A）匯出 OpenAPI + 保鮮
 
-FastAPI：`python "${CLAUDE_SKILL_DIR}/scripts/gen_openapi.py" --app app.main:app` → 產
-`openapi.json`（不適用會 exit 0 提示走 Mode B）。其他框架的匯出指令見
+先把本 skill 目錄的 `scripts/` **五檔**複製進**該服務目錄**的 `scripts/`（三支工具 +
+`frontmatter.schema.json`（lint 執行時讀同目錄的 schema，漏了會炸）+ `envrun.sh`）。
+
+**環境判定交給 envrun，不要自己判斷**：會 import repo 程式碼或需要 repo 相依的指令
+（`gen_openapi.py`、`pre-commit`、`pytest`）一律加前綴 `bash scripts/envrun.sh`。
+它自動分流：已在容器內→直跑；repo 沒 devcontainer 設定（會往上找到 git root）→host
+直跑；devcontainer 在跑（VS Code 起的也認得）→進容器跑；沒在跑→有 devcontainer CLI
+就自動起。monorepo 在服務子目錄跑即可，它會找到 repo root 的設定並在容器內回到對應
+子目錄。要傳環境變數一律寫 `bash scripts/envrun.sh env K=V <指令>`
+（寫成 `K=V bash scripts/envrun.sh …` 進容器時變數會消失）。
+**exit 2 = 它起不了容器**——把它印出的選項原樣轉述給使用者選（只轉述，不代跑），
+禁止自行改用 host；其他非 0 的失敗＝貼實際錯誤輸出、停下問使用者。
+
+FastAPI：`bash scripts/envrun.sh env PYTHONPATH=. python scripts/gen_openapi.py --app app.main:app`
+→ 產 `openapi.json`（不適用會 exit 0 提示走 Mode B）。其他框架的匯出指令見
 [references/frameworks.md](references/frameworks.md)。
 
-把本 skill 目錄的 `scripts/` **四檔**複製進**該服務目錄**的 `scripts/`（三支工具 +
-`frontmatter.schema.json` —— lint 執行時讀同目錄的 schema，漏了會炸）；
 `.pre-commit-config.yaml` 放 **repo root**（pre-commit 只認 root；已有就 append hooks），
 monorepo 時 hook 的 `entry` 與 `--app` 用該服務的相對路徑。每次 commit 自動重生 + 擋缺漏：
 
@@ -183,8 +194,9 @@ repos:
       - id: gen-openapi            # 非 FastAPI 換成 frameworks.md 對應指令
         name: regenerate openapi.json
         # PYTHONPATH=. 必要：少了它 app import 失敗，而工具「不適用就 exit 0」
-        # 的優雅降級會把失敗誤裝成「走 Mode B」，hook 形同虛設
-        entry: env PYTHONPATH=. python scripts/gen_openapi.py --app app.main:app
+        # 的優雅降級會把失敗誤裝成「走 Mode B」，hook 形同虛設。
+        # envrun 前綴：有 devcontainer 就在容器內跑（host commit 也對），沒有就 passthrough
+        entry: bash scripts/envrun.sh env PYTHONPATH=. python scripts/gen_openapi.py --app app.main:app
         language: system
         pass_filenames: false
         always_run: true
@@ -255,5 +267,6 @@ curl 'localhost:8002/search_knowledge?query=每晚扣款&type=reference'
 | `gen_openapi.py` | 從 FastAPI app 匯出 openapi.json |
 | `openapi_completeness.py` | 檢查 description/範例/error 缺漏（`--fail` 擋 CI/commit） |
 | `lint_frontmatter.py` | 驗 README frontmatter（type 受控值、source_app 格式） |
+| `envrun.sh` | 需要 repo 相依的指令一律經它跑（自動判定 devcontainer / host，見 Step 3） |
 
 frontmatter 的 `type`/`tags` 會進 wiki、可用 `search_knowledge?type=…&tag=…` 過濾。
