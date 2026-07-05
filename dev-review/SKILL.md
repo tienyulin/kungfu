@@ -1,9 +1,9 @@
 ---
-name: agent-rules-review
-description: Code review 的固定流程 — 只看真 diff、按正確性>安全>失敗路徑>相容>可維護優先序獵錯、每個 finding 要有具體觸發條件才准回報、一行一 finding、零讚美填充。使用者要 review、檢查程式碼、audit、看一下有沒有問題時用。Triggers - "review"、"幫我看 code"、"檢查一下"、"有沒有問題"、"audit"、"check my code"、"look over"、"/agent-rules-review"。
+name: dev-review
+description: Code review 的固定流程 — 只看真 diff、按正確性>安全>失敗路徑>相容>可維護優先序獵錯、每個 finding 要有具體觸發條件才准回報、一行一 finding、零讚美填充。使用者要 review、檢查程式碼、audit、看一下有沒有問題時用。Triggers - "review"、"幫我看 code"、"檢查一下"、"有沒有問題"、"audit"、"check my code"、"look over"、"/dev-review"。
 ---
 
-# agent-rules-review
+# dev-review
 
 **開工前：把下面的進度清單照抄進你的回覆，每完成一步打勾再做下一步。**
 遇到本 skill 沒定義的情況：停下來問使用者，不要自行發明。

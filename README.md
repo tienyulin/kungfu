@@ -77,7 +77,7 @@ claude plugin list         # 應看到 bundle + agent-rules + 外部 mirror plug
 | 層 | 內容 | 載入方式 |
 |---|---|---|
 | **憲法**（常駐） | [12 條硬規則](agent-rules/rules/CONSTITUTION.md)：證據先於宣稱、先重現再修、最小 diff、錯誤逐字引用、禁幻覺 API、測試唯讀、三振停手、破壞性操作需確認…＋回合終檢 6 題 | 各家 session-start hook 注入，**現讀 marketplace 檔＝永遠最新** |
-| **Playbooks**（按需） | 五本固定流程：[bugfix](agent-rules-bugfix/SKILL.md)（先重現→根因→最小修→機器驗證）、[feature](agent-rules-feature/SKILL.md)（驗收清單先行）、[refactor](agent-rules-refactor/SKILL.md)（行為零改變）、[investigate](agent-rules-investigate/SKILL.md)（答案不是 diff）、[review](agent-rules-review/SKILL.md)（每個 finding 要有觸發條件） | skill 觸發詞路由，進 bundle 自動到手 |
+| **Playbooks**（按需） | 五本固定流程：[bugfix](dev-bugfix/SKILL.md)（先重現→根因→最小修→機器驗證）、[feature](dev-feature/SKILL.md)（驗收清單先行）、[refactor](dev-refactor/SKILL.md)（行為零改變）、[investigate](dev-investigate/SKILL.md)（答案不是 diff）、[review](dev-review/SKILL.md)（每個 finding 要有觸發條件） | skill 觸發詞路由，進 bundle 自動到手 |
 | **情境檔**（按需讀） | [DECISIONS](agent-rules/rules/DECISIONS.md)（問 vs 做查表）、[SAFETY](agent-rules/rules/SAFETY.md)（護欄協定）、[ANTIPATTERNS](agent-rules/rules/ANTIPATTERNS.md)（15 種失敗氣味） | 憲法說何時讀；hook 一併注入**絕對路徑**，agent 要用時自己開（不常駐、不脹 context） |
 | **SAFETY guard**（機械強制） | [`guard.py`](agent-rules/hooks/guard.py) 在 PreToolUse 層攔 `rm -rf`、force-push、`git reset --hard`、`DROP`、無 WHERE 的 DELETE、`sudo`… ——**模型自不自覺都過不了關**；擋下的理由文字引導 agent 走 SAFETY §1 協定（亮指令→使用者同意→使用者跑） | hook，同下表 |
 

@@ -1,9 +1,9 @@
 ---
-name: agent-rules-investigate
-description: 回答問題/調查的固定流程 — 交付物是帶 file:line 證據的答案，不是程式碼改動；答案附信心等級，查到的問題只回報不修。使用者問為什麼、怎麼運作、在哪裡、安不安全、查一下時用。Triggers - "為什麼"、"怎麼運作"、"在哪裡"、"查一下"、"看一下是不是"、"why"、"how does"、"explain"、"where is"、"is it safe"、"find out"、"/agent-rules-investigate"。
+name: dev-investigate
+description: 回答問題/調查的固定流程 — 交付物是帶 file:line 證據的答案，不是程式碼改動；答案附信心等級，查到的問題只回報不修。使用者問為什麼、怎麼運作、在哪裡、安不安全、查一下時用。Triggers - "為什麼"、"怎麼運作"、"在哪裡"、"查一下"、"看一下是不是"、"why"、"how does"、"explain"、"where is"、"is it safe"、"find out"、"/dev-investigate"。
 ---
 
-# agent-rules-investigate
+# dev-investigate
 
 **開工前：把下面的進度清單照抄進你的回覆，每完成一步打勾再做下一步。**
 遇到本 skill 沒定義的情況：停下來問使用者，不要自行發明。
