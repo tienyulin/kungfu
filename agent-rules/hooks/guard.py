@@ -74,13 +74,16 @@ def find_commands(payload, agent):
 
 
 def main():
+    """Read the hook payload from stdin, emit the agent-specific verdict."""
     agent = "claude"
     if "--agent" in sys.argv:
         agent = sys.argv[sys.argv.index("--agent") + 1]
     try:
         payload = json.load(sys.stdin)
-    except Exception:
-        return 0  # malformed/empty input: never block, never crash the agent
+    except Exception:  # pylint: disable=broad-exception-caught
+        # deliberately broad: a guard hook must never crash the host agent,
+        # whatever garbage arrives on stdin — fail open instead.
+        return 0
 
     hits = []
     for cmd in find_commands(payload, agent):
