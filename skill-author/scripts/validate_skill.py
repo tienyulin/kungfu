@@ -90,7 +90,7 @@ def _check_marketplace(root, skills):
     if not os.path.isfile(mp):
         # A silent pass here would green-light a skill that can't be installed —
         # this is almost always "ran from the wrong directory".
-        return [f"找不到 {mp} —— 請從 ai-agent-skills repo root 執行本工具"]
+        return [f"找不到 {mp} —— 請從 kungfu repo root 執行本工具"]
     try:
         with open(mp, encoding="utf-8") as f:
             m = json.load(f)

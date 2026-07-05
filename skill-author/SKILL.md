@@ -1,6 +1,6 @@
 ---
 name: skill-author
-description: 在這個 ai-agent-skills repo 裡新增或修改一個 Claude Code skill，並讓它可被安裝。照官方 Agent Skills spec + 本 repo 慣例產出合規 SKILL.md、scripts/references，並註冊進 .claude-plugin/marketplace.json。開發者想加/改 skill 時用。Triggers - "寫一個 skill"、"新增 skill"、"author a skill"、"add a skill to ai-agent-skills"、"/skill-author"。
+description: 在這個 kungfu repo 裡新增或修改一個 Claude Code skill，並讓它可被安裝。照官方 Agent Skills spec + 本 repo 慣例產出合規 SKILL.md、scripts/references，並註冊進 .claude-plugin/marketplace.json。開發者想加/改 skill 時用。Triggers - "寫一個 skill"、"新增 skill"、"author a skill"、"add a skill to kungfu"、"/skill-author"。
 ---
 
 # skill-author
@@ -21,7 +21,7 @@ description: 在這個 ai-agent-skills repo 裡新增或修改一個 Claude Code
 （`<name>/SKILL.md` ＋ 選填 `scripts/`、`references/`）放在 repo root，再在
 `.claude-plugin/marketplace.json` 註冊。
 
-**先確認位置**：所有指令都要在 ai-agent-skills repo root 下執行 —— 判別法：cwd 有
+**先確認位置**：所有指令都要在 kungfu repo root 下執行 —— 判別法：cwd 有
 `.claude-plugin/marketplace.json`。（這個 repo 常是別的專案的 submodule，路徑通常是
 `<專案>/.claude/skills/`；每條指令前 `cd` 過去或用 `cd … &&` 前綴。）
 
@@ -84,12 +84,12 @@ description: <做什麼 + 何時用>。Triggers - "<中文觸發句>"、"<englis
 }
 ```
 
-**② 把 `"./<name>"` 加進既有 bundle plugin（`"name": "ai-agent-skills"` 那個條目）的
+**② 把 `"./<name>"` 加進既有 bundle plugin（`"name": "kungfu"` 那個條目）的
 `skills` 陣列**——它長這樣，只動它的 `skills`（bundle 的 description 刻意不枚舉成員
 名單，不用改）：
 ```json
 {
-  "name": "ai-agent-skills",
+  "name": "kungfu",
   "source": "./",
   "description": "Bundle — installs this repo's own skills at once (…)",
   "skills": ["./wiki-doc-author", "./sop-to-spec", "./skill-author", "./<name>"]
@@ -112,16 +112,16 @@ envrun exit 2（起不了容器）時的**唯一例外**：validator 本身純 s
 
 2) 本地安裝實測 —— **先查這台機器有沒有已註冊的同名 marketplace**：
 ```bash
-claude plugin marketplace list | grep ai-agent-skills
+claude plugin marketplace list | grep kungfu
 ```
 - **已註冊**（團隊成員機器的常態）→ **跳過實測**：不要 add/remove —— remove 會把
   使用者正在用的 bundle 連 plugins 一起拔掉。validator + PR CI 已足夠。
 - **未註冊**（乾淨環境）→ 實測後移除（中途失敗也要跑最後一行，別把設定殘留在 user scope）：
 ```bash
 claude plugin marketplace add "$PWD"
-claude plugin install <name>@ai-agent-skills    # <name>@<marketplace.json 頂層 name>
+claude plugin install <name>@kungfu    # <name>@<marketplace.json 頂層 name>
 claude plugin list | grep -A3 <name>            # Status 行應為 enabled（不在名稱同一行）
-claude plugin marketplace remove ai-agent-skills   # 會連同其 plugins 一起移除
+claude plugin marketplace remove kungfu   # 會連同其 plugins 一起移除
 ```
 
 ## 完成定義

@@ -1,6 +1,6 @@
 ---
 name: agent-rules-setup
-description: 幫使用者跑 ai-agent-skills 的 skills-sync.sh —— 裝齊 skills、把 agent-rules 憲法與 SAFETY guard 接進其他 agent（Codex/Gemini/Cline/OpenCode）。使用者不需要知道腳本在哪，本 skill 自己找。使用者想安裝團隊 skills、同步到其他 agent、接憲法、設定 agent-rules 時用。Triggers - "接 agent-rules"、"裝團隊 skills"、"同步 skills 到其他 agent"、"setup agent rules"、"sync skills"、"install team skills"、"skills-sync"、"/agent-rules-setup"。
+description: 幫使用者跑 kungfu 的 skills-sync.sh —— 裝齊 skills、把 agent-rules 憲法與 SAFETY guard 接進其他 agent（Codex/Gemini/Cline/OpenCode）。使用者不需要知道腳本在哪，本 skill 自己找。使用者想安裝團隊 skills、同步到其他 agent、接憲法、設定 agent-rules 時用。Triggers - "接 agent-rules"、"裝團隊 skills"、"同步 skills 到其他 agent"、"setup agent rules"、"sync skills"、"install team skills"、"skills-sync"、"/agent-rules-setup"。
 ---
 
 # agent-rules-setup
@@ -18,11 +18,11 @@ description: 幫使用者跑 ai-agent-skills 的 skills-sync.sh —— 裝齊 sk
 
 ## Step 1 — 找到 skills-sync.sh（依序試，第一個中的就用）
 
-1. `~/.claude/plugins/marketplaces/ai-agent-skills/skills-sync.sh`（`marketplace add` 的下載位置，成員機器的常態）
+1. `~/.claude/plugins/marketplaces/kungfu/skills-sync.sh`（`marketplace add` 的下載位置，成員機器的常態）
 2. 目前專案的 `.claude/skills/skills-sync.sh`（把本 repo 當 submodule 用的專案）
 3. 都沒有 → 使用者還沒加 marketplace。給他這條，跑完回到 1：
    ```bash
-   claude plugin marketplace add https://gitlab.<公司>/<group>/ai-agent-skills.git
+   claude plugin marketplace add https://gitlab.<公司>/<group>/kungfu.git
    ```
    （實際 URL 見團隊文件；不知道就問使用者，**不要猜**。）
 
