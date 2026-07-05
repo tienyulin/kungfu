@@ -62,12 +62,11 @@ claude plugin list         # 應看到 bundle + 外部 mirror plugins
   `extraKnownMarketplaces` 條目；第三方 marketplace 預設是關的）。之後**每次 Claude Code
   啟動**自動 git-pull marketplace + 更新已裝 plugins；有更新會提示跑 `/reload-plugins`。
 
-重跑 `bash skills-sync.sh` 只剩四個情境：**新機器初裝**、**要把 skills 同步到新的
+重跑 `bash skills-sync.sh` 只剩三個情境：**新機器初裝**、**要把 skills 同步到新的
 agent**（Gemini/Codex/Cline/OpenCode，見下節）、marketplace **新收錄 bundle 以外的新 plugin**
 （外部 mirror 或常駐 hook plugin 如 `agent-rules`——新 plugin 不會自己裝，bundle 只涵蓋
-自家 skill；腳本讀 marketplace.json 會自動補裝）、**憲法改版且你是 Codex 用戶並用了
-`--constitution`**（只有 Codex 是嵌入快照，其他 agent 用原生 include 自動跟新，見下節）。
-自家 skill 的新增/修改**永遠不用重跑**。
+自家 skill；腳本讀 marketplace.json 會自動補裝）。自家 skill 的新增/修改**永遠不用重跑**；
+憲法改版也不用——各家都走 hook/引用，session 開頭現讀 marketplace 檔（見下節）。
 
 ### 版本策略
 
@@ -108,19 +107,19 @@ agent（看家目錄），只同步偵測到的：
   bash skills-sync.sh agents --constitution   # 只跨 agent + 憲法
   ```
 
-  只碰偵測到的 agent，**優先用各家原生 include 機制**——憲法檔本體留在 marketplace
-  目錄，rules 端只放引用，marketplace 更新後內容**自動跟新**；只有 Codex 沒有 include
-  機制，才嵌入全文快照：
+  只碰偵測到的 agent，**用各家 hook 機制在 session 開頭注入**——跟 Claude Code 的
+  hook plugin 同架構：hook 在 session 開始時**讀 marketplace 裡的憲法檔**，所以
+  marketplace 更新後內容一律**自動跟新**，零快照：
 
-  | agent | 機制 | 憲法改版後 |
+  | agent | 機制 | 備註 |
   |---|---|---|
-  | Gemini | `~/.gemini/GEMINI.md` managed block 裡兩行 `@import` | 自動跟新 |
-  | OpenCode | `~/.config/opencode/opencode.json` 的 `instructions[]` 加路徑（AGENTS.md 完全不碰） | 自動跟新 |
-  | Cline | rules 目錄放憲法 **symlink** ＋情境路徑檔 | 自動跟新 |
-  | Codex | `~/.codex/AGENTS.md` managed block **嵌入全文**（AGENTS.md 無 include 機制） | 重跑一次 `--constitution` |
+  | Codex | `~/.codex/hooks.json` SessionStart hook（`cat` 憲法＋情境路徑，stdout 進 context） | 舊版嵌在 AGENTS.md 的 block 會自動清掉 |
+  | Gemini | `~/.gemini/settings.json` SessionStart hook（呼叫生成的 wrapper，輸出 `additionalContext` JSON） | 舊版 GEMINI.md 的 @import block 會自動清掉 |
+  | Cline | `~/Documents/Cline/Rules/Hooks/TaskStart` hook script（`contextModification`） | Cline hooks 限 macOS/Linux；你自己已有 TaskStart 時**不覆蓋**、印手動指引；只有 `~/.cline` 的佈局退回 rules symlink |
+  | OpenCode | `opencode.json` 的 `instructions[]`（**它的 plugin API 沒有 session-start 注入 hook**，instructions 就是官方常駐機制） | AGENTS.md 完全不碰 |
 
-  managed block／JSON merge 都**冪等**，你自己寫的內容一字不動。情境檔
-  （DECISIONS / SAFETY / ANTIPATTERNS）照設計按需讀、不常駐——隨憲法一起載入的只有
+  所有 JSON merge 都**冪等**、不動你自己的任何 key 與 hook。情境檔
+  （DECISIONS / SAFETY / ANTIPATTERNS）照設計按需讀、不常駐——隨憲法一起注入的只有
   **絕對路徑清單**（生成在 `~/.agents/agent-rules-situational-paths.md`），agent 要用時
   照路徑自己開（跟 Claude hook 報路徑同一招）。不想用旗標也可以手動貼
   [`agent-rules/rules/CONSTITUTION.md`](agent-rules/rules/CONSTITUTION.md)。
