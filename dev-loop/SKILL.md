@@ -53,7 +53,11 @@ GATES:
 ## Step 2 — 內圈執行
 
 照需求型路由（同 DECISIONS 表 5）：修壞的 → `dev-bugfix`；加新的 → `dev-feature`；
-整理 → `dev-refactor`；補測試 → `dev-test`。照該 playbook 的步驟做出**第一版**。
+整理 → `dev-refactor`；補測試 → `dev-test`。輸出（必填，先寫再動手）：
+```
+ROUTE: <playbook 名> （原因: <需求屬於哪型，一句>）
+```
+照該 playbook 的步驟做出**第一版**。
 禁止跳過 playbook 自由發揮——「怎麼做」是它們的事，本 skill 只管「圈」。
 
 ## Step 3 — 迭代圈（核心）
