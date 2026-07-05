@@ -1,5 +1,10 @@
 # judgment/ — 通用判斷力制度
 
+> **這份是線上使用版**（vendored 進 agent-rules plugin，隨 marketplace autoUpdate 發佈）。
+> 觸發方式：INDEX.md 隨憲法的 SessionStart hook 自動常駐注入（含各檔絕對路徑），
+> 其餘 31 檔由 agent 照 INDEX 路由表按需 Read——不用安裝、不用手動載入。
+> 修訂走本 repo 的 PR＋CI；原始蒸餾快照在 github.com/tienyulin/judgment。
+
 由 Claude Fable 5 於 2026-07-05 一次性蒸餾並整併。目的：讓之後在此環境長期運作的模型
 （不論等級：Sonnet / Opus / Haiku / minimax / qwen / 7B 開源），在做**任何事情**時
 借用一套已固化的判斷程序。本系統不限寫程式 — 它管的是「怎麼判斷」，不是「怎麼寫 code」。
@@ -74,7 +79,7 @@ domains/ 每檔固定格式：觸發（可觀察）→ 動作（可執行）→ 
 KERNEL 與全部檔案原樣保留——單獨使用、或當 train 其他 skill 的素材時，照下方安裝法。
 INDEX 的路由表新增檔案時要同步更新。
 
-## 安裝（三選一，單獨使用時）
+## 安裝（三選一——只在「不裝 agent-rules plugin、單獨使用本制度」時需要）
 
 1. **CLAUDE.md 指令**（最簡單）：加一行
    `每個 session 開始時，先讀 /Users/tienyu/Project/judgment/KERNEL.md 並遵守其中規則與路由表。`
