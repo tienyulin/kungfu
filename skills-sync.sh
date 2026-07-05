@@ -189,7 +189,7 @@ situational_paths_body() {
   done
   # judgment bridge（可選）：通用判斷增量＋路由表。repo 不在（隊友沒裝）就靜默跳過。
   # 內容在 --constitution 執行時解析嵌入；INDEX.md 更新後重跑一次 --constitution。
-  local j="${JUDGMENT_DIR:-$HOME/Project/judgment}"
+  local j="${JUDGMENT_DIR:-$SCRIPT_DIR/agent-rules/judgment}"
   if [ -f "$j/INDEX.md" ]; then
     echo
     sed "s|@JUDGMENT@|$j|g" "$j/INDEX.md"
