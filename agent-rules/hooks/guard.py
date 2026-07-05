@@ -12,6 +12,7 @@ NOTE: the pattern list below is mirrored in the generated OpenCode plugin
 (agent-rules-guard.js, written by skills-sync.sh --constitution). Change one →
 change both.
 """
+
 import json
 import re
 import sys
@@ -27,7 +28,10 @@ PATTERNS = [
     (re.compile(r"\btruncate\s+table\b", re.I), "TRUNCATE TABLE"),
     (re.compile(r"\bdelete\s+from\b(?![\s\S]*\bwhere\b)", re.I), "DELETE without WHERE"),
     (re.compile(r"(^|[;&|]\s*)sudo\b"), "sudo"),
-    (re.compile(r"\b(chmod|chown)\s+-[a-zA-Z]*R[a-zA-Z]*\s+[^ ]*\s*(/|~)(\s|$)", re.I), "recursive chmod/chown on / or ~"),
+    (
+        re.compile(r"\b(chmod|chown)\s+-[a-zA-Z]*R[a-zA-Z]*\s+[^ ]*\s*(/|~)(\s|$)", re.I),
+        "recursive chmod/chown on / or ~",
+    ),
 ]
 
 REASON_PREFIX = "agent-rules SAFETY hook: 命中破壞性指令 pattern"
@@ -70,13 +74,16 @@ def find_commands(payload, agent):
 
 
 def main():
+    """Read the hook payload from stdin, emit the agent-specific verdict."""
     agent = "claude"
     if "--agent" in sys.argv:
         agent = sys.argv[sys.argv.index("--agent") + 1]
     try:
         payload = json.load(sys.stdin)
-    except Exception:
-        return 0  # malformed/empty input: never block, never crash the agent
+    except Exception:  # pylint: disable=broad-exception-caught
+        # deliberately broad: a guard hook must never crash the host agent,
+        # whatever garbage arrives on stdin — fail open instead.
+        return 0
 
     hits = []
     for cmd in find_commands(payload, agent):
@@ -92,17 +99,31 @@ def main():
     reason = REASON_PREFIX + "（" + ", ".join(hits) + "）" + REASON_SUFFIX
     if agent == "claude":
         # "ask" surfaces a confirmation prompt to the user — exactly Law 9.
-        print(json.dumps({"hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "ask",
-            "permissionDecisionReason": reason,
-        }}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {
+                    "hookSpecificOutput": {
+                        "hookEventName": "PreToolUse",
+                        "permissionDecision": "ask",
+                        "permissionDecisionReason": reason,
+                    }
+                },
+                ensure_ascii=False,
+            )
+        )
     elif agent == "codex":
-        print(json.dumps({"hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "deny",
-            "permissionDecisionReason": reason,
-        }}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {
+                    "hookSpecificOutput": {
+                        "hookEventName": "PreToolUse",
+                        "permissionDecision": "deny",
+                        "permissionDecisionReason": reason,
+                    }
+                },
+                ensure_ascii=False,
+            )
+        )
     elif agent == "gemini":
         print(json.dumps({"decision": "deny", "reason": reason}, ensure_ascii=False))
     elif agent == "cline":
