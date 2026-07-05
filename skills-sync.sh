@@ -240,11 +240,19 @@ sync_agents() {
   if [ -d "$home/.codex" ]; then
     mkdir -p "$home/.codex/skills"; codex=1; did=1
   fi
-  # Cline: plain .md rules (not SKILL.md). Global rules dir.
+  # Cline: plain .md rules (not SKILL.md). Base dir differs by platform —
+  # macOS uses ~/Documents/Cline, Linux/WSL uses ~/Cline (cline#9994); hooks
+  # and Rules both hang off that base.
+  local cline_base=""
+  if [ -d "$home/Documents/Cline" ]; then
+    cline_base="$home/Documents/Cline"
+  elif [ -d "$home/Cline" ]; then
+    cline_base="$home/Cline"
+  fi
   if [ -d "$home/.cline" ]; then
     cline_dir="$home/.cline/rules"
-  elif [ -d "$home/Documents/Cline" ]; then
-    cline_dir="$home/Documents/Cline/Rules"
+  elif [ -n "$cline_base" ]; then
+    cline_dir="$cline_base/Rules"
   fi
   [ -n "$cline_dir" ] && { mkdir -p "$cline_dir"; did=1; }
 
@@ -344,13 +352,13 @@ PYEOF
       echo "  OpenCode → ~/.config/opencode/opencode.json instructions（原生常駐機制；plugin API 無 session-start 注入 hook）"
     fi
     if [ -n "$cline_dir" ]; then
-      if [ -d "$home/Documents/Cline" ]; then
+      if [ -n "$cline_base" ]; then
         # global hooks dir is <base>/Hooks, SIBLING of Rules/Workflows (the app
         # scaffolds it; confirmed by cline#9994) — NOT Rules/Hooks as some blog
         # posts claim. Hooks are macOS/Linux only.
-        local chooks="$home/Documents/Cline/Hooks" cts
+        local chooks="$cline_base/Hooks" cts
         # migrate our files out of the wrong dir earlier versions wrote to
-        local oldhooks="$home/Documents/Cline/Rules/Hooks" oldf
+        local oldhooks="$cline_base/Rules/Hooks" oldf
         for oldf in "$oldhooks/TaskStart" "$oldhooks/PreToolUse"; do
           [ -f "$oldf" ] && grep -q "agent-rules managed" "$oldf" && rm -f "$oldf"
         done
@@ -379,7 +387,7 @@ SHEOF
         # rules-dir symlink fallback (also auto-fresh, just not a hook).
         ln -sfn "$const_src" "$cline_dir/agent-rules-constitution.md"
         cp "$paths_file" "$cline_dir/agent-rules-situational-paths.md"
-        echo "  Cline    → $cline_dir（無 Documents/Cline 佈局，退回 rules symlink，自動跟新）"
+        echo "  Cline    → $cline_dir（無 Cline base 目錄佈局，退回 rules symlink，自動跟新）"
       fi
     fi
 
@@ -401,9 +409,9 @@ SHEOF
           "{\"hooks\":[{\"type\":\"command\",\"command\":\"python3 '$guard' --agent gemini\",\"name\":\"agent-rules-guard\",\"timeout\":10000}]}"
         echo "  Gemini   → ~/.gemini/settings.json BeforeTool（deny）"
       fi
-      if [ -n "$cline_dir" ] && [ -d "$home/Documents/Cline" ]; then
-        local cpre="$home/Documents/Cline/Hooks/PreToolUse"
-        mkdir -p "$home/Documents/Cline/Hooks"
+      if [ -n "$cline_dir" ] && [ -n "$cline_base" ]; then
+        local cpre="$cline_base/Hooks/PreToolUse"
+        mkdir -p "$cline_base/Hooks"
         if [ -f "$cpre" ] && ! grep -q "agent-rules managed" "$cpre"; then
           echo "  ⚠ Cline：$cpre 已存在且不是本腳本產生的 — 不覆蓋；請在你的 PreToolUse 裡自行呼叫 python3 '$guard' --agent cline"
         else
@@ -680,6 +688,18 @@ PY
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h6"; CONSTITUTION=1; sync_agents >/dev/null )
   grep -q "user-hook" "$sb/h6/Documents/Cline/Hooks/TaskStart" \
     || { echo "  FAIL: foreign cline TaskStart clobbered"; fail=1; }
+
+  # case 7: Linux layout (~/Cline, no Documents) → hooks land in ~/Cline/Hooks,
+  # rules in ~/Cline/Rules
+  mkdir -p "$sb/h7/Cline"
+  ( SCRIPT_DIR="$sb/src"; HOME="$sb/h7"; CONSTITUTION=1; sync_agents >/dev/null )
+  [ -x "$sb/h7/Cline/Hooks/TaskStart" ] || { echo "  FAIL: linux-layout TaskStart missing"; fail=1; }
+  [ -x "$sb/h7/Cline/Hooks/PreToolUse" ] || { echo "  FAIL: linux-layout PreToolUse missing"; fail=1; }
+  grep -q "demo-skill" "$sb/h7/Cline/Rules/demo-skill.md" 2>/dev/null \
+    || { echo "  FAIL: linux-layout pointer rule missing"; fail=1; }
+  echo '{"toolName":"executeCommand","parameters":{"command":"sudo rm x"}}' | "$sb/h7/Cline/Hooks/PreToolUse" \
+    | python3 -c 'import json,sys; assert json.load(sys.stdin)["cancel"] is True' \
+    || { echo "  FAIL: linux-layout guard did not cancel"; fail=1; }
 
   rm -rf "$sb"
   if [ "$fail" = 0 ]; then
