@@ -115,6 +115,12 @@ claude plugin list         # 應看到 bundle + agent-rules + 外部 mirror plug
   `extraKnownMarketplaces`；第三方 marketplace 預設關）。每次 Claude Code 啟動自動
   git-pull ＋ 更新已裝 plugins，有更新會提示 `/reload-plugins`。
 
+不依賴「有沒有開 Claude Code」：`--constitution` 接線的 **Codex / Gemini / Cline hook
+會自我 refresh**——hook 觸發時背景 git pull marketplace（6 小時節流、不擋啟動，
+新內容下個 session 生效）。就算整週只用 Cline，憲法與 guard 也自己保持最新。
+例外：OpenCode 的 instructions 是 host 直讀檔、沒有 exec 點，跟著 Claude Code
+或其他 agent 的 refresh 沾光。
+
 **要重跑腳本的只剩三種情境**（其餘一律自動）：
 
 1. 新機器初裝
