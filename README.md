@@ -124,6 +124,22 @@ agent（看家目錄），只同步偵測到的：
   照路徑自己開（跟 Claude hook 報路徑同一招）。不想用旗標也可以手動貼
   [`agent-rules/rules/CONSTITUTION.md`](agent-rules/rules/CONSTITUTION.md)。
 
+  **SAFETY guard（隨 `--constitution` 一起接線）**：SAFETY.md §1 的破壞性指令清單
+  （`rm -rf`、`git push --force`、`git reset --hard`、`DROP TABLE`、無 WHERE 的
+  DELETE、`sudo`…）由 [`agent-rules/hooks/guard.py`](agent-rules/hooks/guard.py) 在
+  **hook 層機械攔截**——模型自不自覺都過不了關，這是 rules（勸）跟 hook（擋）的本質差異：
+
+  | agent | 攔截點 | 效果 |
+  |---|---|---|
+  | Claude Code | plugin 內建 PreToolUse（裝 `agent-rules` plugin 就有，**不用旗標**） | `ask`——彈出確認讓使用者放行 |
+  | Codex | `~/.codex/hooks.json` PreToolUse | deny＋理由回給 agent |
+  | Gemini | `~/.gemini/settings.json` BeforeTool | deny＋理由回給 agent |
+  | Cline | `Hooks/PreToolUse` script（同樣不覆蓋你既有的） | cancel＋errorMessage |
+  | OpenCode | 生成 `plugins/agent-rules-guard.js`（`tool.execute.before` throw） | 擋下＋錯誤訊息 |
+
+  被擋不是終點：理由文字會引導 agent 走 SAFETY.md §1 協定（亮指令→使用者同意→使用者跑）。
+  pattern 清單改動要同步兩處：`guard.py` 與 skills-sync 生成的 OpenCode JS。
+
 ### 進階：只裝某幾個 / 離線
 
 ```bash
