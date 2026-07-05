@@ -191,6 +191,44 @@
       ]
     },
     {
+      "name": "dev-loop",
+      "source": "./",
+      "strict": false,
+      "description": "End-to-end autonomous iteration loop for one coding requirement (loop engineering): lock intent once, establish machine gates, then act-observe-adjust until all gates are green and a PR is opened — no step-by-step human prompting; blocked work escalates via three-strike instead of thrashing.",
+      "author": {
+        "name": "tienyulin"
+      },
+      "keywords": [
+        "loop",
+        "autonomous",
+        "iteration",
+        "agent-rules"
+      ],
+      "category": "development",
+      "skills": [
+        "./dev-loop"
+      ]
+    },
+    {
+      "name": "dev-test",
+      "source": "./",
+      "strict": false,
+      "description": "Fixed procedure for adding tests to existing code — behavior list first, one test at a time, and every test must prove it catches breakage (kill-proof: break the implementation, test must go red) so no evergreen fake tests survive.",
+      "author": {
+        "name": "tienyulin"
+      },
+      "keywords": [
+        "test",
+        "coverage",
+        "characterization",
+        "agent-rules"
+      ],
+      "category": "development",
+      "skills": [
+        "./dev-test"
+      ]
+    },
+    {
       "name": "agent-rules-setup",
       "source": "./",
       "strict": false,
@@ -233,6 +271,8 @@
         "./dev-refactor",
         "./dev-investigate",
         "./dev-review",
+        "./dev-test",
+        "./dev-loop",
         "./agent-rules-setup"
       ]
     },

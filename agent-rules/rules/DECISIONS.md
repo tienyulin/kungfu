@@ -61,4 +61,6 @@
 | 錯字/小修 | 單點 edit＋驗證。不要順手重構整個檔 |
 | 新功能 | 走 dev-feature playbook。驗收清單先行 |
 | 「整理/重構」 | 走 dev-refactor playbook。動工前測試全綠，否則先問 |
+| 補測試/加 coverage | 走 dev-test playbook。每條測試要 kill-proof |
+| 「整個需求自己做到好」 | 走 dev-loop。intent 鎖定一次，之後圈內不問人，gate 全綠才開 PR |
 | 模糊的大要求（「把 app 弄好一點」） | 提 3 個具體選項附成本，讓使用者挑。不要直接開寫 |

@@ -66,7 +66,8 @@ bash ~/ai-agent-skills/skills-sync.sh agents --constitution
 | [`sop-to-spec`](sop-to-spec/SKILL.md) | 把維運 SOP（DBA runbook、infra 程序…）轉成「人能審、AI 能照著實作三層 FastAPI 服務」的 spec。 |
 | [`api-template-dev`](api-template-dev/SKILL.md) | 照公司 API template 開三層式 FastAPI 服務：clone 起手、照層加端點、用內建工具不重造。 |
 | [`skill-author`](skill-author/SKILL.md) | 在本 repo 新增/修改一個**可安裝**的 skill —— 照標準產 SKILL.md、註冊進 marketplace。 |
-| `agent-rules-*` 五本 playbook | 見下方〈agent-rules〉。 |
+| `dev-*` 六本 playbook（bugfix / feature / refactor / investigate / review / test） | 開發任務的固定作業流程，見下方〈agent-rules〉。 |
+| [`dev-loop`](dev-loop/SKILL.md) | **一個需求自己做到好**：loop engineering 的端到端迭代圈，見下方〈dev-loop〉。 |
 | [`agent-rules-setup`](agent-rules-setup/SKILL.md) | 叫 Claude 代跑 skills-sync —— 找腳本、選模式、跑、轉述警告。**使用者不用知道腳本在哪。** |
 
 ### 常駐 plugin（不是 skill，要單獨裝一次——`skills-sync.sh` 會自動裝）
@@ -117,6 +118,21 @@ bash ~/ai-agent-skills/skills-sync.sh agents --constitution
   唯一例外：guard pattern 清單改動要同步 `guard.py` 與生成的 OpenCode JS 兩處（維護者的事）。
 - 非 Claude 工具想手動接（不跑腳本）：貼 [`CONSTITUTION.md`](agent-rules/rules/CONSTITUTION.md)
   進該工具 rules 檔即可。
+
+### dev-loop — 把需求丟進圈裡（loop engineering）
+
+[Loop engineering](https://kilo.ai/articles/what-is-loop-engineering)：人設計一次
+迴圈（目標、驗證 gate、停止規則），agent 拿到需求就自己繞
+「做 → 觀察 → 調整」直到 gate 全綠開 PR——**gate 的失敗輸出不是錯誤訊息，是下一輪
+的新 context**。人不再逐步下 prompt，只把守 PR 與升級。
+
+用法一行：`/dev-loop <需求>`。Intent 鎖定時問你一次，之後圈內不再問；
+卡住走三振升級（LOOP ESCALATED）而不是無限重試；SAFETY guard 在圈內照常生效。
+
+**`VERIFY.md` 慣例**（讓 loop 不用人教怎麼驗）：每個 repo root 放一份，
+一個 gate 一節（run 指令＋pass 判準），至少一個 unit 類＋一個 smoke 類
+（非測試觀察，防 overfitting to tests）。格式見
+[dev-loop/references/verify-format.md](dev-loop/references/verify-format.md)。
 
 ---
 
