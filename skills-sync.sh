@@ -268,7 +268,7 @@ sync_agents() {
          || [ "$(basename "$mig")" = "agent-rules-situational-paths.md" ] \
          || grep -q "ai-agent-skills 的指標規則" "$mig" 2>/dev/null; then
         rm -f "$mig"
-        echo "  − ~/.cline/rules/$(basename "$mig")（遷移到 $cline_dir）"
+        echo "  − ~/.cline/rules/$(basename "$mig")（遷移到 ${cline_dir}）"
       fi
     done
     rmdir "$home/.cline/rules" 2>/dev/null || true
@@ -329,7 +329,7 @@ sync_agents() {
   if [ "$CONSTITUTION" = 1 ]; then
     local const_src="$SCRIPT_DIR/agent-rules/rules/CONSTITUTION.md"
     if [ ! -f "$const_src" ]; then
-      echo "  ⚠ --constitution：找不到 $const_src，跳過"
+      echo "  ⚠ --constitution：找不到 ${const_src}，跳過"
       return 0
     fi
     echo "→ 憲法（--constitution）：用各家 hook 在 session 開頭注入（讀 marketplace 檔，內容自動跟新）"
@@ -419,14 +419,14 @@ SHEOF
           chmod +x "$cts"
           # migrate off the old rules-dir symlink + paths file (hook replaces both)
           rm -f "$cline_dir/agent-rules-constitution.md" "$cline_dir/agent-rules-situational-paths.md"
-          echo "  Cline    → $cts（TaskStart hook，自動跟新）"
+          echo "  Cline    → ${cts}（TaskStart hook，自動跟新）"
         fi
       else
         # ~/.cline-only layout: global hooks dir undocumented there → keep the
         # rules-dir symlink fallback (also auto-fresh, just not a hook).
         ln -sfn "$const_src" "$cline_dir/agent-rules-constitution.md"
         cp "$paths_file" "$cline_dir/agent-rules-situational-paths.md"
-        echo "  Cline    → $cline_dir（無 Cline base 目錄佈局，退回 rules symlink，自動跟新）"
+        echo "  Cline    → ${cline_dir}（無 Cline base 目錄佈局，退回 rules symlink，自動跟新）"
       fi
     fi
 
@@ -435,7 +435,7 @@ SHEOF
     # the call". Claude Code gets this from the agent-rules plugin itself.
     local guard="$SCRIPT_DIR/agent-rules/hooks/guard.py"
     if [ ! -f "$guard" ]; then
-      echo "  ⚠ 找不到 $guard，跳過 SAFETY guard"
+      echo "  ⚠ 找不到 ${guard}，跳過 SAFETY guard"
     else
       echo "→ SAFETY guard（--constitution）：hook 層攔破壞性指令（pattern 清單＝SAFETY.md §1）"
       if [ "$codex" = 1 ]; then
@@ -460,7 +460,7 @@ SHEOF
 exec python3 '$guard' --agent cline
 SHEOF
           chmod +x "$cpre"
-          echo "  Cline    → $cpre（cancel）"
+          echo "  Cline    → ${cpre}（cancel）"
         fi
       fi
       if [ "$opencode" = 1 ]; then
@@ -500,6 +500,24 @@ JSEOF
 }
 
 self_test() {
+  # lint: `$var` immediately followed by a multibyte char breaks bash 3.2
+  # varname lexing under CJK UTF-8 locales (the char is absorbed into the
+  # name -> set -u explodes at runtime, e.g. `cline_dir（: unbound variable`).
+  # Always write `${var}` before non-ASCII text. Locale-independent check.
+  local lint
+  lint="$(python3 - "$SCRIPT_DIR/skills-sync.sh" <<'PYLINT'
+import re, sys
+pat = re.compile(r'\$[a-zA-Z_][a-zA-Z0-9_]*[^\x00-\x7f]')
+hits = [f"  line {i}: {l.strip()[:70]}" for i, l in enumerate(open(sys.argv[1], encoding='utf-8'), 1) if pat.search(l)]
+print("\n".join(hits))
+PYLINT
+)"
+  if [ -n "$lint" ]; then
+    echo "self-test FAIL (unbraced \$var directly before a multibyte char):"
+    echo "$lint"
+    exit 1
+  fi
+
   local tmp; tmp="$(mktemp -d)"
   cat > "$tmp/mp.json" <<'JSON'
 {"plugins":[
@@ -785,7 +803,7 @@ for arg in "$@"; do
   case "$arg" in
     --constitution)      CONSTITUTION=1 ;;
     --self-test|agents)  MODE="$arg" ;;
-    *) echo "unknown argument: $arg（可用：agents、--constitution、--self-test）" >&2; exit 1 ;;
+    *) echo "unknown argument: ${arg}（可用：agents、--constitution、--self-test）" >&2; exit 1 ;;
   esac
 done
 
@@ -816,7 +834,7 @@ while IFS=' ' read -r action name; do
   if [ "$action" = "RETIRE" ]; then
     # migration from the pre-bundle layout; a no-op when it was never installed.
     claude plugin uninstall "$name@$MARKET" 2>/dev/null \
-      && echo "  − $name（改由 bundle 提供）"
+      && echo "  − ${name}（改由 bundle 提供）"
     continue
   fi
   echo "  • $name"
