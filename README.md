@@ -89,11 +89,12 @@ bash ~/ai-agent-skills/skills-sync.sh agents --constitution
 
 由 Claude Fable 5 session 蒸餾，設計目標：**判斷力寫成弱模型也能機械執行的制度**
 ——具體判準（「diff > 3 檔 150 行就停」）、照抄模板（VERIFIED / STUCK 報告）、
-封閉分流（條件→走哪），不寫抽象原則。四層：
+封閉分流（條件→走哪），不寫抽象原則。五層：
 
 | 層 | 內容 | 載入方式 |
 |---|---|---|
 | **憲法**（常駐） | [12 條硬規則](agent-rules/rules/CONSTITUTION.md)：證據先於宣稱、先重現再修、最小 diff、錯誤逐字引用、禁幻覺 API、測試唯讀、三振停手、破壞性操作需確認…＋回合終檢 6 題 | 各家 session-start hook 注入，**現讀 marketplace 檔＝永遠最新** |
+| **judgment**（常駐入口＋按需展開） | 通用判斷制度 32 檔，vendored 於 [agent-rules/judgment/](agent-rules/judgment/README.md)：[INDEX](agent-rules/judgment/INDEX.md)＝憲法沒覆蓋的 7 條判斷法則（目的>字面、可逆×範圍、成本對稱、預設值+ASSUMED…）＋兩層路由表；17 個任務域檔（部署/除錯/架構/研究/摘要/事故/資安/Oracle…）＋ 11 個訊號檔（卡關/選擇/權衡/驗證/自我進化…） | INDEX 隨憲法**同一支 hook** 常駐注入（含各檔絕對路徑）；域檔 agent 照路由表自己開——開工時查任務型、過程中對訊號型，**任何時刻最多 2 檔**（防發散） |
 | **Playbooks**（按需） | 五本固定流程：[bugfix](dev-bugfix/SKILL.md)（先重現→根因→最小修→機器驗證）、[feature](dev-feature/SKILL.md)（驗收清單先行）、[refactor](dev-refactor/SKILL.md)（行為零改變）、[investigate](dev-investigate/SKILL.md)（答案不是 diff）、[review](dev-review/SKILL.md)（每個 finding 要有觸發條件） | skill 觸發詞路由，進 bundle 自動到手 |
 | **情境檔**（按需讀） | [DECISIONS](agent-rules/rules/DECISIONS.md)（問 vs 做查表）、[SAFETY](agent-rules/rules/SAFETY.md)（護欄協定）、[ANTIPATTERNS](agent-rules/rules/ANTIPATTERNS.md)（15 種失敗氣味） | 憲法說何時讀；hook 一併注入**絕對路徑**，agent 要用時自己開（不常駐、不脹 context） |
 | **SAFETY guard**（機械強制） | [`guard.py`](agent-rules/hooks/guard.py) 在 PreToolUse 層攔 `rm -rf`、force-push、`git reset --hard`、`DROP`、無 WHERE 的 DELETE、`sudo`… ——**模型自不自覺都過不了關**；擋下的理由文字引導 agent 走 SAFETY §1 協定（亮指令→使用者同意→使用者跑） | hook，同下表 |
