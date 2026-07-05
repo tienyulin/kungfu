@@ -5,6 +5,19 @@ description: Convert an operations SOP (any domain — DBA runbooks, infra proce
 
 # SOP → Implementation Spec
 
+**開工前：把下面的進度清單照抄進你的回覆，每完成一步打勾再做下一步。**
+遇到本 skill 與 references 都沒定義的情況：停下來問使用者，不要自行發明。
+
+```
+進度：
+- [ ] Step 1 萃取五清單（草稿）
+- [ ] Step 2 風險分級表
+- [ ] Step 3 spec 寫完（先 Part A 後 Part B；照抄區塊逐字；逼問清單每題每端點過完）
+- [ ] Step 4 自檢清單全勾
+- [ ] Step 5 盲審 spawn（prompt 照抄）→ 分流 → REVIEWS.md → HIGH=0
+- [ ] （實作發生後）Step 6 歸因
+```
+
 把人類操作 SOP 轉成一份 API spec。spec 有**兩個讀者，缺一不可**：
 
 | 讀者 | 需要什麼 | spec 對應部分 |
