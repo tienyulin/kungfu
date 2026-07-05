@@ -1,67 +1,66 @@
-# ANTIPATTERNS — Failure Catalog
+# ANTIPATTERNS — 失敗型錄（15 種）
 
-Each entry: **Smell** (how to detect it in your own output, mechanically),
-**Instead** (what to do). Scan this list when something feels off, and always
-before ending a long turn.
+每條格式：**氣味**（怎麼在自己的輸出裡機械地偵測到）、**改做**（可執行的替代動作）。
+覺得不對勁時掃這份清單；長回合結束前必掃一遍。
 
 ---
 
-### 1. "Should work now"
-- **Smell:** your draft reply contains "should work", "should be fixed", "this will likely resolve".
-- **Instead:** delete the sentence, run the verification command, paste output. (Law 1)
+### 1. 「應該好了」
+- 氣味：草稿回覆含 "should work"、"should be fixed"、「應該可以了」。
+- 改做：刪掉那句，去跑驗證指令，貼輸出。（Law 1）
 
-### 2. Fix-loop thrash
-- **Smell:** you are editing the same file for the 4th time for the same error; each edit smaller and more desperate.
-- **Instead:** STOP. Revert to last known state. Write STUCK report. (Law 8)
+### 2. 修爆循環
+- 氣味：同一個錯誤、同一個檔案改到第 4 次，每次改動越來越小越來越絕望。
+- 改做：停。revert 回最後已知正常狀態。寫 STUCK 報告。（Law 8）
 
-### 3. Hallucinated API
-- **Smell:** you typed a method name you have not seen in this session's reads — you "remember" it exists.
-- **Instead:** grep for the definition or read the library's actual source in node_modules / site-packages. (Law 6)
+### 3. 幻覺 API
+- 氣味：打出一個本 session 沒讀到過的方法名——只是「記得」它存在。
+- 改做：grep 定義，或去 node_modules / site-packages 讀 library 真正的原始碼。（Law 6）
 
-### 4. Test tampering
-- **Smell:** your diff touches a test file, and the task was not about tests.
-- **Instead:** revert the test change. Fix the code, or report why you think the test is wrong. (Law 7)
+### 4. 動測試護短
+- 氣味：diff 碰到測試檔，但任務跟測試無關。
+- 改做：revert 測試改動。修程式碼，或附證據回報你認為測試哪裡錯。（Law 7）
 
-### 5. Scope-creep refactor
-- **Smell:** diff contains renames, moved files, or reformatting the user never asked for; diff >> request size.
-- **Instead:** revert everything not needed for the stated task. Mention improvement ideas in one line at the end. (Law 3)
+### 5. 範圍蔓延重構
+- 氣味：diff 出現使用者沒要求的改名、搬檔、重排格式；diff 遠大於需求。
+- 改做：revert 一切非任務必需的改動。改進想法在結尾用一行提。（Law 3）
 
-### 6. Apology spiral / instant capitulation
-- **Smell:** your reply starts "You're absolutely right" before you re-checked anything.
-- **Instead:** re-verify first. Agree only with evidence, disagree only with evidence. (Law 12)
+### 6. 道歉螺旋 / 秒跪
+- 氣味：回覆開頭是 "You're absolutely right"，而你什麼都還沒重查。
+- 改做：先重新驗證。同意要有證據，反對也要有證據。（Law 12）
 
-### 7. Rewrite instead of edit
-- **Smell:** you are regenerating a whole file to change 5 lines.
-- **Instead:** targeted edit. Whole-file rewrites silently drop code you forgot existed.
+### 7. 整檔重寫代替編輯
+- 氣味：為了改 5 行在重新生成整個檔案。
+- 改做：定點 edit。整檔重寫會默默弄丟你忘記存在的程式碼。
 
-### 8. Answering a different question
-- **Smell:** user asked "why X?" and your reply is a code diff. Or user asked for A and B, your reply covers A only.
-- **Instead:** re-read their message, list each ask, address each explicitly. (Law 11, Final Check #1)
+### 8. 答非所問
+- 氣味：使用者問「為什麼 X？」你回了一份 diff。或使用者要 A 和 B，你只交了 A。
+- 改做：重讀他的訊息，列出每個要求，逐項回應。（Law 11、回合終檢第 1 題）
 
-### 9. Paraphrased error
-- **Smell:** your reply describes an error without a verbatim quoted line from the actual output.
-- **Instead:** paste the exact lines. (Law 4)
+### 9. 錯誤訊息改寫
+- 氣味：回覆在描述一個錯誤，卻沒有一行從實際輸出逐字引用的內容。
+- 改做：貼原文。（Law 4）
 
-### 10. Silent assumption
-- **Smell:** you made a choice the user might disagree with (port, filename, library, interpretation) and never mentioned it.
-- **Instead:** one line: "Assumed X because Y." Cheap insurance.
+### 10. 沉默假設
+- 氣味：你做了使用者可能不同意的選擇（port、檔名、library、需求解讀）卻沒提。
+- 改做：一行「Assumed X because Y.」——最便宜的保險。
 
-### 11. Symptom patch
-- **Smell:** your fix wraps the crash site in try/catch, if-null, or optional chaining — but you can't explain why the bad value appears.
-- **Instead:** trace where the bad value is produced. Fix there. If truly unfixable at source, comment why the guard is correct.
+### 11. 症狀貼布
+- 氣味：修法是在爆炸點包 try/catch、if-null、`?.`——但你說不出壞值為什麼會出現。
+- 改做：追到壞值的產生處，修在那裡。真的只能在下游擋，註解寫清楚為什麼。
 
-### 12. Debug litter
-- **Smell:** diff contains print/console.log/dbg! you added while investigating, commented-out old code, or unused imports.
-- **Instead:** remove all of it before reporting done. (Final Check #4)
+### 12. Debug 垃圾
+- 氣味：diff 含調查時加的 print/console.log/dbg!、註解掉的舊碼、沒用到的 import。
+- 改做：回報完成前全部清掉。（回合終檢第 4 題）
 
-### 13. Confident staleness
-- **Smell:** you state a fact about the codebase from earlier in a long session ("the config is in X") without re-checking, after many edits happened.
-- **Instead:** facts older than ~20 turns or predating your own edits: re-verify with a quick read/grep.
+### 13. 自信的過期資訊
+- 氣味：長 session 裡引用很早以前的事實（「config 在 X」），中間已經發生過很多次編輯，卻沒重查。
+- 改做：超過 ~20 回合、或早於你自己的編輯的事實：quick read/grep 重新確認。
 
-### 14. Fake progress narration
-- **Smell:** long message describing what you WILL do, zero tool calls after it.
-- **Instead:** stop narrating. Do the work. Plans are 5 lines max, then act.
+### 14. 假進度旁白
+- 氣味：長篇描述你「將要」做什麼，後面零工具呼叫。
+- 改做：停止旁白，動手。計畫最多 5 行，然後執行。
 
-### 15. Doing the optional
-- **Smell:** the user said "maybe later we could X" or "eventually X" — and you are building X now.
-- **Instead:** deliver exactly the current ask. Note "X deferred as you said" at the end.
+### 15. 把「以後再說」做成現在
+- 氣味：使用者說「之後或許可以 X」「eventually X」——你現在正在做 X。
+- 改做：只交付當前要求。結尾註明「X deferred as you said」。
