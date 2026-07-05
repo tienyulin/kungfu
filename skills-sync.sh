@@ -122,13 +122,23 @@ PY
 # Write the constitution into one agent's global rules file inside a managed
 # marker block — idempotent, appends on first run, replaces only the block after;
 # everything the user wrote outside the markers is preserved byte-for-byte.
+# The block ends with the ABSOLUTE PATHS of the situational rule files
+# (DECISIONS / SAFETY / ANTIPATTERNS) — the constitution tells the agent WHEN to
+# read them, this footer tells it WHERE (the same job Claude Code's hook does by
+# echoing ${CLAUDE_PLUGIN_ROOT} paths; without it those references would dangle).
 write_constitution_block() {  # $1 = target rules file
-  python3 - "$1" "$SCRIPT_DIR/agent-rules/rules/CONSTITUTION.md" <<'PY'
+  python3 - "$1" "$SCRIPT_DIR/agent-rules/rules" <<'PY'
 import os, sys
-path, src = sys.argv[1], sys.argv[2]
+path, rules_dir = sys.argv[1], sys.argv[2]
 begin = "<!-- agent-rules-constitution:begin (managed by skills-sync.sh --constitution; edits inside are overwritten) -->"
 end = "<!-- agent-rules-constitution:end -->"
-block = begin + "\n" + open(src, encoding="utf-8").read().rstrip() + "\n" + end
+body = open(os.path.join(rules_dir, "CONSTITUTION.md"), encoding="utf-8").read().rstrip()
+footer_lines = ["", "## 情境檔路徑（上面「情境檔」節說何時讀，這裡是去哪讀 — 用讀檔工具開）"]
+for name in ("DECISIONS", "SAFETY", "ANTIPATTERNS"):
+    p = os.path.join(rules_dir, name + ".md")
+    if os.path.exists(p):
+        footer_lines.append(f"- {name}: {p}")
+block = begin + "\n" + body + "\n" + "\n".join(footer_lines) + "\n" + end
 content = open(path, encoding="utf-8").read() if os.path.exists(path) else ""
 if begin in content and end in content:
     content = content.split(begin)[0] + block + content.split(end, 1)[1]
@@ -219,7 +229,9 @@ sync_agents() {
       echo "  OpenCode → ~/.config/opencode/AGENTS.md"
     fi
     if [ -n "$cline_dir" ]; then
-      cp "$const_src" "$cline_dir/agent-rules-constitution.md"
+      # same block writer (file starts empty → pure block) so Cline also gets
+      # the situational-paths footer instead of a bare copy with dangling refs.
+      write_constitution_block "$cline_dir/agent-rules-constitution.md"
       echo "  Cline    → $cline_dir/agent-rules-constitution.md"
     fi
   fi
@@ -274,6 +286,9 @@ self_test_agents() {
   mkdir -p "$sb/src/demo-skill" "$sb/src/agent-rules/rules"
   printf -- '---\nname: demo-skill\ndescription: 測試用 skill。\n---\n# body\n' > "$sb/src/demo-skill/SKILL.md"
   printf -- '# 憲法\nLAW-MARKER-42\n' > "$sb/src/agent-rules/rules/CONSTITUTION.md"
+  printf -- '# D\n' > "$sb/src/agent-rules/rules/DECISIONS.md"
+  printf -- '# S\n' > "$sb/src/agent-rules/rules/SAFETY.md"
+  printf -- '# A\n' > "$sb/src/agent-rules/rules/ANTIPATTERNS.md"
 
   # case 1: all agent homes present (constitution OFF by default)
   mkdir -p "$sb/h1/.gemini" "$sb/h1/.codex" "$sb/h1/.cline"
@@ -321,6 +336,11 @@ self_test_agents() {
     || { echo "  FAIL: opencode constitution missing"; fail=1; }
   grep -q "LAW-MARKER-42" "$sb/h4/.cline/rules/agent-rules-constitution.md" 2>/dev/null \
     || { echo "  FAIL: cline constitution copy missing"; fail=1; }
+  # situational-paths footer: absolute paths to DECISIONS/SAFETY/ANTIPATTERNS in every target
+  grep -q "DECISIONS: $sb/src/agent-rules/rules/DECISIONS.md" "$sb/h4/.codex/AGENTS.md" 2>/dev/null \
+    || { echo "  FAIL: codex block missing situational paths footer"; fail=1; }
+  grep -q "ANTIPATTERNS: $sb/src/agent-rules/rules/ANTIPATTERNS.md" "$sb/h4/.cline/rules/agent-rules-constitution.md" 2>/dev/null \
+    || { echo "  FAIL: cline file missing situational paths footer"; fail=1; }
 
   rm -rf "$sb"
   if [ "$fail" = 0 ]; then

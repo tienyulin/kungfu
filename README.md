@@ -110,6 +110,8 @@ agent（看家目錄），只同步偵測到的：
   寫入位置（只碰偵測到的 agent；用 managed marker block **冪等**更新，你自己寫的內容
   一字不動）：Codex `~/.codex/AGENTS.md`、Gemini `~/.gemini/GEMINI.md`、OpenCode
   `~/.config/opencode/AGENTS.md`、Cline `<rules dir>/agent-rules-constitution.md`（整檔生成）。
+  block 內容＝憲法全文＋**三個情境檔（DECISIONS / SAFETY / ANTIPATTERNS）的絕對路徑**——
+  情境檔照設計是按需讀、不常駐，agent 要用時照路徑自己開（跟 Claude hook 報路徑同一招）。
   注意：block 是**當下快照**，憲法改版後要再跑一次 `--constitution` 才會更新
   （Claude Code 的 hook 版不用，跟著 marketplace 自動新）。不想用旗標也可以手動貼
   [`agent-rules/rules/CONSTITUTION.md`](agent-rules/rules/CONSTITUTION.md)。
