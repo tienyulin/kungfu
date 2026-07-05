@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat \"${CLAUDE_PLUGIN_ROOT}/rules/CONSTITUTION.md\"; echo; echo \"[agent-rules] 情境檔（憲法內文說何時讀）: ${CLAUDE_PLUGIN_ROOT}/rules/DECISIONS.md ${CLAUDE_PLUGIN_ROOT}/rules/SAFETY.md ${CLAUDE_PLUGIN_ROOT}/rules/ANTIPATTERNS.md\""
+          }
+        ]
+      }
+    ]
+  }
+}

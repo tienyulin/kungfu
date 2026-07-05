@@ -86,6 +86,111 @@
       ]
     },
     {
+      "name": "agent-rules",
+      "source": "./agent-rules",
+      "strict": false,
+      "description": "Always-on constitution for weak models — a SessionStart hook injects 12 hard laws (evidence before claims, reproduce before fix, minimal diff, three-strike stop, no hallucinated APIs, tests are read-only, …) plus an end-of-turn checklist into every session. Ships situational rule files (DECISIONS / SAFETY / ANTIPATTERNS). Install alongside the agent-rules-* playbook skills; distilled from a Claude Fable 5 session.",
+      "author": {
+        "name": "tienyulin"
+      },
+      "keywords": [
+        "constitution",
+        "hooks",
+        "guardrails",
+        "weak-model"
+      ],
+      "category": "development"
+    },
+    {
+      "name": "agent-rules-bugfix",
+      "source": "./",
+      "strict": false,
+      "description": "Fixed bug-fix procedure for any model tier — reproduce first, root-cause one-liner, minimal fix, machine-gated verification, fill-in report templates. Prevents 'should work now' fake completions.",
+      "author": {
+        "name": "tienyulin"
+      },
+      "keywords": [
+        "bugfix",
+        "debugging",
+        "agent-rules"
+      ],
+      "category": "development",
+      "skills": [
+        "./agent-rules-bugfix"
+      ]
+    },
+    {
+      "name": "agent-rules-feature",
+      "source": "./",
+      "strict": false,
+      "description": "Fixed feature-building procedure — acceptance checklist before code, copy existing patterns, smallest version, verify every checklist item with a command.",
+      "author": {
+        "name": "tienyulin"
+      },
+      "keywords": [
+        "feature",
+        "implementation",
+        "agent-rules"
+      ],
+      "category": "development",
+      "skills": [
+        "./agent-rules-feature"
+      ]
+    },
+    {
+      "name": "agent-rules-refactor",
+      "source": "./",
+      "strict": false,
+      "description": "Fixed refactor procedure — tests green before starting, one mechanical transform at a time with tests after each step, zero-behavior-change audit before reporting.",
+      "author": {
+        "name": "tienyulin"
+      },
+      "keywords": [
+        "refactor",
+        "agent-rules"
+      ],
+      "category": "development",
+      "skills": [
+        "./agent-rules-refactor"
+      ]
+    },
+    {
+      "name": "agent-rules-investigate",
+      "source": "./",
+      "strict": false,
+      "description": "Fixed investigation procedure — the deliverable is an answer with file:line evidence and a confidence label, never a code edit; found problems are reported, not fixed.",
+      "author": {
+        "name": "tienyulin"
+      },
+      "keywords": [
+        "investigate",
+        "question",
+        "agent-rules"
+      ],
+      "category": "development",
+      "skills": [
+        "./agent-rules-investigate"
+      ]
+    },
+    {
+      "name": "agent-rules-review",
+      "source": "./",
+      "strict": false,
+      "description": "Fixed code-review procedure — real diff only, correctness>security>failure-paths>contracts priority, every finding needs a concrete trigger, one line per finding, no praise padding, ends with a verdict.",
+      "author": {
+        "name": "tienyulin"
+      },
+      "keywords": [
+        "review",
+        "audit",
+        "agent-rules"
+      ],
+      "category": "development",
+      "skills": [
+        "./agent-rules-review"
+      ]
+    },
+    {
       "name": "ai-agent-skills",
       "source": "./",
       "strict": false,
@@ -104,7 +209,12 @@
         "./wiki-doc-author",
         "./sop-to-spec",
         "./skill-author",
-        "./api-template-dev"
+        "./api-template-dev",
+        "./agent-rules-bugfix",
+        "./agent-rules-feature",
+        "./agent-rules-refactor",
+        "./agent-rules-investigate",
+        "./agent-rules-review"
       ]
     },
     {
