@@ -1,3 +1,5 @@
+<img src="assets/kungfu-icon.svg" alt="Kungfu" width="120" align="right"/>
+
 # Kungfu 🥋
 
 團隊共用的 **AI agent skills marketplace**。一個 repo、兩件事：
