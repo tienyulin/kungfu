@@ -39,8 +39,9 @@
 #   bash skills-sync.sh --self-test           # offline checks (plugin plan + auto-update + cross-agent)
 set -euo pipefail
 
-# Swap GITLAB_URL for your internal GitLab mirror of this repo once it exists.
-GITLAB_URL="https://gitlab.internal.example.com/mirrors/kungfu.git"
+# Git URL of this marketplace repo. Default is the public GitHub repo; to point
+# at an internal mirror, run localize.sh (config-driven) instead of editing here.
+MARKETPLACE_URL="https://github.com/tienyulin/kungfu.git"
 MARKET="kungfu"
 CLAUDE_SETTINGS_FILE="${CLAUDE_SETTINGS_FILE:-$HOME/.claude/settings.json}"
 
@@ -78,7 +79,7 @@ PY
 # settings entry. `claude plugin marketplace add` writes that entry too; create it
 # (with the git source) when it doesn't exist yet.
 enable_auto_update() {
-  python3 - "$CLAUDE_SETTINGS_FILE" "$MARKET" "$GITLAB_URL" <<'PY'
+  python3 - "$CLAUDE_SETTINGS_FILE" "$MARKET" "$MARKETPLACE_URL" <<'PY'
 import json, os, sys
 path, market, url = sys.argv[1], sys.argv[2], sys.argv[3]
 settings = {}
@@ -840,7 +841,7 @@ if ! command -v claude >/dev/null 2>&1; then
 fi
 
 echo "→ marketplace: add or update ($MARKET)"
-claude plugin marketplace add "$GITLAB_URL" 2>/dev/null || claude plugin marketplace update "$MARKET"
+claude plugin marketplace add "$MARKETPLACE_URL" 2>/dev/null || claude plugin marketplace update "$MARKET"
 
 echo "→ plugins（bundle 取代逐裝；舊逐裝的先移除避免同 skill 雙載）"
 while IFS=' ' read -r action name; do

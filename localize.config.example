@@ -1,0 +1,16 @@
+# localize.config — copy this file to `localize.config`, fill in your internal
+# git URLs, then run:  bash localize.sh   (preview first with --dry-run)
+#
+# localize.sh rewrites the DEFAULT public URLs (below, in comments) to these
+# values across README.md, skills-sync.sh, .claude-plugin/marketplace.json and
+# agent-rules-setup/SKILL.md. Leave a value empty/commented to keep its default.
+# Re-run to a different target: `git checkout -- <files>` first, then edit + run.
+
+# This marketplace repo. Default: https://github.com/tienyulin/kungfu.git
+MARKETPLACE_URL="https://gitlab.example.com/ai/kungfu.git"
+
+# External mirror plugins. Default: their public GitHub upstreams.
+#   superpowers default: https://github.com/obra/superpowers.git
+SUPERPOWERS_URL="https://gitlab.example.com/mirrors/superpowers.git"
+#   andrej-karpathy-skills default: https://github.com/forrestchang/andrej-karpathy-skills.git
+KARPATHY_URL="https://gitlab.example.com/mirrors/andrej-karpathy-skills.git"

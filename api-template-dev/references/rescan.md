@@ -6,7 +6,7 @@
 
 ## 步驟
 
-1. **補齊取得方式**:填公司 template repo 的 clone URL;grep template 佔位名逐檔
+1. **補齊取得方式**:填組織 template repo 的 clone URL;grep template 佔位名逐檔
    確認**改名清單**(每個含它的檔);列**示範端點清單**(example
    router/service/repository/tests 是哪些檔,起手要砍的)。
 2. **登錄內建工具**(重點):掃 template 的工具層(DB 連線、寄信、內部服務 client、
@@ -21,8 +21,8 @@
    - Dockerfile / compose:同上
    - lint / test / CI:工具鏈、設定值、跑的指令、**CI 平台**(GitHub/GitLab)照實寫;
      指令一字不差(pylint 全訊息即紅這種行為差異要標)
-   - 預設值表:port、python 版本、健康端點、mock 起服務指令、requirements 基線,照公司慣例
-4. **與 proxy 版 diff 自查**:公司模板有、proxy 沒有的機制(tracing、DB migration、
+   - 預設值表:port、python 版本、健康端點、mock 起服務指令、requirements 基線,照組織慣例
+4. **與 proxy 版 diff 自查**:組織模板有、proxy 沒有的機制(tracing、DB migration、
    多環境設定…)→ 在 facts 加節。**必存節合約**(SKILL.md 依賴,不可刪,內容不適用
    就寫「不適用:<原因>」):取得方式、內建工具、目錄樹、命名慣例、DI 模式、設定模式、
    auth 模式、openapi responses、scripts 來源、main.py(入口)模式、devcontainer、

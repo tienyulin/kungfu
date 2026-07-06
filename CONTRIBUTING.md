@@ -82,7 +82,7 @@ claude plugin marketplace add "$PWD"
 claude plugin install <skill-name>@kungfu
 claude plugin marketplace remove kungfu
 ```
-> 官方 `skills-ref`（<https://github.com/agentskills/agentskills>）是 pip 套件、需外網安裝，**內網不適用**；
+> 官方 `skills-ref`（<https://github.com/agentskills/agentskills>）是 pip 套件、需連外網安裝，**離線/受限網路環境不適用**；
 > 上面這支自帶驗證器涵蓋同樣檢查、零相依。本檔的規則都已內聯，不需要連 agentskills.io 也能照做。
 
 ## Checklist（新 skill）

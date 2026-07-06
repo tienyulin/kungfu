@@ -3,9 +3,9 @@
 > **這份是線上使用版**（vendored 進 agent-rules plugin，隨 marketplace autoUpdate 發佈）。
 > 觸發方式：INDEX.md 隨憲法的 SessionStart hook 自動常駐注入（含各檔絕對路徑），
 > 其餘 31 檔由 agent 照 INDEX 路由表按需 Read——不用安裝、不用手動載入。
-> 修訂走本 repo 的 PR＋CI；原始蒸餾快照在 github.com/tienyulin/judgment。
+> 修訂走本 repo 的 PR＋CI；原始快照在 github.com/tienyulin/judgment。由來與時間見根目錄 ORIGIN.md。
 
-由 Claude Fable 5 於 2026-07-05 一次性蒸餾並整併。目的：讓之後在此環境長期運作的模型
+首次整理並整併於 2026-07-05。目的：讓之後在此環境長期運作的模型
 （不論等級：Sonnet / Opus / Haiku / minimax / qwen / 7B 開源），在做**任何事情**時
 借用一套已固化的判斷程序。本系統不限寫程式 — 它管的是「怎麼判斷」，不是「怎麼寫 code」。
 
