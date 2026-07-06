@@ -8,13 +8,6 @@
   <em>插上就會一身功夫 — “I know kung fu.”</em>
 </p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/works%20with-5%20agents-111111?style=flat-square" alt="Works with 5 agents">
-  <img src="https://img.shields.io/badge/skills-12-111111?style=flat-square" alt="12 skills">
-  <img src="https://img.shields.io/badge/constitution-12%20laws-111111?style=flat-square" alt="12-law constitution">
-  <img src="https://img.shields.io/badge/SAFETY%20guard-always--on-111111?style=flat-square" alt="Always-on SAFETY guard">
-</p>
-
 ---
 
 插上一根線、睜眼就會功夫。agent 裝上 Kungfu，立刻上身一整套武功——**不是它突然變聰明，
