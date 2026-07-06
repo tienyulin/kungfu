@@ -2,7 +2,7 @@
   <img src="assets/kungfu-icon.png" width="200" alt="Kungfu">
 </p>
 
-<h1 align="center">Kungfu 🥋</h1>
+<h1 align="center">Kungfu</h1>
 
 <p align="center">
   <em>插上就會一身功夫 — “I know kung fu.”</em>
