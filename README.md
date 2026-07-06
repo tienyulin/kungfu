@@ -1,13 +1,18 @@
-<img src="assets/kungfu-icon.svg" alt="Kungfu" width="120" align="right"/>
+<img src="assets/kungfu-icon.png" alt="Kungfu" width="130" align="right"/>
 
 # Kungfu 🥋
 
-團隊共用的 **AI agent skills marketplace**。一個 repo、兩件事：
+> 就像電影裡插上一根線、三秒後睜眼說「**I know kung fu**」——
+> agent 裝上 Kungfu，立刻會一身功夫：不是它突然變聰明，是套路、心法、
+> 戒律一次上身。**弱的模型也能打出師父的招式。**
 
-1. **Skills** —— 可安裝的工作流程（wiki 文件、SOP 轉 spec、API template 開發…），
-   Claude Code 之外也同步給 Gemini / Codex / Cline / OpenCode。
-2. **agent-rules** —— AI 工作紀律系統：常駐憲法＋固定作業 playbook＋破壞性指令
-   機械攔截，讓**任何等級的模型**（含較弱的）都守同一套紀律。
+一個 marketplace，把「功夫」拆成三種可安裝的東西：
+
+- **招式（skills）** —— 可安裝的工作流程（wiki 文件、SOP 轉 spec、API template 開發…），
+  Claude Code 之外也同步給 Gemini / Codex / Cline / OpenCode。
+- **心法＋戒律（agent-rules）** —— AI 工作紀律系統：常駐憲法＋固定作業 playbook＋
+  破壞性指令機械攔截，讓**任何等級的模型**（含較弱的）都守同一套紀律。
+- **一路過招到收招（dev-loop）** —— 丟一個需求，agent 自己繞「做→驗→修」直到全綠開 PR。
 
 本 repo 就是一個 **Claude Code plugin marketplace**，公司內網 GitLab 即可用，
 不需要 GitHub 或公開 marketplace。
