@@ -238,7 +238,7 @@ gate）；或人工照 [`CONTRIBUTING.md`](CONTRIBUTING.md)。merge 進 main 後
 ```jsonc
 {
   "name": "<plugin-name>",
-  "source": { "source": "url", "url": "https://github.com/<owner>/<repo>.git" },
+  "source": { "source": "url", "url": "https://github.com/<owner>/<repo>.git", "ref": "main" },
   "description": "External — …（註明上游）",
   "author": { "name": "<上游作者>" },
   "category": "development",
@@ -247,8 +247,12 @@ gate）；或人工照 [`CONTRIBUTING.md`](CONTRIBUTING.md)。merge 進 main 後
 ```
 
 - **沒有 `skills` 欄**：外部 plugin 的 skill 由它自己的 repo 結構提供。
-- **沒設 `sha` = 跟上游預設分支**；要鎖版本加 `"sha": "<commit>"`（之後不會自己往前）。
-  ⚠️ 不 pin = 自動吃上游推來的任何 commit。要穩定供應鏈就 pin。
+- **版本釘選**（三種 git source `github`／`url`／`git-subdir`都通用）：
+  - `"ref": "<branch 或 tag>"` —— 指定分支/標籤；不設＝上游**預設分支**。本 repo 的外部
+    mirror 現在都明寫 `"ref": "main"`。
+  - `"sha": "<40 字元 commit>"` —— 釘到某個 commit（之後不會自己往前）。
+  - 兩者並存時 **`sha` 優先**（實際 checkout 那個 commit）。
+  - ⚠️ 只設 `ref`（或都不設）= 自動吃該分支推來的任何 commit。要穩定供應鏈就加 `sha`。
 - 更新鏈：上游 → 成員 auto-update 自動帶到（已裝的人）。**新收錄**的是新 plugin，
   請成員重跑一次腳本（自動補裝）。搬內部時 `localize.sh` 會把這些 URL 一併換成 mirror。
 
