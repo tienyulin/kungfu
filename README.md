@@ -267,8 +267,17 @@ gate）；或人工照 [`CONTRIBUTING.md`](CONTRIBUTING.md)。merge 進 main 後
 `bash skill-author/scripts/envrun.sh <指令>`——自動判定「容器內／容器在跑／自動起／
 沒 devcontainer 就 host 直跑」，起不了 exit 2 印選項。
 
-Python 測試在 [`tests/`](tests/)（stdlib `unittest`，零 dep），CI 會跑：
-`bash skill-author/scripts/envrun.sh python -m unittest discover -s tests -t tests`。
+**一鍵驗證**（新環境就跑這個，內容＝CI 的 gate）：
+
+```bash
+bash verify.sh                # 完整：自動 pip install requirements → lint + tests + validators
+bash verify.sh --tests-only   # 只跑單元測試：純 stdlib、零安裝，任何 python3 / 離線都能跑
+SKIP_INSTALL=1 bash verify.sh  # 已備妥工具鏈（如 devcontainer 內）→ 跳過 pip
+```
+
+Python 測試在 [`tests/`](tests/)（stdlib `unittest`，零 dep）——**測試不需要任何套件**，
+只有 lint（black/flake8/mypy/pylint，列在 `requirements.txt`）要裝。環境定義在
+`.devcontainer/`（python 3.14 image ＋ postCreate 自動 `pip install`），CI 亦同。
 每個 script 一個 `test_*.py`，正負案例並存（弄壞實作必轉紅）。
 
 ### 組織 allow-list（給平台/IT 團隊，選用）
