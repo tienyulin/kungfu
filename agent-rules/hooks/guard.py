@@ -13,6 +13,8 @@ NOTE: the pattern list below is mirrored in the generated OpenCode plugin
 change both.
 """
 
+import contextlib
+import io
 import json
 import re
 import sys
@@ -73,8 +75,72 @@ def find_commands(payload, agent):
     return found
 
 
+def _run(agent, payload):
+    """Run main() in-process for one agent+payload; return (exit_code, parsed_json|None)."""
+    old_argv, old_stdin = sys.argv, sys.stdin
+    sys.argv = ["guard.py", "--agent", agent]
+    sys.stdin = io.StringIO(json.dumps(payload))
+    out = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(out):
+            rc = main()
+    finally:
+        sys.argv, sys.stdin = old_argv, old_stdin
+    text = out.getvalue().strip()
+    return rc, (json.loads(text) if text else None)
+
+
+def _self_test():
+    """Assert block/pass verdicts per agent + fail-open on garbage (stdlib only)."""
+
+    def bash(cmd):
+        return {"tool_name": "Bash", "tool_input": {"command": cmd}}
+
+    # block cases, each in its agent's dialect
+    _, d = _run("claude", bash("rm -rf /tmp/x"))
+    assert d["hookSpecificOutput"]["permissionDecision"] == "ask", d
+    _, d = _run("codex", bash("git push -f origin main"))
+    assert d["hookSpecificOutput"]["permissionDecision"] == "deny", d
+    _, d = _run(
+        "gemini", {"tool_name": "run_shell_command", "tool_input": {"command": "sudo rm x"}}
+    )
+    assert d["decision"] == "deny", d
+    _, d = _run("cline", {"toolName": "exec", "parameters": {"command": "DROP TABLE users;"}})
+    assert d["cancel"] is True, d
+
+    # pass cases: safe command, non-shell tool, and a dangerous string under a
+    # content-ish key (file body, not a command) must NOT trigger
+    _, d = _run("claude", bash("ls -la && git status"))
+    assert d is None, d
+    _, d = _run("claude", {"tool_name": "Write", "tool_input": {"command": "rm -rf /"}})
+    assert d is None, d
+    _, d = _run("cline", {"toolName": "write_to_file", "parameters": {"content": "rm -rf build/"}})
+    assert d["cancel"] is False, d
+
+    # DELETE needs a WHERE: with it passes, without it blocks
+    _, d = _run("claude", bash('psql -c "DELETE FROM t WHERE id=1"'))
+    assert d is None, d
+    _, d = _run("claude", bash('psql -c "DELETE FROM t"'))
+    assert d["hookSpecificOutput"]["permissionDecision"] == "ask", d
+
+    # malformed stdin: never crash, exit 0, emit nothing
+    old_argv, old_stdin = sys.argv, sys.stdin
+    sys.argv = ["guard.py", "--agent", "claude"]
+    sys.stdin = io.StringIO("not json at all")
+    try:
+        with contextlib.redirect_stdout(io.StringIO()):
+            assert main() == 0
+    finally:
+        sys.argv, sys.stdin = old_argv, old_stdin
+
+    print("guard self-test: OK")
+    return 0
+
+
 def main():
     """Read the hook payload from stdin, emit the agent-specific verdict."""
+    if "--self-test" in sys.argv:
+        return _self_test()
     agent = "claude"
     if "--agent" in sys.argv:
         agent = sys.argv[sys.argv.index("--agent") + 1]
