@@ -18,3 +18,6 @@ max-line-length = 100
 # Each skill bundles self-contained stdlib scripts (no cross-skill imports allowed),
 # so small parsers/boilerplate are duplicated by design.
 disable = ["duplicate-code"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

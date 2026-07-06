@@ -25,23 +25,23 @@ repos:
         entry: pylint
         language: system
         types: [python]
-      # The offline validator is this repo's test: spec + marketplace registration.
+      # The test suite (tests/ — pure stdlib, run under pytest).
+      - id: pytest
+        name: pytest
+        entry: pytest
+        language: system
+        pass_filenames: false
+        always_run: true
+      # The offline validator checks the real repo's spec + marketplace registration.
       - id: validate-skills
         name: validate skills
         entry: python skill-author/scripts/validate_skill.py
         language: system
         pass_filenames: false
         always_run: true
-      # The wiki-doc-author gate scripts self-check their logic (stdlib, no deps).
-      - id: openapi-completeness-self-test
-        name: openapi_completeness self-test
-        entry: python wiki-doc-author/scripts/openapi_completeness.py --self-test
-        language: system
-        pass_filenames: false
-        always_run: true
-      - id: lint-frontmatter-self-test
-        name: lint_frontmatter self-test
-        entry: python wiki-doc-author/scripts/lint_frontmatter.py --self-test
+      - id: localize-self-test
+        name: localize self-test
+        entry: bash localize.sh --self-test
         language: system
         pass_filenames: false
         always_run: true
