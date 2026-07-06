@@ -3,7 +3,10 @@
 #
 # localize.sh rewrites the DEFAULT public URLs (below, in comments) to these
 # values across README.md, skills-sync.sh, .claude-plugin/marketplace.json and
-# agent-rules-setup/SKILL.md. Leave a value empty/commented to keep its default.
+# agent-rules-setup/SKILL.md. Both github URL forms are recognized and replaced:
+#   https://github.com/<owner>/<repo>.git  AND  git@github.com:<owner>/<repo>.git
+# Your replacement value can be https or ssh — whatever your host uses.
+# Leave a value empty/commented to keep its default.
 # Re-run to a different target: `git checkout -- <files>` first, then edit + run.
 
 # This marketplace repo. Default: https://github.com/tienyulin/kungfu.git
