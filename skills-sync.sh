@@ -33,10 +33,15 @@
 #
 # Usage:
 #   bash skills-sync.sh                       # Claude plugins + auto-update + cross-agent sync
-#   bash skills-sync.sh --constitution        # same + write constitution into agent rules files
+#   bash skills-sync.sh --constitution        # same + write constitution/guard into agent configs
 #   bash skills-sync.sh agents                # only the cross-agent sync step
 #   bash skills-sync.sh agents --constitution # cross-agent sync + constitution
+#   bash skills-sync.sh --no-constitution     # turn the sticky constitution off (remove marker)
 #   bash skills-sync.sh --self-test           # offline checks (plugin plan + auto-update + cross-agent)
+#
+# STICKY: --constitution once leaves a marker (~/.agents/.constitution-on); after
+# that EVERY plain run keeps the constitution/guard hooks fresh, so you can't
+# forget the flag on a re-run. --no-constitution removes the marker and stops.
 set -euo pipefail
 
 # Git URL of this marketplace repo. Default is the public GitHub repo; to point
@@ -364,6 +369,7 @@ sync_agents() {
     # hooks together with the constitution itself.
     local paths_file="$home/.agents/agent-rules-situational-paths.md"
     mkdir -p "$home/.agents"
+    touch "$home/.agents/.constitution-on"   # sticky opt-in: later plain runs auto-enable
     situational_paths_body > "$paths_file"
 
     # HOME-relative forms baked into the hooks so they survive being mounted
@@ -860,22 +866,49 @@ PY
   printf '%s' "$out" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert "LAW-MARKER-42" in d["contextModification"]' \
     || { echo "  FAIL: hook does not resolve under a different HOME (not portable)"; fail=1; }
 
+  # case 9: sticky --constitution — opt in once → marker; later PLAIN run
+  # auto-enables; --no-constitution removes the marker. Runs the real script.
+  mkdir -p "$sb/hs/Cline"
+  ( HOME="$sb/hs"; bash "$SCRIPT_DIR/skills-sync.sh" agents --constitution >/dev/null 2>&1 )
+  [ -f "$sb/hs/.agents/.constitution-on" ] || { echo "  FAIL: marker not written on --constitution"; fail=1; }
+  rm -f "$sb/hs/Cline/Hooks/TaskStart"
+  ( HOME="$sb/hs"; bash "$SCRIPT_DIR/skills-sync.sh" agents >/dev/null 2>&1 )   # plain, no flag
+  [ -f "$sb/hs/Cline/Hooks/TaskStart" ] \
+    || { echo "  FAIL: plain run did not auto-enable via marker"; fail=1; }
+  ( HOME="$sb/hs"; bash "$SCRIPT_DIR/skills-sync.sh" agents --no-constitution >/dev/null 2>&1 )
+  [ -e "$sb/hs/.agents/.constitution-on" ] && { echo "  FAIL: --no-constitution left the marker"; fail=1; }
+
   rm -rf "$sb"
   if [ "$fail" = 0 ]; then
-    echo "self-test OK — agents: symlinks + cline rule + skip-absent + idempotent + opencode + constitution(opt-in/hooks/migration-strip/preserve/idempotent/exec-verified/home-relative-portable)"
+    echo "self-test OK — agents: symlinks + cline rule + skip-absent + idempotent + opencode + constitution(opt-in/sticky/hooks/migration-strip/preserve/idempotent/exec-verified/home-relative-portable)"
   else
     exit 1
   fi
 }
 
 MODE=""
+NOCON=0
 for arg in "$@"; do
   case "$arg" in
     --constitution)      CONSTITUTION=1 ;;
+    --no-constitution)   NOCON=1 ;;
     --self-test|agents)  MODE="$arg" ;;
-    *) echo "unknown argument: ${arg}（可用：agents、--constitution、--self-test）" >&2; exit 1 ;;
+    *) echo "unknown argument: ${arg}（可用：agents、--constitution、--no-constitution、--self-test）" >&2; exit 1 ;;
   esac
 done
+
+# Sticky opt-in: --constitution once leaves a marker so later PLAIN runs keep the
+# constitution/guard hooks fresh (easy to forget the flag on a re-run). The
+# marker records that YOU already consented to writing agent dotfiles.
+# --no-constitution turns it off and removes the marker.
+CON_MARKER="$HOME/.agents/.constitution-on"
+if [ "$NOCON" = 1 ]; then
+  CONSTITUTION=0
+  rm -f "$CON_MARKER"
+elif [ "$CONSTITUTION" != 1 ] && [ -f "$CON_MARKER" ]; then
+  CONSTITUTION=1
+  echo "→ 沿用上次的 --constitution（偵測到 ${CON_MARKER}；要關用 --no-constitution）"
+fi
 
 case "$MODE" in
   --self-test) self_test; self_test_guard; self_test_agents; exit 0 ;;

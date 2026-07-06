@@ -164,6 +164,10 @@ host 裝一次、每個容器共用、跟電腦一致：
   個人設定檔（`~/.codex/hooks.json`、`~/.gemini/settings.json`…）。所有寫入**冪等**、
   不動你自己的任何 key；你既有的同名 Cline hook **絕不覆蓋**（印手動指引）；舊版佈局
   （AGENTS.md/GEMINI.md 嵌入 block、rules symlink）會自動清掉遷移。
+- **黏性（sticky）**：`--constitution` 用過一次會留一個記號（`~/.agents/.constitution-on`），
+  之後**每次普通 `skills-sync` 都自動帶上** constitution——重跑時不會忘。要關用
+  `--no-constitution`（移除記號並停）。所以 skills-sync 的 **code 有更新時**（例如 hook
+  路徑改法），只要重跑一次 `skills-sync`（不必記得加旗標）就會用新版重生 hook。
 - Cline hooks 限 macOS/Linux；只有 `~/.cline` 的舊佈局退回 rules symlink。
 - 憲法或 guard 的 pattern 改版：**誰都不用重跑**——hook 現讀 marketplace 檔。
   唯一例外：guard pattern 清單改動要同步 `guard.py` 與生成的 OpenCode JS 兩處（維護者的事）。
