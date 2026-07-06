@@ -113,7 +113,7 @@ host 裝一次、每個容器共用、跟電腦一致：
 |---|---|
 | [`wiki-doc-author`](wiki-doc-author/SKILL.md) | 產出餵進 wiki processor 的源頭文件 —— API（README + openapi.json）、cronjob/worker/CLI、純知識，都一份 README 搞定。附純 stdlib 工具。 |
 | [`sop-to-spec`](sop-to-spec/SKILL.md) | 把維運 SOP（DBA runbook、infra 程序…）轉成「人能審、AI 能照著實作三層 FastAPI 服務」的 spec。 |
-| [`api-template-dev`](api-template-dev/SKILL.md) | 照你組織的標準 API template 開三層式 FastAPI 服務：clone 起手、照層加端點、用內建工具不重造。 |
+| [`dev-api-template`](dev-api-template/SKILL.md) | 組織 API template 的**功能與架構參考**：查它有哪些內建工具、架構怎麼分層，開發時當默認藍圖（可偏離、非強制）。facts 可 rescan 改成公司內部版。 |
 | [`skill-author`](skill-author/SKILL.md) | 在本 repo 新增/修改一個**可安裝**的 skill —— 照標準產 SKILL.md、註冊進 marketplace。 |
 | `dev-*` 六本 playbook（bugfix / feature / refactor / investigate / review / test） | 開發任務的固定作業流程，見下方〈agent-rules〉。 |
 | [`dev-loop`](dev-loop/SKILL.md) | **一個需求自己做到好**：loop engineering 的端到端迭代圈，見下方〈dev-loop〉。 |
