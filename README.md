@@ -267,6 +267,10 @@ gate）；或人工照 [`CONTRIBUTING.md`](CONTRIBUTING.md)。merge 進 main 後
 `bash skill-author/scripts/envrun.sh <指令>`——自動判定「容器內／容器在跑／自動起／
 沒 devcontainer 就 host 直跑」，起不了 exit 2 印選項。
 
+Python 測試在 [`tests/`](tests/)（stdlib `unittest`，零 dep），CI 會跑：
+`bash skill-author/scripts/envrun.sh python -m unittest discover -s tests -t tests`。
+每個 script 一個 `test_*.py`，正負案例並存（弄壞實作必轉紅）。
+
 ### 組織 allow-list（給平台/IT 團隊，選用）
 
 managed settings 用 `strictKnownMarketplaces` 的 `hostPattern`（regex）允許你的 git
