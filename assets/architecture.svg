@@ -1,0 +1,71 @@
+<svg viewBox="0 0 800 560" xmlns="http://www.w3.org/2000/svg" role="img" font-family="ui-sans-serif, system-ui, sans-serif">
+  <title>Kungfu Architecture</title>
+  <desc>kungfu marketplace content flows through skills-sync.sh to Claude Code and other agents, sharing the ~/.agents directory.</desc>
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#6b7280"/>
+    </marker>
+    <style>
+      .box{fill:#f4f4f5;stroke:#d4d4d8;stroke-width:1.5;}
+      .accent{fill:#fef2f2;stroke:#dc2626;stroke-width:1.5;}
+      .t{fill:#18181b;font-size:14px;font-weight:600;}
+      .s{fill:#6b7280;font-size:11.5px;}
+      .cap{fill:#6b7280;font-size:11px;font-weight:600;letter-spacing:.06em;}
+      .edge{stroke:#6b7280;stroke-width:1.6;fill:none;}
+    </style>
+  </defs>
+
+  <text x="30" y="34" class="cap">SOURCE — kungfu repo · marketplace.json</text>
+  <rect x="30" y="46" width="230" height="78" rx="10" class="box"/>
+  <text x="46" y="72" class="t">Bundle skills</text>
+  <text x="46" y="92" class="s">dev-bugfix / feature / refactor</text>
+  <text x="46" y="108" class="s">investigate / review / test / loop</text>
+
+  <rect x="285" y="46" width="230" height="78" rx="10" class="accent"/>
+  <text x="301" y="72" class="t">agent-rules  ·  hook plugin</text>
+  <text x="301" y="92" class="s">CONSTITUTION 12 laws</text>
+  <text x="301" y="108" class="s">SAFETY guard · situational files</text>
+
+  <rect x="540" y="46" width="230" height="78" rx="10" class="box"/>
+  <text x="556" y="72" class="t">External mirrors</text>
+  <text x="556" y="92" class="s">superpowers</text>
+  <text x="556" y="108" class="s">karpathy-skills</text>
+
+  <path d="M145 124 L400 168" class="edge" marker-end="url(#ah)"/>
+  <path d="M400 124 L400 168" class="edge" marker-end="url(#ah)"/>
+  <path d="M655 124 L400 168" class="edge" marker-end="url(#ah)"/>
+
+  <rect x="250" y="172" width="300" height="66" rx="12" fill="#18181b"/>
+  <text x="400" y="200" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">skills-sync.sh</text>
+  <text x="400" y="222" text-anchor="middle" fill="#d4d4d8" font-size="11.5">install · cross-agent wire · [--constitution]</text>
+
+  <path d="M340 238 L200 286" class="edge" marker-end="url(#ah)"/>
+  <path d="M460 238 L600 286" class="edge" marker-end="url(#ah)"/>
+
+  <text x="30" y="278" class="cap">TARGETS</text>
+  <rect x="30" y="290" width="340" height="96" rx="10" class="box"/>
+  <text x="46" y="316" class="t">Claude Code  —  native plugin</text>
+  <text x="46" y="338" class="s">marketplace install · ${CLAUDE_PLUGIN_ROOT}</text>
+  <text x="46" y="358" class="s">SessionStart injects constitution · PreToolUse guard</text>
+  <text x="46" y="376" class="s">skills auto-update</text>
+
+  <rect x="430" y="290" width="340" height="96" rx="10" class="box"/>
+  <text x="446" y="316" class="t">Other agents  —  generated hooks</text>
+  <text x="446" y="338" class="s">Codex · Gemini · Cline · OpenCode</text>
+  <text x="446" y="358" class="s">HOME-relative paths (devcontainer-portable)</text>
+  <text x="446" y="376" class="s">TaskStart injects constitution · PreToolUse guard</text>
+
+  <path d="M200 386 L200 430" class="edge" marker-end="url(#ah)"/>
+  <path d="M600 386 L600 430" class="edge" marker-end="url(#ah)"/>
+  <text x="30" y="424" class="cap">SHARED STATE  (~/ )</text>
+  <rect x="30" y="434" width="740" height="86" rx="10" class="box"/>
+  <text x="50" y="462" class="t">~/.agents/</text>
+  <text x="50" y="484" class="s">skills/ (read natively by Gemini · OpenCode)  ·  hooks/  ·  situational rule files</text>
+  <text x="50" y="503" class="s">.constitution-on  ← sticky marker (remembers last --constitution)</text>
+  <rect x="560" y="448" width="192" height="58" rx="8" class="box"/>
+  <text x="576" y="472" class="t" font-size="13">install clone</text>
+  <text x="576" y="491" class="s">self-refresh git pull</text>
+
+  <rect x="30" y="534" width="13" height="13" rx="3" class="accent"/>
+  <text x="50" y="545" class="s">Red = safety/discipline layer (constitution + guard), always-on across agents</text>
+</svg>
