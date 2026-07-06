@@ -73,8 +73,35 @@ bash ~/kungfu/skills-sync.sh agents --constitution
   `claude` CLI（直接跑預設模式也行，腳本偵測不到 `claude` 會自動跳過 plugin 段）。
 - **更新一樣全自動**：hook 每次觸發會背景 git pull 這份 clone（6 小時節流），
   跟有 Claude Code 的人同一套 self-refresh 機制。
-- clone 位置隨意，但**別刪**——hooks 與 symlink 都指向它。之後裝了 Claude Code，
-  重跑一次腳本即補上 plugin 部分。
+- **clone 建議放在 `$HOME` 底下**（`~/kungfu` 或 marketplace 的 `~/.claude/...`）。
+  只要 clone 在家目錄內，`--constitution` 生成的 hook 就用 `$HOME`／`~` **相對路徑**
+  （執行時展開），不寫死絕對前綴——這讓 hook 能跨機器/容器搬（見下）。放 `$HOME` 外
+  （`/opt`、submodule workspace）也能用，但那台的 hook 會是絕對路徑、不可攜。
+- clone **別刪**——hooks 都指向它。之後裝了 Claude Code，重跑一次腳本即補上 plugin 部分。
+
+### 在 devcontainer 裡用 agent-rules（掛進去，不用重裝）
+
+hook 用 `$HOME`-relative 生成後，容器只要把 host 的相同目錄**掛到容器自己的 HOME**，
+host 裝一次、每個容器共用、跟電腦一致：
+
+| 容器裡用 | devcontainer.json `mounts` | 為什麼 |
+|---|---|---|
+| **Claude Code** | `~/.claude` → `${containerEnv:HOME}/.claude` | plugin hook 走 `${CLAUDE_PLUGIN_ROOT}`；掛 `.claude` 就把 marketplace clone 一起帶進去。**一條搞定** |
+| **Cline / Codex / Gemini** | `~/kungfu` → 容器 HOME 同名 ＋ `~/.agents` → 容器 HOME 同名 | hook 讀 clone（`~/kungfu/...`）＋ `~/.agents/...`；`$HOME` 在容器展開成容器 HOME → 對得上 |
+
+```jsonc
+// Cline/Codex/Gemini（手動 clone 在 ~/kungfu 的情況）：
+"mounts": [
+  "source=${localEnv:HOME}/kungfu,  target=${containerEnv:HOME}/kungfu,  type=bind,consistency=cached",
+  "source=${localEnv:HOME}/.agents, target=${containerEnv:HOME}/.agents, type=bind,consistency=cached"
+  // ＋ 你的 agent 設定目錄（Cline 的 Hooks 那個）掛到容器對應位置
+]
+```
+
+- **前提**：clone 在 `$HOME` 底下（見上）。放 `$HOME` 外就得掛到與 hook 內完全相同的絕對路徑。
+- **OpenCode 例外**：它的 `instructions[]` 路徑保持絕對（opencode.json loader 不保證展開 `~`），
+  所以 OpenCode 這條不可攜——要嘛在容器內重跑 skills-sync，要嘛掛同絕對路徑。
+- 想在容器內**全新裝**（不掛）也行：容器裡 `git clone … ~/kungfu && bash ~/kungfu/skills-sync.sh agents --constitution`，hook 就用容器路徑生成。
 
 ---
 
