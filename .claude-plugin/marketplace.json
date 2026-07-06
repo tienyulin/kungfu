@@ -280,7 +280,8 @@
       "name": "superpowers",
       "source": {
         "source": "url",
-        "url": "https://github.com/obra/superpowers.git"
+        "url": "https://github.com/obra/superpowers.git",
+        "ref": "main"
       },
       "description": "External — brainstorming, subagent-driven dev with code review, systematic debugging, red/green TDD, and skill authoring. Points at the public upstream; run localize.sh to swap it for an internal mirror. No sha = follows the default branch, so `/plugin marketplace update` pulls the latest.",
       "author": {
@@ -299,7 +300,8 @@
       "name": "andrej-karpathy-skills",
       "source": {
         "source": "url",
-        "url": "https://github.com/forrestchang/andrej-karpathy-skills.git"
+        "url": "https://github.com/forrestchang/andrej-karpathy-skills.git",
+        "ref": "main"
       },
       "description": "External — behavioral guidelines to reduce common LLM coding mistakes (Think Before Coding, Simplicity, …). Points at the public upstream; run localize.sh to swap it for an internal mirror. No sha = follows the default branch.",
       "author": {
