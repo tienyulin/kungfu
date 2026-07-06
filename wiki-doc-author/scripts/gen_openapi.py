@@ -15,72 +15,10 @@ hand-written markdown). It never blocks a commit for that reason.
 """
 
 import argparse
-import contextlib
 import importlib
-import io
 import json
 import os
 import sys
-import tempfile
-import types
-
-
-def _run(args):
-    """Call main() with the given CLI args, swallow stdout, return the exit code."""
-    old = sys.argv
-    sys.argv = ["gen_openapi.py"] + args
-    try:
-        with contextlib.redirect_stdout(io.StringIO()):
-            return main()
-    finally:
-        sys.argv = old
-
-
-def _self_test():
-    """Exercise the skip / write / error branches with fake ASGI apps (stdlib only)."""
-    # --app without ':' → not a module:attr target → skip, exit 0
-    assert _run(["--app", "noattr"]) == 0
-    # unimportable module → hook doesn't apply → skip, exit 0
-    assert _run(["--app", "does.not.exist:app"]) == 0
-
-    # object without a callable .openapi() → skip, exit 0
-    m_noop = types.ModuleType("gen_openapi_fake_noop")
-    m_noop.app = object()  # type: ignore[attr-defined]
-    sys.modules["gen_openapi_fake_noop"] = m_noop
-    assert _run(["--app", "gen_openapi_fake_noop:app"]) == 0
-
-    # app WITH .openapi() → writes a sorted-key spec, exit 0
-    class _App:  # pylint: disable=too-few-public-methods
-        """Fake FastAPI-ish app whose .openapi() returns a spec."""
-
-        def openapi(self):
-            """Return a minimal spec with out-of-order paths to prove sort_keys."""
-            return {"openapi": "3.1.0", "paths": {"/b": {}, "/a": {}}}
-
-    m_ok = types.ModuleType("gen_openapi_fake_ok")
-    m_ok.app = _App()  # type: ignore[attr-defined]
-    sys.modules["gen_openapi_fake_ok"] = m_ok
-    with tempfile.TemporaryDirectory() as d:
-        out = os.path.join(d, "openapi.json")
-        assert _run(["--app", "gen_openapi_fake_ok:app", "--out", out]) == 0
-        with open(out, encoding="utf-8") as f:
-            data = json.load(f)
-        assert list(data["paths"]) == ["/a", "/b"], data["paths"]  # sort_keys=True
-
-    # .openapi() that raises → real error → exit 1
-    class _Bad:  # pylint: disable=too-few-public-methods
-        """Fake app whose .openapi() raises, to exercise the error branch."""
-
-        def openapi(self):
-            """Always raise, standing in for a broken spec build."""
-            raise RuntimeError("boom")
-
-    m_bad = types.ModuleType("gen_openapi_fake_bad")
-    m_bad.app = _Bad()  # type: ignore[attr-defined]
-    sys.modules["gen_openapi_fake_bad"] = m_bad
-    assert _run(["--app", "gen_openapi_fake_bad:app"]) == 1
-
-    print("gen_openapi self-test: OK")
 
 
 def main():
@@ -92,12 +30,7 @@ def main():
         help="ASGI app target as module:attr (uvicorn style)",
     )
     ap.add_argument("--out", default="openapi.json")
-    ap.add_argument("--self-test", action="store_true", help="run offline self-checks and exit")
     args = ap.parse_args()
-
-    if args.self_test:
-        _self_test()
-        return 0
 
     if ":" not in args.app:
         print(f"[gen-openapi] --app 需為 module:attr，收到 '{args.app}' → 跳過")

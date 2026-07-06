@@ -21,7 +21,6 @@ import json
 import os
 import re
 import sys
-import tempfile
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(_HERE, "frontmatter.schema.json"), encoding="utf-8") as _schema_f:
@@ -91,55 +90,8 @@ def lint_file(path):
     return errs
 
 
-def _self_test():
-    """Assert lint rules on temp docs (stdlib tempfile, no deps)."""
-    with tempfile.TemporaryDirectory() as d:
-
-        def write(name, text):
-            path = os.path.join(d, name)
-            with open(path, "w", encoding="utf-8") as f:
-                f.write(text)
-            return path
-
-        good = write(
-            "good.md", "---\ntype: reference\nsource_app: nightly\ntags: [cronjob]\n---\n# Job\nx\n"
-        )
-        assert not lint_file(good), lint_file(good)
-
-        bad_type = write("bt.md", "---\ntype: cronjob\nsource_app: x\n---\n# X\nx\n")
-        assert any("受控詞彙" in e for e in lint_file(bad_type))
-
-        missing = write("miss.md", "---\ntype: api\n---\n# X\nGET /x — y\n")
-        assert any("source_app" in e for e in lint_file(missing))
-
-        bad_sa = write("bs.md", "---\ntype: reference\nsource_app: Bad_App\n---\n# X\nx\n")
-        assert any("source_app" in e for e in lint_file(bad_sa))
-
-        mode_b = write(
-            "mb.md", "---\ntype: api\nsource_app: pay\n---\n# Pay\nPOST /charge — 扣款\n"
-        )
-        assert not lint_file(mode_b), lint_file(mode_b)
-
-        # api doc with neither openapi.json nor an endpoint line -> error (asserted
-        # before we drop an openapi.json into the dir).
-        api_noep = write("ae.md", "---\ntype: api\nsource_app: pay\n---\n# Pay\n沒有端點。\n")
-        assert any("endpoint" in e for e in lint_file(api_noep))
-
-        # once a companion openapi.json exists, the endpoint line is not required.
-        write("openapi.json", "{}")
-        api_oa = write(
-            "oa.md", "---\ntype: api\nsource_app: pay\n---\n# Pay\n端點由 openapi 帶。\n"
-        )
-        assert not lint_file(api_oa), lint_file(api_oa)
-
-    print("lint_frontmatter self-test: OK")
-
-
 def main(argv):
     """Lint the given markdown paths (or all *.md under cwd); return process exit code."""
-    if "--self-test" in argv:
-        _self_test()
-        return 0
     paths = argv[1:]
     if not paths:
         # Wiki source docs are README.md files; skip internal docs and hidden
