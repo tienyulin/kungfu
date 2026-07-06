@@ -1,6 +1,8 @@
-# dev / lint toolchain (skill scripts themselves are pure stdlib, no runtime deps)
+# dev toolchain (skill scripts + tests are pure stdlib, no runtime deps).
+# pytest is the test runner; the rest is lint.
 black==26.5.1
 flake8==7.3.0
 pylint==4.0.6
 mypy==2.1.0
 pre-commit==4.3.0
+pytest==9.1.1

@@ -263,22 +263,25 @@ gate）；或人工照 [`CONTRIBUTING.md`](CONTRIBUTING.md)。merge 進 main 後
 
 ### 開發環境（devcontainer）
 
-本 repo 帶 `.devcontainer/`（python 3.14 ＋ lint/測試工具鏈，跟 CI 同款）。驗證指令一律
-`bash skill-author/scripts/envrun.sh <指令>`——自動判定「容器內／容器在跑／自動起／
-沒 devcontainer 就 host 直跑」，起不了 exit 2 印選項。
+環境定義在 `.devcontainer/`：一個 `Dockerfile`（`python:3.14` image，**build 時就
+`pip install -r requirements.txt`**，工具鏈烤進 image、隔離且可快取），devcontainer.json
+用 `build.dockerfile`。VS Code「Reopen in Container」或 `devcontainer up` 即得完整環境。
 
-**一鍵驗證**（新環境就跑這個，內容＝CI 的 gate）：
+驗證統一走 **pre-commit**（＝CI 的 gate，單一事實來源）：
 
 ```bash
-bash verify.sh                # 完整：自動 pip install requirements → lint + tests + validators
-bash verify.sh --tests-only   # 只跑單元測試：純 stdlib、零安裝，任何 python3 / 離線都能跑
-SKIP_INSTALL=1 bash verify.sh  # 已備妥工具鏈（如 devcontainer 內）→ 跳過 pip
+pre-commit run --all-files     # 全部：black/flake8/mypy/pylint + pytest + validate + self-tests
+pytest                         # 只跑測試（tests/，純 stdlib，任何裝了 pytest 的 python 都能跑）
 ```
 
-Python 測試在 [`tests/`](tests/)（stdlib `unittest`，零 dep）——**測試不需要任何套件**，
-只有 lint（black/flake8/mypy/pylint，列在 `requirements.txt`）要裝。環境定義在
-`.devcontainer/`（python 3.14 image ＋ postCreate 自動 `pip install`），CI 亦同。
-每個 script 一個 `test_*.py`，正負案例並存（弄壞實作必轉紅）。
+`.pre-commit-config.yaml` 的 hooks 都是 `language: system`（用已裝的工具、不連外網），
+CI 就是 `pre-commit run --all-files`。Python 測試在 [`tests/`](tests/)：每個 script 一個
+`test_*.py`，正負案例並存（弄壞實作必轉紅）。**scripts 與測試邏輯本身純 stdlib**，
+只有工具鏈（pytest＋linters）來自 `requirements.txt`。
+
+不想／不能用 devcontainer：`pip install -r requirements.txt` 後照樣 `pre-commit run
+--all-files`。需要在指定環境跑單一指令時用 `bash skill-author/scripts/envrun.sh <指令>`
+（自動判定容器內／起容器／host 直跑）。
 
 ### 組織 allow-list（給平台/IT 團隊，選用）
 

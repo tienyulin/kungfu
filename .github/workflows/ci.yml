@@ -13,7 +13,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.14"
-      - name: verify (lint + tests + validators)
-        run: bash verify.sh
-      - name: envrun self-test
-        run: bash skill-author/scripts/envrun.sh --self-test
+      - name: install toolchain
+        run: pip install -r requirements.txt
+      - name: pre-commit (lint + pytest + validators)
+        run: pre-commit run --all-files --show-diff-on-failure
