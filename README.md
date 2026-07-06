@@ -9,10 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/works%20with-5%20agents-111111?style=flat-square" alt="Works with 5 agents">
-  <img src="https://img.shields.io/badge/skills-12-111111?style=flat-square" alt="12 skills">
-  <img src="https://img.shields.io/badge/constitution-12%20laws-111111?style=flat-square" alt="12-law constitution">
-  <img src="https://img.shields.io/badge/SAFETY%20guard-always--on-111111?style=flat-square" alt="Always-on SAFETY guard">
+  <img src="assets/badges.png" width="445" alt="works with 5 agents · 12 skills · 12-law constitution · SAFETY guard on">
 </p>
 
 ---
