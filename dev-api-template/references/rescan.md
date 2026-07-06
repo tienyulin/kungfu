@@ -34,8 +34,7 @@
 6. **出貨**:skills repo = 本 skill 的安裝來源(`claude plugin marketplace list` 看
    kungfu 指向哪個 git repo;本地目錄在 `~/.claude/plugins/marketplaces/
    kungfu/`)。該 repo 慣例 branch → PR → merge(細節見其 CONTRIBUTING.md);
-   merge 後成員經 marketplace auto-update 自動帶到(把它當 submodule 的專案另 bump
-   pointer)。
+   merge 後成員經 marketplace auto-update 自動帶到。
 
 ## 萃取時的判斷準則
 

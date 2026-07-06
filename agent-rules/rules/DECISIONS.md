@@ -63,4 +63,5 @@
 | 「整理/重構」 | 走 dev-refactor playbook。動工前測試全綠，否則先問 |
 | 補測試/加 coverage | 走 dev-test playbook。每條測試要 kill-proof |
 | 「整個需求自己做到好」 | 走 dev-loop。intent 鎖定一次，之後圈內不問人，gate 全綠才開 PR |
+| 照 API template 開發／查「template 有什麼功能、架構長怎樣」 | 走 dev-api-template。facts 是默認藍圖，偏離要寫一行理由 |
 | 模糊的大要求（「把 app 弄好一點」） | 提 3 個具體選項附成本，讓使用者挑。不要直接開寫 |

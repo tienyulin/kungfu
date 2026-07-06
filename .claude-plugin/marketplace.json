@@ -66,10 +66,10 @@
       ]
     },
     {
-      "name": "api-template-dev",
+      "name": "dev-api-template",
       "source": "./",
       "strict": false,
-      "description": "Develop three-layer FastAPI services on the company API template — start a new service by cloning the template (architecture, devcontainer, lint/CI and built-in utilities like DB clients and mailers already in place), then add endpoints following the layered architecture, reusing built-in tools instead of reinventing them. Template specifics live in a regenerable facts layer with a rescan procedure.",
+      "description": "Reference to the organization's API template — a lookup of what built-in tools it ships, how the directories layer, and the naming/DI/config/auth/devcontainer/lint-CI conventions. Query it (\"what can the template do / what's the architecture\") or use it as the default blueprint when starting a service or adding endpoints (deviate with a one-line reason; not enforced). Template specifics live in a regenerable facts layer — run the rescan procedure to rewrite it into your company's internal conventions.",
       "author": {
         "name": "tienyulin"
       },
@@ -77,12 +77,12 @@
         "fastapi",
         "template",
         "three-layer",
-        "devcontainer",
+        "reference",
         "development"
       ],
-      "category": "workflow",
+      "category": "development",
       "skills": [
-        "./api-template-dev"
+        "./dev-api-template"
       ]
     },
     {
@@ -265,7 +265,7 @@
         "./wiki-doc-author",
         "./sop-to-spec",
         "./skill-author",
-        "./api-template-dev",
+        "./dev-api-template",
         "./dev-bugfix",
         "./dev-feature",
         "./dev-refactor",
