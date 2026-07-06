@@ -1,18 +1,39 @@
-<img src="assets/kungfu-icon.png" alt="Kungfu" width="130" align="right"/>
+<p align="center">
+  <img src="assets/kungfu-icon.png" width="200" alt="Kungfu">
+</p>
 
-# Kungfu 🥋
+<h1 align="center">Kungfu 🥋</h1>
 
-> 就像電影裡插上一根線、三秒後睜眼說「**I know kung fu**」——
-> agent 裝上 Kungfu，立刻會一身功夫：不是它突然變聰明，是套路、心法、
-> 戒律一次上身。**弱的模型也能打出師父的招式。**
+<p align="center">
+  <em>插上就會一身功夫 — “I know kung fu.”</em>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/works%20with-5%20agents-111111?style=flat-square" alt="Works with 5 agents">
+  <img src="https://img.shields.io/badge/skills-12-111111?style=flat-square" alt="12 skills">
+  <img src="https://img.shields.io/badge/constitution-12%20laws-111111?style=flat-square" alt="12-law constitution">
+  <img src="https://img.shields.io/badge/SAFETY%20guard-always--on-111111?style=flat-square" alt="Always-on SAFETY guard">
+</p>
+
+---
+
+插上一根線、睜眼就會功夫。agent 裝上 Kungfu，立刻上身一整套武功——**不是它突然變聰明，
+是套路、心法、戒律一次附身**。弱的模型也打得出師父的招式。
 
 一個 marketplace，把「功夫」拆成三種可安裝的東西：
 
 - **招式（skills）** —— 可安裝的工作流程（wiki 文件、SOP 轉 spec、API template 開發…），
   Claude Code 之外也同步給 Gemini / Codex / Cline / OpenCode。
-- **心法＋戒律（agent-rules）** —— AI 工作紀律系統：常駐憲法＋固定作業 playbook＋
-  破壞性指令機械攔截，讓**任何等級的模型**（含較弱的）都守同一套紀律。
+- **心法＋戒律（agent-rules）** —— 常駐憲法＋固定作業 playbook＋破壞性指令機械攔截，
+  讓**任何等級的模型**（含較弱的）都守同一套紀律。
 - **一路過招到收招（dev-loop）** —— 丟一個需求，agent 自己繞「做→驗→修」直到全綠開 PR。
+
+## 沒有 Kungfu ／ 有 Kungfu
+
+你叫 haiku 修一個 bug。它改一改，回你「應該修好了」——沒跑測試。
+
+裝了 Kungfu，憲法 Law 1 當場擋下這句：**沒有 `VERIFIED` 區塊、沒真的跑過驗證指令，
+禁止說 done。** 弱模型被逼著先重現、先跑測試、貼出輸出，才准回報完成。招式擺好，破綻自然少。
 
 本 repo 就是一個 **Claude Code plugin marketplace**，公司內網 GitLab 即可用，
 不需要 GitHub 或公開 marketplace。
