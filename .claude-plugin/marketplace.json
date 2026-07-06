@@ -89,7 +89,7 @@
       "name": "agent-rules",
       "source": "./agent-rules",
       "strict": false,
-      "description": "Always-on constitution for weak models — a SessionStart hook injects 12 hard laws (evidence before claims, reproduce before fix, minimal diff, three-strike stop, no hallucinated APIs, tests are read-only, …) plus an end-of-turn checklist into every session. Ships situational rule files (DECISIONS / SAFETY / ANTIPATTERNS). Install alongside the agent-rules-* playbook skills; distilled from a Claude Fable 5 session.",
+      "description": "Always-on constitution for weak models — a SessionStart hook injects 12 hard laws (evidence before claims, reproduce before fix, minimal diff, three-strike stop, no hallucinated APIs, tests are read-only, …) plus an end-of-turn checklist into every session. Ships situational rule files (DECISIONS / SAFETY / ANTIPATTERNS). Install alongside the dev-* playbook skills.",
       "author": {
         "name": "tienyulin"
       },
@@ -280,9 +280,9 @@
       "name": "superpowers",
       "source": {
         "source": "url",
-        "url": "https://gitlab.internal.example.com/mirrors/superpowers.git"
+        "url": "https://github.com/obra/superpowers.git"
       },
-      "description": "External — brainstorming, subagent-driven dev with code review, systematic debugging, red/green TDD, and skill authoring. Mirrored from obra/superpowers into the internal GitLab; swap the url to your GitLab mirror. No sha = follows the mirror's default branch, so `/plugin marketplace update` pulls whatever the mirror last synced.",
+      "description": "External — brainstorming, subagent-driven dev with code review, systematic debugging, red/green TDD, and skill authoring. Points at the public upstream; run localize.sh to swap it for an internal mirror. No sha = follows the default branch, so `/plugin marketplace update` pulls the latest.",
       "author": {
         "name": "obra"
       },
@@ -299,9 +299,9 @@
       "name": "andrej-karpathy-skills",
       "source": {
         "source": "url",
-        "url": "https://gitlab.internal.example.com/mirrors/andrej-karpathy-skills.git"
+        "url": "https://github.com/forrestchang/andrej-karpathy-skills.git"
       },
-      "description": "External — behavioral guidelines to reduce common LLM coding mistakes (Think Before Coding, Simplicity, …). Mirrored from forrestchang/andrej-karpathy-skills into the internal GitLab; swap the url to your GitLab mirror. No sha = follows the mirror's default branch.",
+      "description": "External — behavioral guidelines to reduce common LLM coding mistakes (Think Before Coding, Simplicity, …). Points at the public upstream; run localize.sh to swap it for an internal mirror. No sha = follows the default branch.",
       "author": {
         "name": "forrestchang"
       },

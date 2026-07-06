@@ -35,19 +35,20 @@
 裝了 Kungfu，憲法 Law 1 當場擋下這句：**沒有 `VERIFIED` 區塊、沒真的跑過驗證指令，
 禁止說 done。** 弱模型被逼著先重現、先跑測試、貼出輸出，才准回報完成。招式擺好，破綻自然少。
 
-本 repo 就是一個 **Claude Code plugin marketplace**，公司內網 GitLab 即可用，
-不需要 GitHub 或公開 marketplace。
+本 repo 就是一個 **Claude Code plugin marketplace**，任何 git 主機都能託管
+（GitHub、GitLab、內部 git server 皆可）。要搬進內部環境、把所有 URL 一次換成
+內部 mirror，見〈維護者〉的 `localize.sh`。
 
 ---
 
 # 快速開始（使用者，每台機器一次）
 
 ```bash
-# 0) 前置：裝好 Claude Code、設好對內網 GitLab 的 git auth（token / SSH）
+# 0) 前置：裝好 Claude Code、設好對 git 主機的 auth（GitHub token / SSH 等）
 
 # 1) 加 marketplace（會把整個 repo 含同步腳本下載到
 #    ~/.claude/plugins/marketplaces/kungfu/，不用自己 clone）
-claude plugin marketplace add https://gitlab.<你的公司>/<group>/kungfu.git
+claude plugin marketplace add https://github.com/tienyulin/kungfu.git
 
 # 2) 一鍵裝齊 + 開自動更新
 bash ~/.claude/plugins/marketplaces/kungfu/skills-sync.sh
@@ -71,7 +72,7 @@ claude plugin list         # 應看到 bundle + agent-rules + 外部 mirror plug
 不需要裝 Claude Code。自己 clone 一份、跑 `agents` 模式即可：
 
 ```bash
-git clone https://gitlab.<你的公司>/<group>/kungfu.git ~/kungfu
+git clone https://github.com/tienyulin/kungfu.git ~/kungfu
 bash ~/kungfu/skills-sync.sh agents --constitution
 ```
 
@@ -92,7 +93,7 @@ bash ~/kungfu/skills-sync.sh agents --constitution
 |---|---|
 | [`wiki-doc-author`](wiki-doc-author/SKILL.md) | 產出餵進 wiki processor 的源頭文件 —— API（README + openapi.json）、cronjob/worker/CLI、純知識，都一份 README 搞定。附純 stdlib 工具。 |
 | [`sop-to-spec`](sop-to-spec/SKILL.md) | 把維運 SOP（DBA runbook、infra 程序…）轉成「人能審、AI 能照著實作三層 FastAPI 服務」的 spec。 |
-| [`api-template-dev`](api-template-dev/SKILL.md) | 照公司 API template 開三層式 FastAPI 服務：clone 起手、照層加端點、用內建工具不重造。 |
+| [`api-template-dev`](api-template-dev/SKILL.md) | 照你組織的標準 API template 開三層式 FastAPI 服務：clone 起手、照層加端點、用內建工具不重造。 |
 | [`skill-author`](skill-author/SKILL.md) | 在本 repo 新增/修改一個**可安裝**的 skill —— 照標準產 SKILL.md、註冊進 marketplace。 |
 | `dev-*` 六本 playbook（bugfix / feature / refactor / investigate / review / test） | 開發任務的固定作業流程，見下方〈agent-rules〉。 |
 | [`dev-loop`](dev-loop/SKILL.md) | **一個需求自己做到好**：loop engineering 的端到端迭代圈，見下方〈dev-loop〉。 |
@@ -104,7 +105,7 @@ bash ~/kungfu/skills-sync.sh agents --constitution
 |---|---|
 | [`agent-rules`](agent-rules/rules/CONSTITUTION.md) | 憲法 SessionStart hook ＋ SAFETY guard PreToolUse hook（見下章）。做成 hook 不做 skill：**skill 不保證被載入，hook 保證**。 |
 
-### 外部開源 skills（mirror 進內網 GitLab）
+### 外部開源 skills（直接指向公開上游；要換內部 mirror 見 localize.sh）
 
 | plugin | 上游 | 說明 |
 |---|---|---|
@@ -115,9 +116,10 @@ bash ~/kungfu/skills-sync.sh agents --constitution
 
 # agent-rules — AI 工作紀律系統
 
-由 Claude Fable 5 session 蒸餾，設計目標：**判斷力寫成弱模型也能機械執行的制度**
+設計目標：**把判斷力寫成弱模型也能機械執行的制度**
 ——具體判準（「diff > 3 檔 150 行就停」）、照抄模板（VERIFIED / STUCK 報告）、
 封閉分流（條件→走哪），不寫抽象原則。五層：
+（這套制度的由來與時間見 [ORIGIN.md](ORIGIN.md)。）
 
 | 層 | 內容 | 載入方式 |
 |---|---|---|
@@ -221,27 +223,30 @@ agent，不由這裡轉。
 
 # 維護者
 
-### 換掉 placeholder（上線前一次性）
+### 搬進內部環境（一次性）
 
-`skills-sync.sh` 開頭的 `GITLAB_URL`、`marketplace.json` 裡 external 的 placeholder URL，
-都換成內網 GitLab mirror 的 `.git`。離線驗證：`bash skills-sync.sh --self-test`
-（plugin plan／guard／跨 agent 三套全綠才算過）。
+預設所有 URL 指向公開 GitHub，開箱即用。要換成內部 git 主機的 mirror：複製
+[`localize.config.example`](localize.config.example) → `localize.config`，填入你的
+內部 URL，跑 `bash localize.sh`——它一次把 `skills-sync.sh`、`marketplace.json`、
+README、`agent-rules-setup` 裡的預設 URL 全部換掉。先 `bash localize.sh --dry-run`
+可預覽。離線驗證：`bash skills-sync.sh --self-test`（plugin plan／guard／跨 agent
+三套全綠才算過）。
 
 ### 加自家 skill
 
 用 `skill-author` skill 讓 AI 照標準產出（含 marketplace 註冊、弱模型五規則、validator
 gate）；或人工照 [`CONTRIBUTING.md`](CONTRIBUTING.md)。merge 進 main 後全隊自動拿到。
 
-### 加外部 / 第三方 skill（內網 GitLab mirror）
+### 加外部 / 第三方 skill
 
-上游 repo 拉成內網 GitLab **pull mirror**，`marketplace.json` 的 `plugins` 加一筆，
-`source` 用 **`url` 形式**指 mirror 的 `.git`（**不要**用 `github`+`repo`，那只給公開 GitHub）：
+`marketplace.json` 的 `plugins` 加一筆，`source` 用 **`url` 形式**指上游 repo 的 `.git`
+（公開 GitHub，或你的內部 mirror；用 `url` 而非 `github`+`repo` 兩種主機都能指）：
 
 ```jsonc
 {
   "name": "<plugin-name>",
-  "source": { "source": "url", "url": "https://gitlab.<你的公司>/<group>/<repo>.git" },
-  "description": "External — …（註明 mirror 自哪個上游）",
+  "source": { "source": "url", "url": "https://github.com/<owner>/<repo>.git" },
+  "description": "External — …（註明上游）",
   "author": { "name": "<上游作者>" },
   "category": "development",
   "homepage": "https://github.com/<上游>"
@@ -249,10 +254,10 @@ gate）；或人工照 [`CONTRIBUTING.md`](CONTRIBUTING.md)。merge 進 main 後
 ```
 
 - **沒有 `skills` 欄**：外部 plugin 的 skill 由它自己的 repo 結構提供。
-- **沒設 `sha` = 跟 mirror 預設分支**；要鎖版本加 `"sha": "<commit>"`（之後不會自己往前）。
-  ⚠️ 不 pin = 自動吃 mirror 同步到的任何 commit（含上游被改）。要穩定供應鏈就 pin。
-- 更新鏈：上游 GitHub → GitLab mirror 排程同步 → 成員 auto-update 自動帶到（已裝的人）。
-  **新收錄**的是新 plugin，請成員重跑一次腳本（自動補裝）。
+- **沒設 `sha` = 跟上游預設分支**；要鎖版本加 `"sha": "<commit>"`（之後不會自己往前）。
+  ⚠️ 不 pin = 自動吃上游推來的任何 commit。要穩定供應鏈就 pin。
+- 更新鏈：上游 → 成員 auto-update 自動帶到（已裝的人）。**新收錄**的是新 plugin，
+  請成員重跑一次腳本（自動補裝）。搬內部時 `localize.sh` 會把這些 URL 一併換成 mirror。
 
 ### 改 agent-rules
 
@@ -269,10 +274,10 @@ gate）；或人工照 [`CONTRIBUTING.md`](CONTRIBUTING.md)。merge 進 main 後
 `bash skill-author/scripts/envrun.sh <指令>`——自動判定「容器內／容器在跑／自動起／
 沒 devcontainer 就 host 直跑」，起不了 exit 2 印選項。
 
-### 企業 allow-list（給 IT，選用）
+### 組織 allow-list（給平台/IT 團隊，選用）
 
-managed settings 用 `strictKnownMarketplaces` 的 `hostPattern`（regex）允許內網 GitLab
-host，全公司即可安裝。見官方「Manage plugins for your organization」。
+managed settings 用 `strictKnownMarketplaces` 的 `hostPattern`（regex）允許你的 git
+host，全組織即可安裝。見官方「Manage plugins for your organization」。
 
 ---
 
