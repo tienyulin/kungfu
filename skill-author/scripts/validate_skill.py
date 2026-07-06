@@ -14,6 +14,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 
 NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")  # kebab, no leading/trailing/consecutive hyphen
 MAX_NAME = 64
@@ -146,8 +147,64 @@ def _check_envrun_copies(root):
     ]
 
 
+def _write(path, text):
+    """Write text to path, creating parent dirs (self-test helper)."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(text)
+
+
+def _self_test():
+    """Assert the name/desc/marketplace rules on fixtures (stdlib, no deps)."""
+    # _check_name: valid vs kebab / dir-mismatch / too-long
+    assert not _check_name("d/foo-bar", "foo-bar", "foo-bar")
+    assert _check_name("d/foo", "Foo", "Foo"), "uppercase name should fail kebab"
+    assert _check_name("d/foo", "bar", "foo"), "name != dir should fail"
+    assert _check_name(
+        "d/x", "a" * (MAX_NAME + 1), "a" * (MAX_NAME + 1)
+    ), "over-long name should fail"
+
+    # _check_desc: the repo requires a `Triggers -` tag
+    assert not _check_desc("d", 'does a thing. Triggers - "x"、"/x"。')[0]
+    assert _check_desc("d", "no trigger tag here")[0], "missing Triggers should fail"
+    assert _check_desc("d", "")[0], "empty desc should fail"
+
+    fm = "---\nname: {n}\ndescription: {d}\n---\n# body\n"
+    good_desc = '測試用 skill。Triggers - "做測試"、"/demo-skill"。'
+    with tempfile.TemporaryDirectory() as root:
+        cwd = os.getcwd()
+        os.chdir(root)
+        try:
+            # a valid skill dir passes validate_skill()
+            _write("demo-skill/SKILL.md", fm.format(n="demo-skill", d=good_desc))
+            errs, _ = validate_skill("demo-skill")
+            assert not errs, errs
+            # frontmatter name != dir name is caught
+            _write("wrong/SKILL.md", fm.format(n="mismatch", d=good_desc))
+            assert validate_skill("wrong")[0], "name/dir mismatch should be caught"
+
+            # _check_marketplace: unregistered skill is flagged
+            mkt = {
+                "plugins": [
+                    {"name": "demo-skill", "source": "./", "skills": ["./demo-skill"]},
+                    {"name": "bundle", "source": "./", "skills": ["./demo-skill", "./other"]},
+                ]
+            }
+            _write("other/SKILL.md", fm.format(n="other", d=good_desc))
+            _write(".claude-plugin/marketplace.json", json.dumps(mkt))
+            assert not _check_marketplace(root, ["demo-skill"])
+            assert _check_marketplace(root, ["ghost"]), "unregistered skill should be flagged"
+        finally:
+            os.chdir(cwd)
+
+    print("validate_skill self-test: OK")
+    return 0
+
+
 def main(argv):
     """Validate all skills (or one named dir) + marketplace registration; return exit code."""
+    if "--self-test" in argv:
+        return _self_test()
     root = os.getcwd()
     errs, warns = [], []
 

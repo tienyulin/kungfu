@@ -25,9 +25,14 @@ jobs:
         run: pylint $(find . -name "*.py")
       - name: validate skills
         run: python skill-author/scripts/validate_skill.py
-      - name: wiki-doc-author script self-tests
+      - name: python script self-tests
         run: |
+          python agent-rules/hooks/guard.py --self-test
+          python skill-author/scripts/validate_skill.py --self-test
+          python wiki-doc-author/scripts/gen_openapi.py --self-test
           python wiki-doc-author/scripts/openapi_completeness.py --self-test
           python wiki-doc-author/scripts/lint_frontmatter.py --self-test
+      - name: localize self-test
+        run: bash localize.sh --self-test
       - name: envrun self-test
         run: bash skill-author/scripts/envrun.sh --self-test
