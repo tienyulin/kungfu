@@ -8,10 +8,6 @@
   <em>插上就會一身功夫 — “I know kung fu.”</em>
 </p>
 
-<p align="center">
-  <img src="assets/badges.png" width="445" alt="works with 5 agents · 12 skills · 12-law constitution · SAFETY guard on">
-</p>
-
 ---
 
 插上一根線、睜眼就會功夫。agent 裝上 Kungfu，立刻上身一整套武功——**不是它突然變聰明，
