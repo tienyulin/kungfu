@@ -156,7 +156,7 @@ host 裝一次、每個容器共用、跟電腦一致：
 | Claude Code | plugin bundle | plugin SessionStart hook | plugin PreToolUse → **ask**（彈確認給使用者） |
 | Codex | `~/.codex/skills/`（symlink） | `~/.codex/hooks.json` SessionStart | 同檔 PreToolUse → deny＋理由 |
 | Gemini | `~/.agents/skills/`（symlink） | `~/.gemini/settings.json` SessionStart | 同檔 BeforeTool → deny＋理由 |
-| Cline | rules 目錄 pointer rule | `Hooks/TaskStart` script | `Hooks/PreToolUse` script → cancel |
+| Cline | `~/.cline/skills/`（symlink，原生 on-demand Skills ≥3.48） | `Hooks/TaskStart` script | `Hooks/PreToolUse` script → cancel |
 | OpenCode | `~/.agents/skills/`（與 Gemini 共用 symlink） | `opencode.json` `instructions[]`（其 plugin API 無 session-start 注入 hook，instructions 即官方常駐機制） | 生成 guard plugin JS → throw |
 
 - Claude Code 部分**裝了 plugin 就有**，不用旗標。
@@ -168,7 +168,11 @@ host 裝一次、每個容器共用、跟電腦一致：
   之後**每次普通 `skills-sync` 都自動帶上** constitution——重跑時不會忘。要關用
   `--no-constitution`（移除記號並停）。所以 skills-sync 的 **code 有更新時**（例如 hook
   路徑改法），只要重跑一次 `skills-sync`（不必記得加旗標）就會用新版重生 hook。
-- Cline hooks 限 macOS/Linux；只有 `~/.cline` 的舊佈局退回 rules symlink。
+- **Cline 偵測靠安裝、不靠開過**：資料夾（`~/Documents/Cline`）要開過 Cline 才生，所以改看
+  「擴充有沒有裝」（`saoudrizwan.claude-dev` 在 `~/.vscode*/extensions/`）＋ workspace 的
+  `devcontainer.json`／`extensions.json` 有沒有宣告它。任一命中就一次佈好，不用跑兩次；
+  都沒有就完全不碰。devcontainer 裡擴充還在裝、config 也抓不到的邊角情況 → `--cline` 強制。
+- Cline hooks 限 macOS/Linux；只有 `~/.cline` CLI 佈局（無 app base）時憲法退回 rules symlink。
 - 憲法或 guard 的 pattern 改版：**誰都不用重跑**——hook 現讀 marketplace 檔。
   唯一例外：guard pattern 清單改動要同步 `guard.py` 與生成的 OpenCode JS 兩處（維護者的事）。
 - 非 Claude 工具想手動接（不跑腳本）：貼 [`CONSTITUTION.md`](agent-rules/rules/CONSTITUTION.md)
@@ -229,11 +233,11 @@ host 裝一次、每個容器共用、跟電腦一致：
 
 ### 跨 agent skills 同步細節
 
-SKILL.md 是跨 agent 共用格式（Claude/Codex/Gemini/OpenCode 原生讀），腳本 **symlink
-同一份來源**進各 agent 位置（Cline 例外：不讀 SKILL.md，生成 pointer rule——skill 名＋
-描述＋「要用時去讀該 SKILL.md」，不內嵌全文以免脹 context）。symlink 指向 marketplace
-下載目錄 → 內容跟著 auto-update 走。只同步**自家 skill**；外部 mirror 上游各自支援多
-agent，不由這裡轉。
+SKILL.md 是跨 agent 共用格式（Claude/Codex/Gemini/OpenCode／Cline≥3.48 都原生讀），腳本
+**symlink 同一份來源**進各 agent 的 skills 位置（Cline 走 `~/.cline/skills/` 的原生
+on-demand Skills——不占常駐 context，講到相關才載入）。symlink 指向 marketplace 下載目錄
+→ 內容跟著 auto-update 走。只同步**自家 skill**；外部 mirror 上游各自支援多 agent，不由
+這裡轉。
 
 ### 進階：只裝某幾個 / 離線
 
