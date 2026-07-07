@@ -47,7 +47,7 @@ repos:
         always_run: true
       - id: skills-sync-self-test
         name: skills-sync self-test
-        entry: bash skills-sync.sh --self-test
+        entry: bash skills-sync.test.sh
         language: system
         pass_filenames: false
         always_run: true

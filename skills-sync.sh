@@ -8,13 +8,12 @@
 #                   NEW skill (added to the bundle) reaches everyone with zero action.
 #  • Gemini / Codex / Cline / OpenCode : sync this repo's OWN skills (bare SKILL.md
 #                   dirs) into each agent. SKILL.md is read natively by Claude Code,
-#                   Codex CLI, Gemini CLI and OpenCode, so we just SYMLINK the one
-#                   source dir into each agent's skills location — zero content
-#                   duplication (Gemini and OpenCode both read the neutral
-#                   ~/.agents/skills, so they share the same symlinks). Cline can't
-#                   read SKILL.md, so we generate a thin pointer rule from it.
-#                   Symlinks track marketplace updates automatically; only a brand-new
-#                   skill needs a re-run here (to create its symlink).
+#                   Codex CLI, Gemini CLI, OpenCode and Cline (>=3.48, native
+#                   on-demand Skills), so we just SYMLINK the one source dir into
+#                   each agent's skills location — zero content duplication (Gemini
+#                   and OpenCode both read the neutral ~/.agents/skills; Cline reads
+#                   ~/.cline/skills). Symlinks track marketplace updates
+#                   automatically; only a brand-new skill needs a re-run here.
 #  • --constitution (OPT-IN, default off): inject agent-rules/rules/CONSTITUTION.md
 #                   into each detected agent at session start via its HOOK mechanism
 #                   (content read from the marketplace file at session time → always
@@ -36,8 +35,14 @@
 #   bash skills-sync.sh --constitution        # same + write constitution/guard into agent configs
 #   bash skills-sync.sh agents                # only the cross-agent sync step
 #   bash skills-sync.sh agents --constitution # cross-agent sync + constitution
+#   bash skills-sync.sh agents --cline         # force-provision Cline even if not detected yet
+#                                              #   (devcontainer postCreate before the extension installs)
 #   bash skills-sync.sh --no-constitution     # turn the sticky constitution off (remove marker)
-#   bash skills-sync.sh --self-test           # offline checks (plugin plan + auto-update + cross-agent)
+#   bash skills-sync.sh --self-test           # offline checks — delegates to skills-sync.test.sh
+#
+# The self-tests live in skills-sync.test.sh (it sources this file for the
+# internal functions). This file is safe to source: the CLI dispatch at the
+# bottom is guarded so only a direct run executes it.
 #
 # STICKY: --constitution once leaves a marker (~/.agents/.constitution-on); after
 # that EVERY plain run keeps the constitution/guard hooks fresh, so you can't
@@ -115,22 +120,21 @@ own_skill_dirs() {
   done
 }
 
-# Print "<name>\t<description>" from a SKILL.md frontmatter (for the Cline rule).
-skill_meta() {
-  python3 - "$1" <<'PY'
-import sys
-text = open(sys.argv[1], encoding="utf-8").read()
-name = desc = ""
-if text.startswith("---"):
-    end = text.find("\n---", 3)
-    fm = text[3:end] if end != -1 else ""
-    for line in fm.splitlines():
-        if line.startswith("name:"):
-            name = line.split(":", 1)[1].strip()
-        elif line.startswith("description:"):
-            desc = line.split(":", 1)[1].strip()
-print(f"{name}\t{desc}")
-PY
+# Does the workspace ASK for the Cline extension? In a devcontainer the extension
+# is installed after the container starts, so at postCreate time it isn't on disk
+# yet — but the config that requested it (devcontainer.json / extensions.json /
+# *.code-workspace) already is. Grepping the id closes the "container up, extension
+# still installing" race without needing a manual flag. Searches $PWD (the
+# workspace root when the sync runs) — CLINE_EXT_ID is the marketplace identifier.
+CLINE_EXT_ID="saoudrizwan.claude-dev"
+cline_declared() {
+  local f
+  for f in "$PWD/.devcontainer/devcontainer.json" "$PWD/.devcontainer.json" \
+           "$PWD"/.devcontainer/*/devcontainer.json \
+           "$PWD/.vscode/extensions.json" "$PWD"/*.code-workspace; do
+    [ -f "$f" ] && grep -q "$CLINE_EXT_ID" "$f" 2>/dev/null && return 0
+  done
+  return 1
 }
 
 # Strip the managed marker block older versions of this script embedded in
@@ -252,144 +256,42 @@ PY
 
 # Symlink each own skill into every agent whose home dir exists. Only agents the
 # user actually has are touched — we never create config for an agent you don't use.
-sync_agents() {
-  local home="$HOME" did=0
-  local gemini=0 codex=0 opencode=0 agents_dir=0 cline_dir=""
+# Constitution injection (SessionStart/TaskStart hooks) for the detected agents.
+# Returns 1 (caller then skips the guard) if the constitution file is missing.
+wire_constitution() {
+  local home="$1" codex="$2" opencode="$3" cline_present="$4" cline_base="$5" cline_dir="$6"
+  local const_src="$SCRIPT_DIR/agent-rules/rules/CONSTITUTION.md"
+  if [ ! -f "$const_src" ]; then
+    echo "  ⚠ --constitution：找不到 ${const_src}，跳過"
+    return 1
+  fi
+  echo "→ 憲法（--constitution）：用各家 hook 在 session 開頭注入（讀 marketplace 檔，內容自動跟新）"
 
-  # Gemini CLI reads ~/.agents/skills natively (neutral interop dir); also ~/.gemini.
-  if [ -d "$home/.gemini" ] || [ -d "$home/.agents" ]; then
-    gemini=1
-  fi
-  # OpenCode reads ~/.agents/skills natively too (plus ~/.config/opencode/skills).
-  if [ -d "$home/.config/opencode" ]; then
-    opencode=1
-  fi
-  if [ "$gemini" = 1 ] || [ "$opencode" = 1 ]; then
-    mkdir -p "$home/.agents/skills"; agents_dir=1; did=1
-  fi
-  # Codex CLI: ~/.codex/skills
-  if [ -d "$home/.codex" ]; then
-    mkdir -p "$home/.codex/skills"; codex=1; did=1
-  fi
-  # Cline: plain .md rules (not SKILL.md). Base dir differs by platform —
-  # macOS uses ~/Documents/Cline, Linux/WSL uses ~/Cline (cline#9994); hooks
-  # and Rules both hang off that base.
-  local cline_base=""
-  if [ -d "$home/Documents/Cline" ]; then
-    cline_base="$home/Documents/Cline"
-  elif [ -d "$home/Cline" ]; then
-    cline_base="$home/Cline"
-  fi
-  # App layout (base/Rules) wins: the VS Code extension only reads
-  # <base>/Rules; ~/.cline is the CLI's state dir. On machines with BOTH,
-  # writing to ~/.cline/rules makes every rule invisible to the extension.
-  if [ -n "$cline_base" ]; then
-    cline_dir="$cline_base/Rules"
-  elif [ -d "$home/.cline" ]; then
-    cline_dir="$home/.cline/rules"
-  fi
-  [ -n "$cline_dir" ] && { mkdir -p "$cline_dir"; did=1; }
-  # one-time migration: earlier versions preferred ~/.cline/rules — clear OUR
-  # files out of there (pointer rules, constitution symlink/copy); user files stay.
-  if [ -n "$cline_base" ] && [ -d "$home/.cline/rules" ]; then
-    local mig
-    for mig in "$home/.cline/rules"/*.md; do
-      [ -f "$mig" ] || continue
-      if [ "$(basename "$mig")" = "agent-rules-constitution.md" ] \
-         || [ "$(basename "$mig")" = "agent-rules-situational-paths.md" ] \
-         || grep -q "kungfu 的指標規則" "$mig" 2>/dev/null; then
-        rm -f "$mig"
-        echo "  − ~/.cline/rules/$(basename "$mig")（遷移到 ${cline_dir}）"
-      fi
-    done
-    rmdir "$home/.cline/rules" 2>/dev/null || true
-  fi
+  # shared situational-paths file, regenerated on every run — read by the
+  # hooks together with the constitution itself.
+  local paths_file="$home/.agents/agent-rules-situational-paths.md"
+  mkdir -p "$home/.agents"
+  touch "$home/.agents/.constitution-on"   # sticky opt-in: later plain runs auto-enable
+  situational_paths_body > "$paths_file"
 
-  if [ "$did" = 0 ]; then
-    echo "→ 跨 agent：未偵測到 Gemini / Codex / Cline / OpenCode，略過（只處理了 Claude）"
-    return 0
-  fi
+  # HOME-relative forms baked into the hooks so they survive being mounted
+  # into a container at a different absolute prefix (see homeref). sh form for
+  # shell/JSON commands, tilde form for the python wrapper (expanduser).
+  local const_ref paths_ref refresh_ref mkt_ref const_tilde paths_tilde refresh_tilde
+  const_ref="$(homeref "$const_src" sh)"
+  paths_ref="$(homeref "$paths_file" sh)"
+  mkt_ref="$(homeref "$SCRIPT_DIR" sh)"
+  const_tilde="$(homeref "$const_src" tilde)"
+  paths_tilde="$(homeref "$paths_file" tilde)"
 
-  echo "→ 跨 agent：同步自家 skill 到偵測到的 agent"
-  local skill src nm ds
-  for skill in $(own_skill_dirs); do
-    src="$SCRIPT_DIR/$skill"
-    [ "$agents_dir" = 1 ] && ln -sfn "$src" "$home/.agents/skills/$skill"
-    [ "$codex" = 1 ]      && ln -sfn "$src" "$home/.codex/skills/$skill"
-    if [ -n "$cline_dir" ]; then
-      IFS=$'\t' read -r nm ds < <(skill_meta "$src/SKILL.md")
-      # pointer rule, not full copy — keeps Cline's always-on context lean.
-      printf '# Skill: %s\n\n%s\n\n完整步驟在 `%s/SKILL.md`。要做這件事時，先讀該檔再照做（這是指向 kungfu 的指標規則，內容以該 SKILL.md 為準）。\n' \
-        "${nm:-$skill}" "$ds" "$src" > "$cline_dir/$skill.md"
-    fi
-    echo "  • $skill"
-  done
-  # prune OUR stale entries (skills renamed/removed upstream): only symlinks
-  # pointing INTO this repo with a vanished target, and only pointer rules we
-  # generated — anything the user made themselves is left alone.
-  local d link tgt f p
-  for d in "$home/.agents/skills" "$home/.codex/skills"; do
-    [ -d "$d" ] || continue
-    for link in "$d"/*; do
-      [ -L "$link" ] || continue
-      tgt="$(readlink "$link")"
-      case "$tgt" in
-        "$SCRIPT_DIR"/*) [ -e "$tgt" ] || { rm -f "$link"; echo "  − $(basename "$link")（已改名/移除，清掉 stale symlink）"; } ;;
-      esac
-    done
-  done
-  if [ -n "$cline_dir" ]; then
-    for f in "$cline_dir"/*.md; do
-      [ -f "$f" ] || continue
-      grep -q "kungfu 的指標規則" "$f" || continue
-      p="$(grep -o "$SCRIPT_DIR/[^\`]*SKILL\.md" "$f" | head -1)"
-      [ -n "$p" ] && [ ! -f "$p" ] && { rm -f "$f"; echo "  − $(basename "$f")（stale Cline pointer rule）"; }
-    done
-  fi
-
-  [ "$gemini" = 1 ]   && echo "  Gemini   → ~/.agents/skills"
-  [ "$opencode" = 1 ] && echo "  OpenCode → ~/.agents/skills（原生讀取，與 Gemini 共用）"
-  [ "$codex" = 1 ]    && echo "  Codex    → ~/.codex/skills"
-  [ -n "$cline_dir" ] && echo "  Cline    → $cline_dir （pointer rule）"
-
-  # Constitution: OPT-IN — these are personal dotfiles, so nothing is written
-  # unless --constitution was passed. Injection is done with each agent's HOOK
-  # mechanism (session-start command reads the marketplace file → always fresh),
-  # mirroring the Claude Code hook plugin. OpenCode has no such hook; its
-  # instructions[] array is the native always-on mechanism and stays.
-  if [ "$CONSTITUTION" = 1 ]; then
-    local const_src="$SCRIPT_DIR/agent-rules/rules/CONSTITUTION.md"
-    if [ ! -f "$const_src" ]; then
-      echo "  ⚠ --constitution：找不到 ${const_src}，跳過"
-      return 0
-    fi
-    echo "→ 憲法（--constitution）：用各家 hook 在 session 開頭注入（讀 marketplace 檔，內容自動跟新）"
-
-    # shared situational-paths file, regenerated on every run — read by the
-    # hooks together with the constitution itself.
-    local paths_file="$home/.agents/agent-rules-situational-paths.md"
-    mkdir -p "$home/.agents"
-    touch "$home/.agents/.constitution-on"   # sticky opt-in: later plain runs auto-enable
-    situational_paths_body > "$paths_file"
-
-    # HOME-relative forms baked into the hooks so they survive being mounted
-    # into a container at a different absolute prefix (see homeref). sh form for
-    # shell/JSON commands, tilde form for the python wrapper (expanduser).
-    local const_ref paths_ref refresh_ref mkt_ref const_tilde paths_tilde refresh_tilde
-    const_ref="$(homeref "$const_src" sh)"
-    paths_ref="$(homeref "$paths_file" sh)"
-    mkt_ref="$(homeref "$SCRIPT_DIR" sh)"
-    const_tilde="$(homeref "$const_src" tilde)"
-    paths_tilde="$(homeref "$paths_file" tilde)"
-
-    # self-refresh helper: hooks call this so the marketplace clone stays fresh
-    # even if the user never opens Claude Code (whose startup normally does the
-    # pull). Throttled to once per 6h, pull runs in the BACKGROUND — adds ~ms to
-    # hook time; the freshly pulled content is picked up from the next session.
-    local refresh="$home/.agents/agent-rules-refresh.sh"
-    refresh_ref="$(homeref "$refresh" sh)"
-    refresh_tilde="$(homeref "$refresh" tilde)"
-    cat > "$refresh" <<SHEOF
+  # self-refresh helper: hooks call this so the marketplace clone stays fresh
+  # even if the user never opens Claude Code (whose startup normally does the
+  # pull). Throttled to once per 6h, pull runs in the BACKGROUND — adds ~ms to
+  # hook time; the freshly pulled content is picked up from the next session.
+  local refresh="$home/.agents/agent-rules-refresh.sh"
+  refresh_ref="$(homeref "$refresh" sh)"
+  refresh_tilde="$(homeref "$refresh" tilde)"
+  cat > "$refresh" <<SHEOF
 #!/usr/bin/env bash
 # agent-rules managed - regenerated by skills-sync.sh --constitution
 MKT="$mkt_ref"
@@ -401,20 +303,20 @@ if [ ! -f "\$STAMP" ] || [ -n "\$(find "\$STAMP" -mmin +360 2>/dev/null)" ]; the
 fi
 exit 0
 SHEOF
-    chmod +x "$refresh"
+  chmod +x "$refresh"
 
-    if [ "$codex" = 1 ]; then
-      # SessionStart command hook; plain stdout becomes developer context.
-      merge_json_hook "$home/.codex/hooks.json" "SessionStart" \
-        "{\"matcher\":\"startup|resume\",\"hooks\":[{\"type\":\"command\",\"command\":\"bash \\\"$refresh_ref\\\"; cat \\\"$const_ref\\\" \\\"$paths_ref\\\"\",\"statusMessage\":\"agent-rules constitution\",\"timeout\":30}]}"
-      strip_managed_block "$home/.codex/AGENTS.md"   # migrate off the old embedded snapshot
-      echo "  Codex    → ~/.codex/hooks.json SessionStart（自動跟新）"
-    fi
-    if [ -d "$home/.gemini" ]; then
-      # Gemini hooks must answer with JSON (hookSpecificOutput.additionalContext),
-      # so generate a tiny stdlib wrapper the hook invokes.
-      local ghook="$home/.agents/agent-rules-gemini-hook.py"
-      cat > "$ghook" <<PYEOF
+  if [ "$codex" = 1 ]; then
+    # SessionStart command hook; plain stdout becomes developer context.
+    merge_json_hook "$home/.codex/hooks.json" "SessionStart" \
+      "{\"matcher\":\"startup|resume\",\"hooks\":[{\"type\":\"command\",\"command\":\"bash \\\"$refresh_ref\\\"; cat \\\"$const_ref\\\" \\\"$paths_ref\\\"\",\"statusMessage\":\"agent-rules constitution\",\"timeout\":30}]}"
+    strip_managed_block "$home/.codex/AGENTS.md"   # migrate off the old embedded snapshot
+    echo "  Codex    → ~/.codex/hooks.json SessionStart（自動跟新）"
+  fi
+  if [ -d "$home/.gemini" ]; then
+    # Gemini hooks must answer with JSON (hookSpecificOutput.additionalContext),
+    # so generate a tiny stdlib wrapper the hook invokes.
+    local ghook="$home/.agents/agent-rules-gemini-hook.py"
+    cat > "$ghook" <<PYEOF
 #!/usr/bin/env python3
 # agent-rules managed - regenerated by skills-sync.sh --constitution
 import json, os, subprocess
@@ -423,33 +325,33 @@ paths = [os.path.expanduser(p) for p in ["$const_tilde", "$paths_tilde"]]
 txt = "\n\n".join(open(p, encoding="utf-8").read() for p in paths if os.path.exists(p))
 print(json.dumps({"hookSpecificOutput": {"additionalContext": txt}}))
 PYEOF
-      chmod +x "$ghook"
-      merge_json_hook "$home/.gemini/settings.json" "SessionStart" \
-        "{\"hooks\":[{\"type\":\"command\",\"command\":\"python3 '$ghook'\",\"name\":\"agent-rules-constitution\",\"timeout\":10000}]}"
-      strip_managed_block "$home/.gemini/GEMINI.md"  # migrate off the old @import block
-      echo "  Gemini   → ~/.gemini/settings.json SessionStart（自動跟新）"
-    fi
-    if [ "$opencode" = 1 ]; then
-      opencode_add_instructions "$home/.config/opencode/opencode.json" "$const_src" "$paths_file"
-      echo "  OpenCode → ~/.config/opencode/opencode.json instructions（原生常駐機制；plugin API 無 session-start 注入 hook）"
-    fi
-    if [ -n "$cline_dir" ]; then
-      if [ -n "$cline_base" ]; then
-        # global hooks dir is <base>/Hooks, SIBLING of Rules/Workflows (the app
-        # scaffolds it; confirmed by cline#9994) — NOT Rules/Hooks as some blog
-        # posts claim. Hooks are macOS/Linux only.
-        local chooks="$cline_base/Hooks" cts
-        # migrate our files out of the wrong dir earlier versions wrote to
-        local oldhooks="$cline_base/Rules/Hooks" oldf
-        for oldf in "$oldhooks/TaskStart" "$oldhooks/PreToolUse"; do
-          [ -f "$oldf" ] && grep -q "agent-rules managed" "$oldf" && rm -f "$oldf"
-        done
-        rmdir "$oldhooks" 2>/dev/null || true
-        mkdir -p "$chooks"; cts="$chooks/TaskStart"
-        if [ -f "$cts" ] && ! grep -q "agent-rules managed" "$cts"; then
-          echo "  ⚠ Cline：$cts 已存在且不是本腳本產生的（Cline 每個 hook 只能一支腳本）— 不覆蓋；請手動在你的 TaskStart 裡 cat "$const_ref""
-        else
-          cat > "$cts" <<SHEOF
+    chmod +x "$ghook"
+    merge_json_hook "$home/.gemini/settings.json" "SessionStart" \
+      "{\"hooks\":[{\"type\":\"command\",\"command\":\"python3 '$ghook'\",\"name\":\"agent-rules-constitution\",\"timeout\":10000}]}"
+    strip_managed_block "$home/.gemini/GEMINI.md"  # migrate off the old @import block
+    echo "  Gemini   → ~/.gemini/settings.json SessionStart（自動跟新）"
+  fi
+  if [ "$opencode" = 1 ]; then
+    opencode_add_instructions "$home/.config/opencode/opencode.json" "$const_src" "$paths_file"
+    echo "  OpenCode → ~/.config/opencode/opencode.json instructions（原生常駐機制；plugin API 無 session-start 注入 hook）"
+  fi
+  if [ "$cline_present" = 1 ]; then
+    if [ -n "$cline_base" ]; then
+      # global hooks dir is <base>/Hooks, SIBLING of Rules/Workflows (the app
+      # scaffolds it; confirmed by cline#9994) — NOT Rules/Hooks as some blog
+      # posts claim. Hooks are macOS/Linux only.
+      local chooks="$cline_base/Hooks" cts
+      # migrate our files out of the wrong dir earlier versions wrote to
+      local oldhooks="$cline_base/Rules/Hooks" oldf
+      for oldf in "$oldhooks/TaskStart" "$oldhooks/PreToolUse"; do
+        [ -f "$oldf" ] && grep -q "agent-rules managed" "$oldf" && rm -f "$oldf"
+      done
+      rmdir "$oldhooks" 2>/dev/null || true
+      mkdir -p "$chooks"; cts="$chooks/TaskStart"
+      if [ -f "$cts" ] && ! grep -q "agent-rules managed" "$cts"; then
+        echo "  ⚠ Cline：$cts 已存在且不是本腳本產生的（Cline 每個 hook 只能一支腳本）— 不覆蓋；請手動在你的 TaskStart 裡 cat "$const_ref""
+      else
+        cat > "$cts" <<SHEOF
 #!/usr/bin/env bash
 # agent-rules managed - regenerated by skills-sync.sh --constitution
 cat >/dev/null
@@ -460,57 +362,63 @@ txt = "\n\n".join(open(p, encoding="utf-8").read() for p in sys.argv[1:] if os.p
 print(json.dumps({"cancel": False, "contextModification": txt}))
 PY
 SHEOF
-          chmod +x "$cts"
-          # migrate off the old rules-dir symlink + paths file (hook replaces both)
-          rm -f "$cline_dir/agent-rules-constitution.md" "$cline_dir/agent-rules-situational-paths.md"
-          echo "  Cline    → ${cts}（TaskStart hook，自動跟新）"
-        fi
-      else
-        # ~/.cline-only layout: global hooks dir undocumented there → keep the
-        # rules-dir symlink fallback (also auto-fresh, just not a hook).
-        ln -sfn "$const_src" "$cline_dir/agent-rules-constitution.md"
-        cp "$paths_file" "$cline_dir/agent-rules-situational-paths.md"
-        echo "  Cline    → ${cline_dir}（無 Cline base 目錄佈局，退回 rules symlink，自動跟新）"
+        chmod +x "$cts"
+        # migrate off the old rules-dir symlink + paths file (hook replaces both)
+        [ -n "$cline_dir" ] && rm -f "$cline_dir/agent-rules-constitution.md" "$cline_dir/agent-rules-situational-paths.md"
+        echo "  Cline    → ${cts}（TaskStart hook，自動跟新）"
       fi
-    fi
-
-    # SAFETY guard: PreToolUse-level interception of destructive commands —
-    # upgrades SAFETY.md §1 from "the model read the rule" to "the host blocks
-    # the call". Claude Code gets this from the agent-rules plugin itself.
-    local guard="$SCRIPT_DIR/agent-rules/hooks/guard.py" guard_ref
-    guard_ref="$(homeref "$SCRIPT_DIR/agent-rules/hooks/guard.py" sh)"
-    if [ ! -f "$guard" ]; then
-      echo "  ⚠ 找不到 ${guard}，跳過 SAFETY guard"
     else
-      echo "→ SAFETY guard（--constitution）：hook 層攔破壞性指令（pattern 清單＝SAFETY.md §1）"
-      if [ "$codex" = 1 ]; then
-        merge_json_hook "$home/.codex/hooks.json" "PreToolUse" \
-          "{\"hooks\":[{\"type\":\"command\",\"command\":\"python3 \\\"$guard_ref\\\" --agent codex\",\"statusMessage\":\"agent-rules guard\",\"timeout\":15}]}"
-        echo "  Codex    → ~/.codex/hooks.json PreToolUse（deny）"
-      fi
-      if [ -d "$home/.gemini" ]; then
-        merge_json_hook "$home/.gemini/settings.json" "BeforeTool" \
-          "{\"hooks\":[{\"type\":\"command\",\"command\":\"python3 \\\"$guard_ref\\\" --agent gemini\",\"name\":\"agent-rules-guard\",\"timeout\":10000}]}"
-        echo "  Gemini   → ~/.gemini/settings.json BeforeTool（deny）"
-      fi
-      if [ -n "$cline_dir" ] && [ -n "$cline_base" ]; then
-        local cpre="$cline_base/Hooks/PreToolUse"
-        mkdir -p "$cline_base/Hooks"
-        if [ -f "$cpre" ] && ! grep -q "agent-rules managed" "$cpre"; then
-          echo "  ⚠ Cline：$cpre 已存在且不是本腳本產生的 — 不覆蓋；請在你的 PreToolUse 裡自行呼叫 python3 "$guard_ref" --agent cline"
-        else
-          cat > "$cpre" <<SHEOF
+      # ~/.cline-only layout: global hooks dir undocumented there → keep the
+      # rules-dir symlink fallback (also auto-fresh, just not a hook).
+      mkdir -p "$cline_dir"
+      ln -sfn "$const_src" "$cline_dir/agent-rules-constitution.md"
+      cp "$paths_file" "$cline_dir/agent-rules-situational-paths.md"
+      echo "  Cline    → ${cline_dir}（無 Cline base 目錄佈局，退回 rules symlink，自動跟新）"
+    fi
+  fi
+  return 0
+}
+
+# SAFETY guard (PreToolUse-level interception of destructive commands) for the
+# detected agents — upgrades SAFETY.md §1 from "the model read the rule" to "the
+# host blocks the call". Claude Code gets this from the agent-rules plugin itself.
+wire_guard() {
+  local home="$1" codex="$2" opencode="$3" cline_present="$4" cline_base="$5"
+  local guard="$SCRIPT_DIR/agent-rules/hooks/guard.py" guard_ref
+  guard_ref="$(homeref "$SCRIPT_DIR/agent-rules/hooks/guard.py" sh)"
+  if [ ! -f "$guard" ]; then
+    echo "  ⚠ 找不到 ${guard}，跳過 SAFETY guard"
+    return 0
+  fi
+  echo "→ SAFETY guard（--constitution）：hook 層攔破壞性指令（pattern 清單＝SAFETY.md §1）"
+  if [ "$codex" = 1 ]; then
+    merge_json_hook "$home/.codex/hooks.json" "PreToolUse" \
+      "{\"hooks\":[{\"type\":\"command\",\"command\":\"python3 \\\"$guard_ref\\\" --agent codex\",\"statusMessage\":\"agent-rules guard\",\"timeout\":15}]}"
+    echo "  Codex    → ~/.codex/hooks.json PreToolUse（deny）"
+  fi
+  if [ -d "$home/.gemini" ]; then
+    merge_json_hook "$home/.gemini/settings.json" "BeforeTool" \
+      "{\"hooks\":[{\"type\":\"command\",\"command\":\"python3 \\\"$guard_ref\\\" --agent gemini\",\"name\":\"agent-rules-guard\",\"timeout\":10000}]}"
+    echo "  Gemini   → ~/.gemini/settings.json BeforeTool（deny）"
+  fi
+  if [ "$cline_present" = 1 ] && [ -n "$cline_base" ]; then
+    local cpre="$cline_base/Hooks/PreToolUse"
+    mkdir -p "$cline_base/Hooks"
+    if [ -f "$cpre" ] && ! grep -q "agent-rules managed" "$cpre"; then
+      echo "  ⚠ Cline：$cpre 已存在且不是本腳本產生的 — 不覆蓋；請在你的 PreToolUse 裡自行呼叫 python3 "$guard_ref" --agent cline"
+    else
+      cat > "$cpre" <<SHEOF
 #!/usr/bin/env bash
 # agent-rules managed - regenerated by skills-sync.sh --constitution
 exec python3 "$guard_ref" --agent cline
 SHEOF
-          chmod +x "$cpre"
-          echo "  Cline    → ${cpre}（cancel）"
-        fi
-      fi
-      if [ "$opencode" = 1 ]; then
-        mkdir -p "$home/.config/opencode/plugins"
-        cat > "$home/.config/opencode/plugins/agent-rules-guard.js" <<'JSEOF'
+      chmod +x "$cpre"
+      echo "  Cline    → ${cpre}（cancel）"
+    fi
+  fi
+  if [ "$opencode" = 1 ]; then
+    mkdir -p "$home/.config/opencode/plugins"
+    cat > "$home/.config/opencode/plugins/agent-rules-guard.js" <<'JSEOF'
 // agent-rules managed - regenerated by skills-sync.sh --constitution
 // Pattern list mirrors agent-rules/hooks/guard.py — change one, change both.
 export const AgentRulesGuard = async () => ({
@@ -538,353 +446,143 @@ export const AgentRulesGuard = async () => ({
   },
 })
 JSEOF
-        echo "  OpenCode → ~/.config/opencode/plugins/agent-rules-guard.js（throw）"
-      fi
+    echo "  OpenCode → ~/.config/opencode/plugins/agent-rules-guard.js（throw）"
+  fi
+  return 0
+}
+
+sync_agents() {
+  local home="$HOME" did=0
+  local gemini=0 codex=0 opencode=0 agents_dir=0 cline_dir=""
+
+  # Gemini CLI reads ~/.agents/skills natively (neutral interop dir); also ~/.gemini.
+  if [ -d "$home/.gemini" ] || [ -d "$home/.agents" ]; then
+    gemini=1
+  fi
+  # OpenCode reads ~/.agents/skills natively too (plus ~/.config/opencode/skills).
+  if [ -d "$home/.config/opencode" ]; then
+    opencode=1
+  fi
+  if [ "$gemini" = 1 ] || [ "$opencode" = 1 ]; then
+    mkdir -p "$home/.agents/skills"; agents_dir=1; did=1
+  fi
+  # Codex CLI: ~/.codex/skills
+  if [ -d "$home/.codex" ]; then
+    mkdir -p "$home/.codex/skills"; codex=1; did=1
+  fi
+  # Cline: detect by INSTALL, not by its data dir. The data dir (~/Documents/Cline
+  # on macOS, ~/Cline on Linux/WSL — cline#9994) only appears after the first
+  # launch, so keying on it means a fresh sync (devcontainer postCreate, or a host
+  # where you've installed the extension but not opened it yet) silently skips
+  # Cline until you open it and re-run. The VS Code extension folder
+  # (saoudrizwan.claude-dev) is on disk the moment it's installed, so we detect
+  # that too and provision in one run. No Cline anywhere → nothing created.
+  local cline_base="" cline_present=0 cline_skills="" cline_dir=""
+  if [ -d "$home/Documents/Cline" ]; then
+    cline_base="$home/Documents/Cline"
+  elif [ -d "$home/Cline" ]; then
+    cline_base="$home/Cline"
+  fi
+  local extfound=0 g
+  for g in "$home"/.vscode*/extensions/"$CLINE_EXT_ID"* \
+           "$home"/.cursor*/extensions/"$CLINE_EXT_ID"* \
+           "$home"/.windsurf*/extensions/"$CLINE_EXT_ID"*; do
+    [ -e "$g" ] && { extfound=1; break; }
+  done
+  # Cline is "present" if ANY signal fires — data dir, CLI state dir, the
+  # installed extension, the workspace config that requests it (closes the
+  # devcontainer "still installing" race), or an explicit --cline. No signal at
+  # all → nothing is created. --cline is the last-resort manual override.
+  local declared=0; cline_declared && declared=1
+  if [ -n "$cline_base" ] || [ "$extfound" = 1 ] || [ -d "$home/.cline" ] \
+     || [ "$declared" = 1 ] || [ "${FORCE_CLINE:-0}" = 1 ]; then
+    cline_present=1; did=1
+    # Skills use Cline's native on-demand Skills (>=3.48): a SKILL.md dir under
+    # the global skills path, loaded via use_skill only when relevant — so they
+    # don't sit in the always-on context the way the old pointer rules did.
+    cline_skills="$home/.cline/skills"; mkdir -p "$cline_skills"
+    # Rules/Hooks (constitution + guard) need the app-layout base. Default it by
+    # OS when Cline is coming (extension/declared/forced) but never opened, so
+    # first-run wiring lands where the extension will read once launched.
+    if [ -z "$cline_base" ] \
+       && { [ "$extfound" = 1 ] || [ "$declared" = 1 ] || [ "${FORCE_CLINE:-0}" = 1 ]; }; then
+      case "$(uname -s)" in
+        Darwin) cline_base="$home/Documents/Cline" ;;
+        *)      cline_base="$home/Cline" ;;
+      esac
     fi
+    # CLI-only (~/.cline, no app base): constitution falls back to a rules-dir
+    # symlink there (the CLI has no Hooks layout).
+    [ -z "$cline_base" ] && [ -d "$home/.cline" ] && cline_dir="$home/.cline/rules"
+  fi
+
+  if [ "$did" = 0 ]; then
+    echo "→ 跨 agent：未偵測到 Gemini / Codex / Cline / OpenCode，略過（只處理了 Claude）"
+    return 0
+  fi
+
+  echo "→ 跨 agent：同步自家 skill 到偵測到的 agent"
+  local skill src
+  for skill in $(own_skill_dirs); do
+    src="$SCRIPT_DIR/$skill"
+    [ "$agents_dir" = 1 ]     && ln -sfn "$src" "$home/.agents/skills/$skill"
+    [ "$codex" = 1 ]          && ln -sfn "$src" "$home/.codex/skills/$skill"
+    [ -n "$cline_skills" ]    && ln -sfn "$src" "$cline_skills/$skill"
+    echo "  • $skill"
+  done
+  # prune OUR stale entries (skills renamed/removed upstream): only symlinks
+  # pointing INTO this repo with a vanished target, and only pointer rules we
+  # generated — anything the user made themselves is left alone.
+  local d link tgt rd f
+  for d in "$home/.agents/skills" "$home/.codex/skills" "$cline_skills"; do
+    [ -n "$d" ] && [ -d "$d" ] || continue
+    for link in "$d"/*; do
+      [ -L "$link" ] || continue
+      tgt="$(readlink "$link")"
+      case "$tgt" in
+        "$SCRIPT_DIR"/*) [ -e "$tgt" ] || { rm -f "$link"; echo "  − $(basename "$link")（已改名/移除，清掉 stale symlink）"; } ;;
+      esac
+    done
+  done
+  # migrate off the pre-3.48 approach: we used to write an always-on pointer .md
+  # per skill into Cline's Rules dir (and older builds into ~/.cline/rules). Now
+  # that Cline has native on-demand Skills those cards are obsolete — remove OURS
+  # (constitution/paths files + the pointer cards); the user's own rules stay.
+  for rd in "$cline_base/Rules" "$home/.cline/rules"; do
+    [ -n "$rd" ] && [ -d "$rd" ] || continue
+    for f in "$rd"/*.md; do
+      [ -f "$f" ] || continue
+      case "$(basename "$f")" in
+        agent-rules-constitution.md|agent-rules-situational-paths.md)
+          rm -f "$f"; echo "  − $(basename "$f")（改用 hook 注入，移除舊檔）" ;;
+        *) grep -q "kungfu 的指標規則" "$f" 2>/dev/null \
+             && { rm -f "$f"; echo "  − $(basename "$f")（改用原生 Cline Skills，移除舊指標卡）"; } ;;
+      esac
+    done
+    rmdir "$rd" 2>/dev/null || true
+  done
+
+  [ "$gemini" = 1 ]      && echo "  Gemini   → ~/.agents/skills"
+  [ "$opencode" = 1 ]    && echo "  OpenCode → ~/.agents/skills（原生讀取，與 Gemini 共用）"
+  [ "$codex" = 1 ]       && echo "  Codex    → ~/.codex/skills"
+  [ "$cline_present" = 1 ] && echo "  Cline    → $cline_skills （原生 Skills，on-demand）"
+
+  # Constitution + guard: OPT-IN — these are personal dotfiles, so nothing is
+  # written unless --constitution was passed. Each is wired via the agent's own
+  # HOOK mechanism (reads the marketplace file at session time → always fresh),
+  # mirroring the Claude Code hook plugin. If the constitution file is missing,
+  # wire_constitution returns non-zero and we skip the guard too.
+  if [ "$CONSTITUTION" = 1 ]; then
+    wire_constitution "$home" "$codex" "$opencode" "$cline_present" "$cline_base" "$cline_dir" \
+      || return 0
+    wire_guard "$home" "$codex" "$opencode" "$cline_present" "$cline_base"
   fi
 }
 
-self_test() {
-  # lint: `$var` immediately followed by a multibyte char breaks bash 3.2
-  # varname lexing under CJK UTF-8 locales (the char is absorbed into the
-  # name -> set -u explodes at runtime, e.g. `cline_dir（: unbound variable`).
-  # Always write `${var}` before non-ASCII text. Locale-independent check.
-  local lint
-  lint="$(python3 - "$SCRIPT_DIR/skills-sync.sh" <<'PYLINT'
-import re, sys
-pat = re.compile(r'\$[a-zA-Z_][a-zA-Z0-9_]*[^\x00-\x7f]')
-hits = [f"  line {i}: {l.strip()[:70]}" for i, l in enumerate(open(sys.argv[1], encoding='utf-8'), 1) if pat.search(l)]
-print("\n".join(hits))
-PYLINT
-)"
-  if [ -n "$lint" ]; then
-    echo "self-test FAIL (unbraced \$var directly before a multibyte char):"
-    echo "$lint"
-    exit 1
-  fi
 
-  local tmp; tmp="$(mktemp -d)"
-  cat > "$tmp/mp.json" <<'JSON'
-{"plugins":[
-  {"name":"wiki-doc-author","source":"./","skills":["./wiki-doc-author"]},
-  {"name":"sop-to-spec","source":"./","skills":["./sop-to-spec"]},
-  {"name":"skill-author","source":"./","skills":["./skill-author"]},
-  {"name":"loner","source":"./","skills":["./loner"]},
-  {"name":"kungfu","source":"./","skills":["./wiki-doc-author","./sop-to-spec","./skill-author"]},
-  {"name":"superpowers","source":{"source":"url","url":"x"}},
-  {"name":"andrej-karpathy-skills","source":{"source":"url","url":"y"}}
-]}
-JSON
-  local got want
-  got="$(plugin_plan "$tmp/mp.json" | sort | tr '\n' ';')"
-  want="INSTALL andrej-karpathy-skills;INSTALL kungfu;INSTALL loner;INSTALL superpowers;RETIRE skill-author;RETIRE sop-to-spec;RETIRE wiki-doc-author;"
-  if [ "$got" != "$want" ]; then
-    rm -rf "$tmp"
-    echo "self-test FAIL (plugin plan)"; echo "  got:  [$got]"; echo "  want: [$want]"; exit 1
-  fi
-
-  # auto-update merge: creates the entry, preserves other keys, idempotent.
-  local out1 out2 fail=0
-  printf '{"model":"keep-me","extraKnownMarketplaces":{"other":{"source":{"source":"github","repo":"x/y"}}}}\n' > "$tmp/settings.json"
-  out1="$(CLAUDE_SETTINGS_FILE="$tmp/settings.json" enable_auto_update)"
-  out2="$(CLAUDE_SETTINGS_FILE="$tmp/settings.json" enable_auto_update)"
-  python3 - "$tmp/settings.json" <<'PY' || fail=1
-import json, sys
-s = json.load(open(sys.argv[1]))
-assert s["model"] == "keep-me", "clobbered unrelated key"
-assert s["extraKnownMarketplaces"]["other"]["source"]["repo"] == "x/y", "clobbered other marketplace"
-mk = s["extraKnownMarketplaces"]["kungfu"]
-assert mk["autoUpdate"] is True, "autoUpdate not set"
-assert mk["source"]["url"].endswith(".git"), "source not created"
-PY
-  [ "$out1" = "enabled" ] && [ "$out2" = "already on" ] || { echo "  FAIL: auto-update not idempotent (got '$out1'/'$out2')"; fail=1; }
-  rm -rf "$tmp"
-  if [ "$fail" = 0 ]; then
-    echo "self-test OK — plugin plan (bundle installs, covered singles retire) + auto-update merge"
-  else
-    exit 1
-  fi
-}
-
-# Unit-test the guard against the real script with per-agent payloads.
-self_test_guard() {
-  local g="$SCRIPT_DIR/agent-rules/hooks/guard.py" fail=0 out
-  # block cases per agent
-  out="$(echo '{"tool_name":"Bash","tool_input":{"command":"rm -rf /tmp/x"}}' | python3 "$g" --agent claude)"
-  echo "$out" | grep -q '"permissionDecision": *"ask"' || { echo "  FAIL: claude rm -rf not asked"; fail=1; }
-  out="$(echo '{"tool_name":"Bash","tool_input":{"command":"git push -f origin main"}}' | python3 "$g" --agent codex)"
-  echo "$out" | grep -q '"permissionDecision": *"deny"' || { echo "  FAIL: codex force-push not denied"; fail=1; }
-  out="$(echo '{"tool_name":"run_shell_command","tool_input":{"command":"sudo rm x"}}' | python3 "$g" --agent gemini)"
-  echo "$out" | grep -q '"decision": *"deny"' || { echo "  FAIL: gemini sudo not denied"; fail=1; }
-  out="$(echo '{"toolName":"executeCommand","parameters":{"command":"DROP TABLE users;"}}' | python3 "$g" --agent cline)"
-  echo "$out" | grep -q '"cancel": *true' || { echo "  FAIL: cline DROP TABLE not cancelled"; fail=1; }
-  # pass cases — safe command, non-shell tool, dangerous text under a content key
-  out="$(echo '{"tool_name":"Bash","tool_input":{"command":"ls -la && git status"}}' | python3 "$g" --agent claude)"
-  [ -z "$out" ] || { echo "  FAIL: claude safe command produced output"; fail=1; }
-  out="$(echo '{"tool_name":"Write","tool_input":{"command":"rm -rf /"}}' | python3 "$g" --agent claude)"
-  [ -z "$out" ] || { echo "  FAIL: claude non-Bash tool should be ignored"; fail=1; }
-  out="$(echo '{"toolName":"write_to_file","parameters":{"content":"#!/bin/sh\nrm -rf build/"}}' | python3 "$g" --agent cline)"
-  echo "$out" | grep -q '"cancel": *false' || { echo "  FAIL: cline content key false positive"; fail=1; }
-  # SQL nuance: DELETE with WHERE passes, without blocks
-  out="$(echo '{"tool_name":"Bash","tool_input":{"command":"psql -c \"DELETE FROM t WHERE id=1\""}}' | python3 "$g" --agent claude)"
-  [ -z "$out" ] || { echo "  FAIL: DELETE with WHERE should pass"; fail=1; }
-  out="$(echo '{"tool_name":"Bash","tool_input":{"command":"psql -c \"DELETE FROM t\""}}' | python3 "$g" --agent claude)"
-  echo "$out" | grep -q '"permissionDecision": *"ask"' || { echo "  FAIL: DELETE without WHERE not asked"; fail=1; }
-  # malformed stdin: exit 0, no crash
-  echo 'not-json' | python3 "$g" --agent claude >/dev/null 2>&1 || { echo "  FAIL: guard crashed on malformed input"; fail=1; }
-  if [ "$fail" = 0 ]; then
-    echo "self-test OK — guard: block(rm -rf/force-push/sudo/DROP/DELETE-no-WHERE) + pass(safe/non-shell/content-key/WHERE) + malformed-input"
-  else
-    exit 1
-  fi
-}
-
-self_test_agents() {
-  local sb; sb="$(mktemp -d)" fail=0
-  mkdir -p "$sb/src/demo-skill" "$sb/src/agent-rules/rules" "$sb/src/agent-rules/hooks"
-  cp "$SCRIPT_DIR/agent-rules/hooks/guard.py" "$sb/src/agent-rules/hooks/guard.py"
-  printf -- '---\nname: demo-skill\ndescription: 測試用 skill。\n---\n# body\n' > "$sb/src/demo-skill/SKILL.md"
-  printf -- '# 憲法\nLAW-MARKER-42\n' > "$sb/src/agent-rules/rules/CONSTITUTION.md"
-  printf -- '# D\n' > "$sb/src/agent-rules/rules/DECISIONS.md"
-  printf -- '# S\n' > "$sb/src/agent-rules/rules/SAFETY.md"
-  printf -- '# A\n' > "$sb/src/agent-rules/rules/ANTIPATTERNS.md"
-
-  # case 1: all agent homes present (constitution OFF by default)
-  mkdir -p "$sb/h1/.gemini" "$sb/h1/.codex" "$sb/h1/.cline"
-  ( SCRIPT_DIR="$sb/src"; HOME="$sb/h1"; sync_agents >/dev/null )
-  [ -L "$sb/h1/.agents/skills/demo-skill" ] || { echo "  FAIL: gemini ~/.agents symlink"; fail=1; }
-  [ "$(readlink "$sb/h1/.codex/skills/demo-skill" 2>/dev/null)" = "$sb/src/demo-skill" ] \
-    || { echo "  FAIL: codex symlink target"; fail=1; }
-  grep -q "demo-skill" "$sb/h1/.cline/rules/demo-skill.md" 2>/dev/null \
-    || { echo "  FAIL: cline rule missing name"; fail=1; }
-  grep -q "$sb/src/demo-skill/SKILL.md" "$sb/h1/.cline/rules/demo-skill.md" 2>/dev/null \
-    || { echo "  FAIL: cline rule missing source path"; fail=1; }
-  [ -e "$sb/h1/.codex/AGENTS.md" ] && { echo "  FAIL: constitution written without --constitution"; fail=1; }
-  [ -e "$sb/h1/.gemini/GEMINI.md" ] && { echo "  FAIL: gemini constitution written without flag"; fail=1; }
-
-  # case 2: no agent homes → nothing created
-  mkdir -p "$sb/h2"
-  ( SCRIPT_DIR="$sb/src"; HOME="$sb/h2"; sync_agents >/dev/null )
-  [ -e "$sb/h2/.agents" ] && { echo "  FAIL: created agent dir when none detected"; fail=1; }
-
-  # case 3: idempotent — re-run, symlink still valid (not nested)
-  ( SCRIPT_DIR="$sb/src"; HOME="$sb/h1"; sync_agents >/dev/null )
-  [ "$(readlink "$sb/h1/.codex/skills/demo-skill" 2>/dev/null)" = "$sb/src/demo-skill" ] \
-    || { echo "  FAIL: not idempotent"; fail=1; }
-
-  # case 3b: stale prune — our dangling symlink and stale Cline pointer rule are
-  # removed; a user's own symlink pointing elsewhere is kept.
-  ln -s "$sb/src/renamed-away" "$sb/h1/.codex/skills/renamed-away"
-  ln -s "$sb/elsewhere/thing" "$sb/h1/.codex/skills/users-own"
-  printf '# Skill: gone\n\ngone.\n\n完整步驟在 `%s/gone-skill/SKILL.md`。（這是指向 kungfu 的指標規則）\n' "$sb/src" > "$sb/h1/.cline/rules/gone-skill.md"
-  printf '# my note\n' > "$sb/h1/.cline/rules/my-note.md"
-  ( SCRIPT_DIR="$sb/src"; HOME="$sb/h1"; sync_agents >/dev/null )
-  [ -L "$sb/h1/.codex/skills/renamed-away" ] && { echo "  FAIL: stale symlink not pruned"; fail=1; }
-  [ -L "$sb/h1/.codex/skills/users-own" ] || { echo "  FAIL: user's own symlink pruned"; fail=1; }
-  [ -f "$sb/h1/.cline/rules/gone-skill.md" ] && { echo "  FAIL: stale cline rule not pruned"; fail=1; }
-  [ -f "$sb/h1/.cline/rules/my-note.md" ] || { echo "  FAIL: user's own cline rule pruned"; fail=1; }
-
-  # case 4: OpenCode detected via ~/.config/opencode → shares ~/.agents/skills
-  mkdir -p "$sb/h3/.config/opencode"
-  ( SCRIPT_DIR="$sb/src"; HOME="$sb/h3"; sync_agents >/dev/null )
-  [ -L "$sb/h3/.agents/skills/demo-skill" ] || { echo "  FAIL: opencode ~/.agents symlink"; fail=1; }
-
-  # case 4b: BOTH Cline layouts present (~/.cline CLI state dir + Documents/Cline
-  # app base) → app layout wins (extension only reads <base>/Rules); our old
-  # files in ~/.cline/rules migrate away; the user's own file there is kept.
-  mkdir -p "$sb/h9/Documents/Cline" "$sb/h9/.cline/rules"
-  printf '# Skill: old\n\nold.\n\n完整步驟在 `%s/demo-skill/SKILL.md`。（這是指向 kungfu 的指標規則）\n' "$sb/src" > "$sb/h9/.cline/rules/demo-skill.md"
-  printf '# my own cline rule\n' > "$sb/h9/.cline/rules/keep-me.md"
-  ( SCRIPT_DIR="$sb/src"; HOME="$sb/h9"; sync_agents >/dev/null )
-  grep -q "demo-skill" "$sb/h9/Documents/Cline/Rules/demo-skill.md" 2>/dev/null \
-    || { echo "  FAIL: both-layouts rules not in Documents/Cline/Rules"; fail=1; }
-  [ -f "$sb/h9/.cline/rules/demo-skill.md" ] \
-    && { echo "  FAIL: old pointer rule not migrated out of ~/.cline/rules"; fail=1; }
-  [ -f "$sb/h9/.cline/rules/keep-me.md" ] \
-    || { echo "  FAIL: user's own ~/.cline rule removed"; fail=1; }
-
-  # case 5: --constitution → hooks everywhere: Codex hooks.json, Gemini
-  # settings.json hook (+ wrapper actually executed), OpenCode instructions[],
-  # Cline without Documents/ falls back to symlink; old managed blocks are
-  # stripped (migration); unrelated keys survive; double run stays idempotent.
-  mkdir -p "$sb/h4/.codex" "$sb/h4/.gemini" "$sb/h4/.config/opencode" "$sb/h4/.cline"
-  OLDBLOCK='<!-- agent-rules-constitution:begin (managed by skills-sync.sh --constitution; edits inside are overwritten) -->
-old embedded stuff
-<!-- agent-rules-constitution:end -->'
-  printf 'my own codex rules\n\n%s\n' "$OLDBLOCK" > "$sb/h4/.codex/AGENTS.md"
-  printf 'my gemini notes\n\n%s\n' "$OLDBLOCK" > "$sb/h4/.gemini/GEMINI.md"
-  printf '{"theme": "dark"}\n' > "$sb/h4/.gemini/settings.json"
-  printf '{"model": "keep-me"}\n' > "$sb/h4/.config/opencode/opencode.json"
-  # judgment bridge fixture: 有 INDEX.md → 解析後嵌入 paths file；placeholder 換成實路徑
-  mkdir -p "$sb/jm"
-  printf '# INDEX\nroute: @JUDGMENT@/domains/DEMO.md\n' > "$sb/jm/INDEX.md"
-  ( SCRIPT_DIR="$sb/src"; HOME="$sb/h4"; CONSTITUTION=1; JUDGMENT_DIR="$sb/jm"; sync_agents >/dev/null )
-  ( SCRIPT_DIR="$sb/src"; HOME="$sb/h4"; CONSTITUTION=1; JUDGMENT_DIR="$sb/jm"; sync_agents >/dev/null )
-  grep -q "route: $sb/jm/domains/DEMO.md" "$sb/h4/.agents/agent-rules-situational-paths.md" 2>/dev/null \
-    || { echo "  FAIL: judgment bridge not embedded/resolved in paths file"; fail=1; }
-  grep -q "@JUDGMENT@" "$sb/h4/.agents/agent-rules-situational-paths.md" 2>/dev/null \
-    && { echo "  FAIL: judgment placeholder not resolved"; fail=1; }
-  # Codex: hook registered once, command points at the constitution; old block gone
-  python3 - "$sb/h4/.codex/hooks.json" "$sb/src/agent-rules/rules/CONSTITUTION.md" <<'PY' || { echo "  FAIL: codex hooks.json wrong"; fail=1; }
-import json, sys
-cfg = json.load(open(sys.argv[1]))
-gs = cfg["hooks"]["SessionStart"]
-ours = [g for g in gs if any("agent-rules" in h["command"] for h in g["hooks"])]
-assert len(ours) == 1, "not exactly one agent-rules hook group"
-assert sys.argv[2] in ours[0]["hooks"][0]["command"], "command missing constitution path"
-PY
-  grep -q "my own codex rules" "$sb/h4/.codex/AGENTS.md" \
-    || { echo "  FAIL: codex user content lost during block strip"; fail=1; }
-  grep -q "agent-rules-constitution:begin" "$sb/h4/.codex/AGENTS.md" \
-    && { echo "  FAIL: codex old managed block not stripped"; fail=1; }
-  # Gemini: settings hook idempotent + unrelated key kept; wrapper runs and emits the constitution
-  python3 - "$sb/h4/.gemini/settings.json" <<'PY' || { echo "  FAIL: gemini settings.json wrong"; fail=1; }
-import json, sys
-cfg = json.load(open(sys.argv[1]))
-assert cfg["theme"] == "dark", "clobbered theme"
-gs = cfg["hooks"]["SessionStart"]
-ours = [g for g in gs if any("agent-rules" in h["command"] for h in g["hooks"])]
-assert len(ours) == 1, "not exactly one agent-rules hook group"
-PY
-  out="$(python3 "$sb/h4/.agents/agent-rules-gemini-hook.py")"
-  printf '%s' "$out" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert "LAW-MARKER-42" in d["hookSpecificOutput"]["additionalContext"]' \
-    || { echo "  FAIL: gemini wrapper output wrong"; fail=1; }
-  grep -q "my gemini notes" "$sb/h4/.gemini/GEMINI.md" \
-    || { echo "  FAIL: gemini user content lost during block strip"; fail=1; }
-  grep -q "agent-rules-constitution:begin" "$sb/h4/.gemini/GEMINI.md" \
-    && { echo "  FAIL: gemini old managed block not stripped"; fail=1; }
-  # OpenCode: instructions[] entries, AGENTS.md untouched, other keys kept, no dupes
-  python3 - "$sb/h4/.config/opencode/opencode.json" "$sb/src/agent-rules/rules/CONSTITUTION.md" <<'PY' || { echo "  FAIL: opencode instructions wrong"; fail=1; }
-import json, sys
-cfg = json.load(open(sys.argv[1]))
-assert cfg["model"] == "keep-me", "clobbered other key"
-ins = cfg["instructions"]
-assert ins.count(sys.argv[2]) == 1, "constitution path missing or duplicated"
-assert any(p.endswith("agent-rules-situational-paths.md") for p in ins), "paths file missing"
-PY
-  [ -e "$sb/h4/.config/opencode/AGENTS.md" ] \
-    && { echo "  FAIL: opencode AGENTS.md should be untouched"; fail=1; }
-  # Cline (~/.cline only, no Documents/Cline): falls back to rules symlink
-  [ "$(readlink "$sb/h4/.cline/rules/agent-rules-constitution.md" 2>/dev/null)" = "$sb/src/agent-rules/rules/CONSTITUTION.md" ] \
-    || { echo "  FAIL: cline fallback symlink missing"; fail=1; }
-  # guard wiring: codex PreToolUse + gemini BeforeTool registered once, constitution hooks intact
-  python3 - "$sb/h4/.codex/hooks.json" <<'PY' || { echo "  FAIL: codex guard hook wrong"; fail=1; }
-import json, sys
-cfg = json.load(open(sys.argv[1]))
-pre = [g for g in cfg["hooks"]["PreToolUse"] if any("agent-rules" in h["command"] for h in g["hooks"])]
-assert len(pre) == 1 and "--agent codex" in pre[0]["hooks"][0]["command"]
-assert len(cfg["hooks"]["SessionStart"]) >= 1, "constitution hook lost"
-PY
-  python3 - "$sb/h4/.gemini/settings.json" <<'PY' || { echo "  FAIL: gemini guard hook wrong"; fail=1; }
-import json, sys
-cfg = json.load(open(sys.argv[1]))
-bt = [g for g in cfg["hooks"]["BeforeTool"] if any("agent-rules" in h["command"] for h in g["hooks"])]
-assert len(bt) == 1 and "--agent gemini" in bt[0]["hooks"][0]["command"]
-assert cfg["theme"] == "dark"
-PY
-  grep -q "tool.execute.before" "$sb/h4/.config/opencode/plugins/agent-rules-guard.js" 2>/dev/null \
-    || { echo "  FAIL: opencode guard plugin missing"; fail=1; }
-  # shared paths file generated in ~/.agents
-  grep -q "SAFETY: $sb/src/agent-rules/rules/SAFETY.md" "$sb/h4/.agents/agent-rules-situational-paths.md" 2>/dev/null \
-    || { echo "  FAIL: shared situational paths file missing"; fail=1; }
-  # self-refresh helper: generated, executable, throttled-stamp on git src,
-  # silent no-op twice in a row (throttle), codex hook command invokes it
-  [ -x "$sb/h4/.agents/agent-rules-refresh.sh" ] || { echo "  FAIL: refresh helper missing"; fail=1; }
-  git -C "$sb/src" init -q 2>/dev/null
-  ( HOME="$sb/h4"; bash "$sb/h4/.agents/agent-rules-refresh.sh" && bash "$sb/h4/.agents/agent-rules-refresh.sh" ) \
-    || { echo "  FAIL: refresh helper errored"; fail=1; }
-  sleep 0.2   # pull is backgrounded; give the stamp a beat
-  [ -f "$sb/h4/.agents/.agent-rules-refresh-stamp" ] || { echo "  FAIL: refresh stamp not created"; fail=1; }
-  grep -q "agent-rules-refresh.sh" "$sb/h4/.codex/hooks.json" \
-    || { echo "  FAIL: codex hook does not invoke refresh"; fail=1; }
-
-  # case 6: Cline with Documents/Cline layout → hooks land in <base>/Hooks
-  # (sibling of Rules, per cline#9994), run correctly, and our files in the
-  # old wrong dir (Rules/Hooks) are migrated away; foreign TaskStart never
-  # clobbered.
-  mkdir -p "$sb/h5/Documents/Cline/Rules/Hooks"
-  printf '#!/bin/sh\n# agent-rules managed\necho old\n' > "$sb/h5/Documents/Cline/Rules/Hooks/TaskStart"
-  ( SCRIPT_DIR="$sb/src"; HOME="$sb/h5"; CONSTITUTION=1; sync_agents >/dev/null )
-  cts="$sb/h5/Documents/Cline/Hooks/TaskStart"
-  [ -x "$cts" ] || { echo "  FAIL: cline TaskStart hook missing or not executable"; fail=1; }
-  echo '{}' | "$cts" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["cancel"] is False and "LAW-MARKER-42" in d["contextModification"]' \
-    || { echo "  FAIL: cline TaskStart output wrong"; fail=1; }
-  cpre="$sb/h5/Documents/Cline/Hooks/PreToolUse"
-  [ -x "$cpre" ] || { echo "  FAIL: cline PreToolUse guard missing or not executable"; fail=1; }
-  echo '{"toolName":"executeCommand","parameters":{"command":"rm -rf /"}}' | "$cpre" \
-    | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["cancel"] is True' \
-    || { echo "  FAIL: cline PreToolUse guard did not cancel rm -rf"; fail=1; }
-  [ -e "$sb/h5/Documents/Cline/Rules/Hooks/TaskStart" ] \
-    && { echo "  FAIL: our file in old wrong hooks dir not migrated away"; fail=1; }
-  mkdir -p "$sb/h6/Documents/Cline/Hooks"
-  printf '#!/bin/sh\necho user-hook\n' > "$sb/h6/Documents/Cline/Hooks/TaskStart"
-  ( SCRIPT_DIR="$sb/src"; HOME="$sb/h6"; CONSTITUTION=1; sync_agents >/dev/null )
-  grep -q "user-hook" "$sb/h6/Documents/Cline/Hooks/TaskStart" \
-    || { echo "  FAIL: foreign cline TaskStart clobbered"; fail=1; }
-
-  # case 7b: no `claude` CLI on PATH → main flow degrades to agents-only sync,
-  # exits 0 with the skip message, writes nothing without agent dirs
-  mkdir -p "$sb/h8"
-  out="$(HOME="$sb/h8" PATH="/usr/bin:/bin" bash "$SCRIPT_DIR/skills-sync.sh" 2>&1)" \
-    || { echo "  FAIL: no-claude flow exited non-zero"; fail=1; }
-  echo "$out" | grep -q "找不到 claude CLI" || { echo "  FAIL: no-claude skip message missing"; fail=1; }
-  [ -e "$sb/h8/.agents" ] && { echo "  FAIL: no-claude flow created agent dirs"; fail=1; }
-
-  # case 7: Linux layout (~/Cline, no Documents) → hooks land in ~/Cline/Hooks,
-  # rules in ~/Cline/Rules
-  mkdir -p "$sb/h7/Cline"
-  ( SCRIPT_DIR="$sb/src"; HOME="$sb/h7"; CONSTITUTION=1; sync_agents >/dev/null )
-  [ -x "$sb/h7/Cline/Hooks/TaskStart" ] || { echo "  FAIL: linux-layout TaskStart missing"; fail=1; }
-  [ -x "$sb/h7/Cline/Hooks/PreToolUse" ] || { echo "  FAIL: linux-layout PreToolUse missing"; fail=1; }
-  grep -q "demo-skill" "$sb/h7/Cline/Rules/demo-skill.md" 2>/dev/null \
-    || { echo "  FAIL: linux-layout pointer rule missing"; fail=1; }
-  echo '{"toolName":"executeCommand","parameters":{"command":"sudo rm x"}}' | "$sb/h7/Cline/Hooks/PreToolUse" \
-    | python3 -c 'import json,sys; assert json.load(sys.stdin)["cancel"] is True' \
-    || { echo "  FAIL: linux-layout guard did not cancel"; fail=1; }
-
-  # case 8: HOME-relative portability — clone UNDER the home dir → generated
-  # hooks bake literal $HOME (not the expanded prefix); copying the home into a
-  # DIFFERENT home (a container mount) and running the hook there still resolves.
-  local H1="$sb/hrel"
-  mkdir -p "$H1/kungfu/agent-rules/rules" "$H1/kungfu/agent-rules/hooks" "$H1/Cline"
-  printf '# 憲法\nLAW-MARKER-42\n' > "$H1/kungfu/agent-rules/rules/CONSTITUTION.md"
-  for r in DECISIONS SAFETY ANTIPATTERNS; do printf '# %s\n' "$r" > "$H1/kungfu/agent-rules/rules/$r.md"; done
-  cp "$SCRIPT_DIR/agent-rules/hooks/guard.py" "$H1/kungfu/agent-rules/hooks/guard.py"
-  ( SCRIPT_DIR="$H1/kungfu"; HOME="$H1"; CONSTITUTION=1; sync_agents >/dev/null )
-  cts="$H1/Cline/Hooks/TaskStart"
-  # baked with literal $HOME, NOT the expanded /…/hrel prefix
-  grep -q '\$HOME/kungfu/agent-rules/rules/CONSTITUTION.md' "$cts" \
-    || { echo "  FAIL: TaskStart not HOME-relative"; fail=1; }
-  grep -q "$H1/kungfu/agent-rules/rules/CONSTITUTION.md" "$cts" \
-    && { echo "  FAIL: TaskStart still has expanded absolute path"; fail=1; }
-  grep -q '~/kungfu/agent-rules/rules/DECISIONS.md' "$H1/.agents/agent-rules-situational-paths.md" \
-    || { echo "  FAIL: situational paths not tilde"; fail=1; }
-  # simulate a container: mount = copy the home tree to a different HOME, run there
-  local HC="$sb/hcontainer"
-  mkdir -p "$HC"; cp -R "$H1/." "$HC/"
-  out="$(echo '{}' | HOME="$HC" bash "$HC/Cline/Hooks/TaskStart")"
-  printf '%s' "$out" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert "LAW-MARKER-42" in d["contextModification"]' \
-    || { echo "  FAIL: hook does not resolve under a different HOME (not portable)"; fail=1; }
-
-  # case 9: sticky --constitution — opt in once → marker; later PLAIN run
-  # auto-enables; --no-constitution removes the marker. Runs the real script.
-  mkdir -p "$sb/hs/Cline"
-  ( HOME="$sb/hs"; bash "$SCRIPT_DIR/skills-sync.sh" agents --constitution >/dev/null 2>&1 )
-  [ -f "$sb/hs/.agents/.constitution-on" ] || { echo "  FAIL: marker not written on --constitution"; fail=1; }
-  rm -f "$sb/hs/Cline/Hooks/TaskStart"
-  ( HOME="$sb/hs"; bash "$SCRIPT_DIR/skills-sync.sh" agents >/dev/null 2>&1 )   # plain, no flag
-  [ -f "$sb/hs/Cline/Hooks/TaskStart" ] \
-    || { echo "  FAIL: plain run did not auto-enable via marker"; fail=1; }
-  ( HOME="$sb/hs"; bash "$SCRIPT_DIR/skills-sync.sh" agents --no-constitution >/dev/null 2>&1 )
-  [ -e "$sb/hs/.agents/.constitution-on" ] && { echo "  FAIL: --no-constitution left the marker"; fail=1; }
-
-  rm -rf "$sb"
-  if [ "$fail" = 0 ]; then
-    echo "self-test OK — agents: symlinks + cline rule + skip-absent + idempotent + opencode + constitution(opt-in/sticky/hooks/migration-strip/preserve/idempotent/exec-verified/home-relative-portable)"
-  else
-    exit 1
-  fi
-}
+# Everything below is the CLI dispatch. Skip it when this file is SOURCED (the
+# test harness sources it to reach the internal functions above).
+if [ "${BASH_SOURCE[0]}" != "${0}" ]; then return 0; fi
 
 MODE=""
 NOCON=0
@@ -892,10 +590,12 @@ for arg in "$@"; do
   case "$arg" in
     --constitution)      CONSTITUTION=1 ;;
     --no-constitution)   NOCON=1 ;;
+    --cline)             FORCE_CLINE=1 ;;
     --self-test|agents)  MODE="$arg" ;;
-    *) echo "unknown argument: ${arg}（可用：agents、--constitution、--no-constitution、--self-test）" >&2; exit 1 ;;
+    *) echo "unknown argument: ${arg}（可用：agents、--constitution、--no-constitution、--cline、--self-test）" >&2; exit 1 ;;
   esac
 done
+export FORCE_CLINE="${FORCE_CLINE:-0}"
 
 # Sticky opt-in: --constitution once leaves a marker so later PLAIN runs keep the
 # constitution/guard hooks fresh (easy to forget the flag on a re-run). The
@@ -911,7 +611,7 @@ elif [ "$CONSTITUTION" != 1 ] && [ -f "$CON_MARKER" ]; then
 fi
 
 case "$MODE" in
-  --self-test) self_test; self_test_guard; self_test_agents; exit 0 ;;
+  --self-test) exec bash "$SCRIPT_DIR/skills-sync.test.sh" ;;
   agents)      sync_agents; exit 0 ;;
 esac
 
