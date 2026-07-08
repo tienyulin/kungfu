@@ -37,6 +37,7 @@
 #   bash skills-sync.sh agents --constitution # cross-agent sync + constitution
 #   bash skills-sync.sh agents --cline         # force-provision Cline even if not detected yet
 #                                              #   (devcontainer postCreate before the extension installs)
+#   bash skills-sync.sh --no-external          # skip installing external-skills.json repos into other agents
 #   bash skills-sync.sh --no-constitution     # turn the sticky constitution off (remove marker)
 #   bash skills-sync.sh --self-test           # offline checks — delegates to skills-sync.test.sh
 #
@@ -451,6 +452,137 @@ JSEOF
   return 0
 }
 
+# Read external-skills.json → "name<TAB>url<TAB>ref" lines. Missing/empty → nothing.
+external_skill_list() {
+  local f="$SCRIPT_DIR/external-skills.json"
+  [ -f "$f" ] || return 0
+  python3 - "$f" <<'PY'
+import json, sys
+try:
+    d = json.load(open(sys.argv[1], encoding="utf-8"))
+except Exception:
+    sys.exit(0)
+for s in d.get("skills", []):
+    n, u, r = s.get("name", ""), s.get("url", ""), s.get("ref", "")
+    if n and u:
+        print(f"{n}\t{u}\t{r or 'main'}")
+PY
+}
+
+# owner/repo from a github git URL (for `codex plugin marketplace add`).
+gh_owner_repo() {  # <url>
+  local u="$1"; u="${u%.git}"; u="${u#https://github.com/}"; u="${u#git@github.com:}"
+  printf '%s' "$u"
+}
+
+# Symlink each skills/<name>/ dir of a cloned repo into a target skills dir
+# (whole dir, so co-located resource files travel). Used for agents with no
+# native adapter for the repo (Cline always; plain-skill repos on Codex/OpenCode).
+drop_skill_dirs() {  # <repo-clone> <target-skills-dir>
+  local clone="$1" dst="$2" d
+  [ -d "$clone/skills" ] || return 1
+  mkdir -p "$dst"
+  for d in "$clone/skills"/*/; do
+    [ -f "${d}SKILL.md" ] && ln -sfn "${d%/}" "$dst/$(basename "$d")"
+  done
+  return 0
+}
+
+# Install the external (third-party) skill repos listed in external-skills.json
+# into the detected NON-Claude agents. superpowers-style repos ship a native
+# adapter per agent (gemini-extension.json / .opencode / .codex-plugin) → use that
+# agent's native installer so the session-start bootstrap loads (upstream rejects
+# plain symlink shims). Plain-skill repos (no adapter, e.g. karpathy) → drop their
+# SKILL.md dirs into the agent's skills path. Claude Code gets these via its own
+# marketplace plugin path, not here. Best-effort: a failing install logs, never aborts.
+sync_external_skills() {  # <home> <cline_present> <cline_skills>
+  [ "${NO_EXTERNAL:-0}" = 1 ] && return 0
+  local home="$1" cline_present="$2" cline_skills="$3"
+  local list; list="$(external_skill_list)"
+  [ -n "$list" ] || return 0
+
+  local has_gemini=0 has_codex=0 has_opencode=0
+  command -v gemini   >/dev/null 2>&1 && has_gemini=1
+  { command -v codex    >/dev/null 2>&1 || [ -d "$home/.codex" ]; } && has_codex=1
+  { command -v opencode >/dev/null 2>&1 || [ -d "$home/.config/opencode" ]; } && has_opencode=1
+  [ "$has_gemini$has_codex$has_opencode$cline_present" = "0000" ] && return 0
+
+  echo "→ external skills（external-skills.json）：裝進偵測到的非 Claude agent"
+  local ext_root="$home/.agents/external"; mkdir -p "$ext_root"
+  local name url ref clone has_g has_o has_c sel
+  while IFS=$'\t' read -r name url ref; do
+    [ -n "$name" ] || continue
+    echo "  • $name"
+    clone="$ext_root/$name"
+    if [ -d "$clone/.git" ]; then
+      ( cd "$clone" && git fetch -q origin "$ref" 2>/dev/null && git checkout -q "$ref" 2>/dev/null && git pull -q 2>/dev/null ) || true
+    else
+      git clone -q --branch "$ref" --depth 1 "$url" "$clone" 2>/dev/null \
+        || git clone -q "$url" "$clone" 2>/dev/null || { echo "    ⚠ clone 失敗，跳過"; continue; }
+    fi
+    has_g=0; has_o=0; has_c=0
+    [ -f "$clone/gemini-extension.json" ] && has_g=1
+    [ -d "$clone/.opencode" ] && has_o=1
+    { [ -d "$clone/.codex-plugin" ] || [ -f "$clone/.agents/plugins/marketplace.json" ]; } && has_c=1
+
+    # Gemini — native extension (its manifest can carry the skills) or skip.
+    # Idempotency + success are judged by the installed dir (~/.gemini/extensions/
+    # <name>), NOT the CLI: `yes` answers the multiple trust/third-party prompts but
+    # under `set -o pipefail` the pipeline returns SIGPIPE(141) even on success, and
+    # `gemini extensions list` misbehaves in a fresh HOME. Filesystem is truth.
+    if [ "$has_gemini" = 1 ]; then
+      if [ "$has_g" != 1 ]; then
+        echo "    Gemini   略過（無 gemini-extension.json；純 skill 當不了 extension）"
+      elif [ -d "$home/.gemini/extensions/$name" ]; then
+        echo "    Gemini   已裝，跳過"
+      else
+        ( set +o pipefail; yes | gemini extensions install "$url" >/dev/null 2>&1 ) || true
+        [ -d "$home/.gemini/extensions/$name" ] \
+          && echo "    Gemini   → extension 裝好" || echo "    ⚠ Gemini extension 裝失敗"
+      fi
+    fi
+
+    # OpenCode — native JS plugin (opencode.jsonc) or skill-drop for plain skills.
+    if [ "$has_opencode" = 1 ]; then
+      if [ "$has_o" = 1 ] && command -v opencode >/dev/null 2>&1; then
+        if grep -qs "$name@git" "$home/.config/opencode/opencode.jsonc" "$home/.config/opencode/opencode.json"; then
+          echo "    OpenCode 已裝，跳過"
+        else
+          opencode plugin "$name@git+$url" --global </dev/null >/dev/null 2>&1 \
+            && echo "    OpenCode → plugin 裝好" || echo "    ⚠ OpenCode plugin 裝失敗"
+        fi
+      else
+        drop_skill_dirs "$clone" "$home/.agents/skills" && echo "    OpenCode → skill-drop ~/.agents/skills"
+      fi
+    fi
+
+    # Codex — native plugin via marketplace, or skill-drop (reads ~/.agents/skills).
+    if [ "$has_codex" = 1 ] && command -v codex >/dev/null 2>&1 && [ "$has_c" = 1 ]; then
+      codex plugin marketplace add "$(gh_owner_repo "$url")" --ref "$ref" </dev/null >/dev/null 2>&1 || true
+      sel="$(codex plugin list 2>/dev/null | grep -oE "[A-Za-z0-9_.-]+@[A-Za-z0-9_.-]+" | grep "^${name}@" | head -1)"
+      if [ -n "$sel" ]; then
+        # STATUS column is "not installed" or "installed, enabled" — test for the
+        # former ("installed" alone would also match "not installed").
+        if codex plugin list 2>/dev/null | grep -F "$sel" | grep -q "not installed"; then
+          codex plugin add "$sel" </dev/null >/dev/null 2>&1 \
+            && echo "    Codex    → plugin 裝好" || echo "    ⚠ Codex plugin 裝失敗"
+        else
+          echo "    Codex    已裝，跳過"
+        fi
+      else
+        echo "    ⚠ Codex marketplace 找不到 ${name}"
+      fi
+    elif [ "$has_codex" = 1 ]; then
+      drop_skill_dirs "$clone" "$home/.agents/skills" && echo "    Codex    → skill-drop ~/.agents/skills"
+    fi
+
+    # Cline — no native install → skill-drop into its Skills dir.
+    if [ "$cline_present" = 1 ] && [ -n "$cline_skills" ]; then
+      drop_skill_dirs "$clone" "$cline_skills" && echo "    Cline    → skill-drop $cline_skills"
+    fi
+  done <<< "$list"
+}
+
 sync_agents() {
   local home="$HOME" did=0
   local gemini=0 codex=0 opencode=0 agents_dir=0 cline_dir=""
@@ -567,6 +699,10 @@ sync_agents() {
   [ "$codex" = 1 ]       && echo "  Codex    → ~/.codex/skills"
   [ "$cline_present" = 1 ] && echo "  Cline    → $cline_skills （原生 Skills，on-demand）"
 
+  # External third-party skill repos (external-skills.json) → detected non-Claude
+  # agents, via each agent's native installer (or skill-drop). Default on; --no-external skips.
+  sync_external_skills "$home" "$cline_present" "$cline_skills"
+
   # Constitution + guard: OPT-IN — these are personal dotfiles, so nothing is
   # written unless --constitution was passed. Each is wired via the agent's own
   # HOOK mechanism (reads the marketplace file at session time → always fresh),
@@ -591,11 +727,13 @@ for arg in "$@"; do
     --constitution)      CONSTITUTION=1 ;;
     --no-constitution)   NOCON=1 ;;
     --cline)             FORCE_CLINE=1 ;;
+    --no-external)       NO_EXTERNAL=1 ;;
     --self-test|agents)  MODE="$arg" ;;
-    *) echo "unknown argument: ${arg}（可用：agents、--constitution、--no-constitution、--cline、--self-test）" >&2; exit 1 ;;
+    *) echo "unknown argument: ${arg}（可用：agents、--constitution、--no-constitution、--cline、--no-external、--self-test）" >&2; exit 1 ;;
   esac
 done
 export FORCE_CLINE="${FORCE_CLINE:-0}"
+export NO_EXTERNAL="${NO_EXTERNAL:-0}"
 
 # Sticky opt-in: --constitution once leaves a marker so later PLAIN runs keep the
 # constitution/guard hooks fresh (easy to forget the flag on a re-run). The

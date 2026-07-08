@@ -132,6 +132,23 @@ host 裝一次、每個容器共用、跟電腦一致：
 | `superpowers` | [obra/superpowers](https://github.com/obra/superpowers) | brainstorming、subagent 開發＋code review、系統化 debug、red/green TDD。 |
 | `andrej-karpathy-skills` | [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills) | 降低 LLM 常見 coding 錯誤的行為準則。 |
 
+**這些外部 skills 現在也會進非 Claude agent。** 來源清單是獨立檔
+[`external-skills.json`](external-skills.json)（name/url/ref，不跟 Claude marketplace 混）。
+`skills-sync` 偵測到哪些 agent，就用**那家的原生機制**裝——因為像 superpowers 這種 repo 本身
+就 ship 了各家 adapter（Gemini extension、OpenCode plugin、Codex plugin），照它的設計裝
+才會正確載入 skill 的 session-start bootstrap（upstream 明確拒絕手動 symlink 轉發）：
+
+| agent | 裝法 | 純 skill（無 adapter，如 karpathy） |
+|---|---|---|
+| Gemini | `gemini extensions install <url>` | 略過（Gemini 只吃 extension，純 skill 當不了） |
+| OpenCode | `opencode plugin "<name>@git+<url>" --global` | drop 進 `~/.agents/skills`（OpenCode 原生讀） |
+| Codex | `codex plugin marketplace add <repo>` ＋ `codex plugin add` | drop 進 `~/.agents/skills`（Codex 原生讀） |
+| Cline | 無原生裝 → drop `skills/*/` 進 `~/.cline/skills` | 同左 |
+
+每個 repo 先 clone 一份到 `~/.agents/external/<name>`（backing store＋判斷它 ship 了哪些
+adapter＋給沒 adapter 的 agent 當 skill-drop 來源）。預設開；不想裝外部的加 `--no-external`。
+新增外部 skill：往 `external-skills.json` 加一筆再重跑。
+
 ---
 
 # agent-rules — AI 工作紀律系統
