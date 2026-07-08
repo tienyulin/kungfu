@@ -50,7 +50,7 @@
       "name": "skill-author",
       "source": "./",
       "strict": false,
-      "description": "Add or modify an installable Claude Code skill in this repo — produce a spec-compliant SKILL.md, bundle its scripts/references, and register it in the marketplace. Use when authoring a new skill or editing an existing one.",
+      "description": "Add or modify an installable cross-agent skill (Claude Code / Gemini / Codex / OpenCode / Cline) in this repo — produce a spec-compliant SKILL.md, bundle its scripts/references, and register it in the marketplace. Use when authoring a new skill or editing an existing one.",
       "author": {
         "name": "tienyulin"
       },

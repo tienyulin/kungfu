@@ -94,7 +94,8 @@ INDEX 的路由表新增檔案時要同步更新。
      }
    }
    ```
-3. **手動 / 非 Claude Code 的 agent**：按上表把 KERNEL.md 或單一 domains/ 檔貼進 system prompt。
+3. **其他 agent（Codex／Gemini／OpenCode／Cline）**：各自的 session-start hook 讀 KERNEL.md
+   （機制同 2，各家格式不同）；沒有 hook 機制時才手動把 KERNEL.md 或單一 domains/ 檔貼進 system prompt。
 
 ## 與 agent-rules/ 的關係
 

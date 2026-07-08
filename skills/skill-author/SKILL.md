@@ -95,13 +95,13 @@ description: <做什麼 + 何時用>。Triggers - "<中文觸發句>"、"<englis
   "skills": ["./skills/wiki-doc-author", "./skills/sop-to-spec", "./skills/<name>"]
 }
 ```
-成員裝的是 bundle ＋ marketplace auto-update：skill 進 bundle、merge 進 main，
-全隊下次開 session 自動拿到。**不設 `version` 欄** —— 沒有它，git commit SHA 就是
+Claude 成員裝的是 bundle ＋ marketplace auto-update：skill 進 bundle、merge 進 main，
+下次開 session 自動拿到。**不設 `version` 欄** —— 沒有它，git commit SHA 就是
 版本，每個 commit 都算新版；設了反而要手動 bump，漏 bump = 收不到更新。
 
 這步接的是 **Claude 通道**（marketplace + validator gate）。skill 是**跨 agent** 的：
-只要它在 `skills/` 下，Gemini／Codex／OpenCode／Cline 各家 adapter（`gemini-extension.json`、
-`.codex-plugin/`、`.opencode/`、Cline skill-drop）會自動撿到同一份，不必另外註冊。
+只要它在 `skills/` 下，各家用自己的機制自動撿到同一份、不必另外註冊：Gemini（extension）、
+Codex（plugin）、OpenCode／Cline（skill-drop 進其原生讀的目錄）。
 
 ## Step 4 — 驗證
 
@@ -114,7 +114,9 @@ envrun exit 2（起不了容器）時的**唯一例外**：validator 本身純 s
 `python3 skills/skill-author/scripts/validate_skill.py` host 直跑；black/mypy 等其他工具鏈
 指令不適用此例外——照 envrun 印出的選項原樣轉述給使用者選（只轉述，不代跑）。
 
-2) 本地安裝實測 —— **先查這台機器有沒有已註冊的同名 marketplace**：
+2) 本地安裝實測（**這步只驗 Claude 通道**——其他 agent 不經 marketplace，skill 進
+`skills/` 後由各家 adapter 自動撿取，Step 3 註冊即足夠，不必另測）—— **先查這台機器
+有沒有已註冊的同名 marketplace**：
 ```bash
 claude plugin marketplace list | grep kungfu
 ```

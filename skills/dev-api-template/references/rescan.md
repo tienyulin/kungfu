@@ -31,9 +31,10 @@
 5. **盲審驗證**(必做):spawn 一個 fresh agent,只給 SKILL.md + 新 facts,叫它模擬
    (a) 起手一個假新服務 (b) 在既有服務加一個「查 DB + 寄通知信」端點,列出「必須猜」
    之處(HIGH = 兩個合理 agent 分岔)。HIGH > 0 → 補 facts 重審。
-6. **出貨**:skills repo = 本 skill 的安裝來源(`claude plugin marketplace list` 看
-   kungfu 指向哪個 git repo;本地目錄在 `~/.claude/plugins/marketplaces/
-   kungfu/`)。該 repo 慣例 branch → PR → merge(細節見其 CONTRIBUTING.md);
+6. **出貨**:skills repo = 你安裝/clone kungfu 的目錄(Claude 使用者可用
+   `claude plugin marketplace list` 查 kungfu 指向的 git repo,本地在
+   `~/.claude/plugins/marketplaces/kungfu/`;自行 clone 的就是 clone 位置,如 `~/kungfu`)。
+   該 repo 慣例 branch → PR → merge(細節見其 CONTRIBUTING.md);
    merge 後成員經 marketplace auto-update 自動帶到。
 
 ## 萃取時的判斷準則

@@ -84,6 +84,9 @@ claude plugin marketplace add "$PWD"
 claude plugin install <skill-name>@kungfu
 claude plugin marketplace remove kungfu
 ```
+> 上面的 install 實測只走 **Claude 通道**；Gemini／Codex／OpenCode／Cline 不經 marketplace
+> ——skill 進 `skills/` 後由各家 adapter 自動撿取（`skills-sync.sh`），第 5 節的 marketplace 註冊即足夠。
+>
 > 官方 `skills-ref`（<https://github.com/agentskills/agentskills>）是 pip 套件、需連外網安裝，**離線/受限網路環境不適用**；
 > 上面這支自帶驗證器涵蓋同樣檢查、零相依。本檔的規則都已內聯，不需要連 agentskills.io 也能照做。
 

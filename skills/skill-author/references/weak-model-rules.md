@@ -60,5 +60,6 @@ skill 沒講的情況,弱模型會自信亂編。每個 skill 明寫一句:
 ## 驗收:弱模型撞擊測試
 
 新 skill 或大改後,除了 fresh-context 盲審,**用團隊最弱的模型當 executor 實跑一個
-小情境**(Claude Code 的 Agent 工具可指定 model),產出用機器 gate + 強模型/人工驗收。
+小情境**(各 agent 用各自的 subagent／model 選擇機制,例如 Claude Code 的 Agent 工具可指定
+model),產出用機器 gate + 強模型/人工驗收。
 弱模型跑不完的步驟 = skill 的自由度還太高,回去降。
