@@ -1,0 +1,6 @@
+{
+  "name": "kungfu",
+  "description": "Kungfu skills — dev playbooks (bugfix/feature/refactor/investigate/review/test/loop), doc & spec authoring, wrapped as a Gemini extension.",
+  "version": "0.0.0",
+  "contextFileName": "GEMINI.md"
+}

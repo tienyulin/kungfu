@@ -9,22 +9,23 @@
 ## 1. 目錄結構（官方）
 
 ```
-<skill-name>/
+skills/<skill-name>/
 ├── SKILL.md          # 必要：frontmatter + 指示
 ├── scripts/          # 選填：可執行工具（純 stdlib、無相依）
 ├── references/       # 選填：漸進揭露的細節文件
 └── assets/           # 選填：範本/資源
 ```
 
-- skill 目錄放在 **repo root**（不是 `skills/` 子目錄）—— `marketplace.json` 的 `skills` 用自訂路徑
-  指向它們，安裝走 plugin（見 §5）。
+- skill 目錄放在 **`skills/` 子目錄**下（superpowers-style 佈局）—— `marketplace.json` 的
+  `skills` 用 `./skills/<name>` 路徑指向它們；repo root 的各家 adapter
+  （`gemini-extension.json`、`.codex-plugin/`、`.opencode/`）共用這個 `skills/` 目錄。
 
 ## 2. SKILL.md frontmatter（官方欄位）
 
 | 欄位 | 必填 | 規則 |
 |---|---|---|
 | `name` | 是 | ≤64 字、小寫英數+連字號、**須等於目錄名**、不可頭尾/連續連字號 |
-| `description` | 是 | ≤1024 字。講 **what + when + 觸發詞**，第三人稱，**稍微 pushy**（Claude 傾向 under-trigger） |
+| `description` | 是 | ≤1024 字。講 **what + when + 觸發詞**，第三人稱，**稍微 pushy**（模型傾向 under-trigger） |
 | `license` | 否 | 短字串或指向 bundled license 檔 |
 | `compatibility` | 否 | ≤500 字。只有特殊環境需求才寫（如 `Requires Python 3.14+`） |
 | `metadata` | 否 | 字串 map。**版本不放這**（版本以 `marketplace.json` 為單一真相，見 §5） |
@@ -60,28 +61,32 @@
 
   "keywords": ["..."],
   "category": "workflow",
-  "skills": ["./<skill-name>"]
+  "skills": ["./skills/<skill-name>"]
 }
 ```
-- 同時把 `"./<skill-name>"` 加進 bundle plugin `kungfu` 的 `skills` 陣列 ——
+- 同時把 `"./skills/<skill-name>"` 加進 bundle plugin `kungfu` 的 `skills` 陣列 ——
   **merge 進 main 即全隊自動拿到**（成員裝的是 bundle + marketplace auto-update，session
   啟動自動帶新 skill），不用通知任何人重裝。
 - **不要設 `version`** —— 省略它，Claude 就用 git commit SHA 當版本：每次 push 都算新版，user
   `/plugin marketplace update` + update 即拿最新，零手動 bump。（設了 version 反而要每次手動改，漏改 = 收不到更新。）
-- **跨 agent 自動納入**：只要 skill 是 repo root 下含 `SKILL.md` 的目錄，`skills-sync.sh` 的跨 agent
-  step 會自動 symlink 給 Gemini/Codex、並為 Cline 生 pointer rule —— 不用另外設定。
+- **跨 agent 自動納入**：只要 skill 在 `skills/` 下（含 `SKILL.md`），`skills-sync.sh` 把 kungfu
+  自己當 adapter repo 裝進各 agent（Gemini extension link／Codex plugin／OpenCode·Cline
+  skill-drop），新 skill 隨之到位——不用另外設定。
 
 ## 6. 驗證（提交前）
 
 ```bash
 # 離線驗證器（純 stdlib、無外連）— frontmatter/命名/marketplace 註冊
-python skill-author/scripts/validate_skill.py            # 驗全部，或帶 <skill-name> 驗單一
+python skills/skill-author/scripts/validate_skill.py            # 驗全部，或帶 <skill-name> 驗單一
 
 # 本地安裝實測（測完移除，別污染設定）
 claude plugin marketplace add "$PWD"
 claude plugin install <skill-name>@kungfu
 claude plugin marketplace remove kungfu
 ```
+> 上面的 install 實測只走 **Claude 通道**；Gemini／Codex／OpenCode／Cline 不經 marketplace
+> ——skill 進 `skills/` 後由各家 adapter 自動撿取（`skills-sync.sh`），第 5 節的 marketplace 註冊即足夠。
+>
 > 官方 `skills-ref`（<https://github.com/agentskills/agentskills>）是 pip 套件、需連外網安裝，**離線/受限網路環境不適用**；
 > 上面這支自帶驗證器涵蓋同樣檢查、零相依。本檔的規則都已內聯，不需要連 agentskills.io 也能照做。
 
@@ -92,4 +97,4 @@ claude plugin marketplace remove kungfu
 - [ ] `scripts/` 純 stdlib；引用相對、只深一層
 - [ ] prose 中文、專有名詞英文+解釋
 - [ ] 加進 `marketplace.json`（自身 plugin + bundle）—— 不設 `version`（commit 即更新）
-- [ ] `skills-ref validate` 過、本地 install 實測過
+- [ ] `validate_skill.py` 全綠、本地 install 實測過

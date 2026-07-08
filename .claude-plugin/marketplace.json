@@ -4,7 +4,7 @@
     "name": "tienyulin"
   },
   "metadata": {
-    "description": "Kungfu — the team's AI-agent skills marketplace: install a move, know the move. A shared Claude Code marketplace any project/agent can install from, plus the agent-rules discipline system (constitution + playbooks + SAFETY guard) and mirrored external skills."
+    "description": "Kungfu — the team's AI-agent skills marketplace: install a move, know the move. A shared Claude Code marketplace any project/agent can install from, plus the agent-rules discipline system (Constitution + Playbooks + Guard). External open-source skills install cross-agent via skills-sync (external-skills.json), not this marketplace."
   },
   "plugins": [
     {
@@ -24,7 +24,7 @@
       ],
       "category": "workflow",
       "skills": [
-        "./wiki-doc-author"
+        "./skills/wiki-doc-author"
       ]
     },
     {
@@ -43,14 +43,14 @@
       ],
       "category": "workflow",
       "skills": [
-        "./sop-to-spec"
+        "./skills/sop-to-spec"
       ]
     },
     {
       "name": "skill-author",
       "source": "./",
       "strict": false,
-      "description": "Add or modify an installable Claude Code skill in this repo — produce a spec-compliant SKILL.md, bundle its scripts/references, and register it in the marketplace. Use when authoring a new skill or editing an existing one.",
+      "description": "Add or modify an installable cross-agent skill (Claude Code / Gemini / Codex / OpenCode / Cline) in this repo — produce a spec-compliant SKILL.md, bundle its scripts/references, and register it in the marketplace. Use when authoring a new skill or editing an existing one.",
       "author": {
         "name": "tienyulin"
       },
@@ -62,7 +62,7 @@
       ],
       "category": "workflow",
       "skills": [
-        "./skill-author"
+        "./skills/skill-author"
       ]
     },
     {
@@ -82,7 +82,7 @@
       ],
       "category": "development",
       "skills": [
-        "./dev-api-template"
+        "./skills/dev-api-template"
       ]
     },
     {
@@ -116,7 +116,7 @@
       ],
       "category": "development",
       "skills": [
-        "./dev-bugfix"
+        "./skills/dev-bugfix"
       ]
     },
     {
@@ -134,7 +134,7 @@
       ],
       "category": "development",
       "skills": [
-        "./dev-feature"
+        "./skills/dev-feature"
       ]
     },
     {
@@ -151,7 +151,7 @@
       ],
       "category": "development",
       "skills": [
-        "./dev-refactor"
+        "./skills/dev-refactor"
       ]
     },
     {
@@ -169,7 +169,7 @@
       ],
       "category": "development",
       "skills": [
-        "./dev-investigate"
+        "./skills/dev-investigate"
       ]
     },
     {
@@ -187,7 +187,7 @@
       ],
       "category": "development",
       "skills": [
-        "./dev-review"
+        "./skills/dev-review"
       ]
     },
     {
@@ -206,7 +206,7 @@
       ],
       "category": "development",
       "skills": [
-        "./dev-loop"
+        "./skills/dev-loop"
       ]
     },
     {
@@ -225,14 +225,14 @@
       ],
       "category": "development",
       "skills": [
-        "./dev-test"
+        "./skills/dev-test"
       ]
     },
     {
       "name": "agent-rules-setup",
       "source": "./",
       "strict": false,
-      "description": "Runs this marketplace's skills-sync.sh for the user — installs the team skills and wires the agent-rules constitution + SAFETY guard into other agents (Codex/Gemini/Cline/OpenCode). The user never needs to know where the script lives; the skill locates it.",
+      "description": "Runs this marketplace's skills-sync.sh for the user — installs the team skills and wires the agent-rules Constitution + Guard into other agents (Codex/Gemini/Cline/OpenCode). The user never needs to know where the script lives; the skill locates it.",
       "author": {
         "name": "tienyulin"
       },
@@ -243,7 +243,25 @@
       ],
       "category": "workflow",
       "skills": [
-        "./agent-rules-setup"
+        "./skills/agent-rules-setup"
+      ]
+    },
+    {
+      "name": "using-kungfu",
+      "source": "./",
+      "strict": false,
+      "description": "Bootstrap meta-skill: reach for the right kungfu skill before acting. Loaded at session start by the cross-agent adapters (Gemini/OpenCode); complements the agent-rules constitution. Triggers - the start of any task.",
+      "author": {
+        "name": "tienyulin"
+      },
+      "keywords": [
+        "bootstrap",
+        "skills",
+        "meta"
+      ],
+      "category": "workflow",
+      "skills": [
+        "./skills/using-kungfu"
       ]
     },
     {
@@ -262,59 +280,20 @@
       ],
       "category": "workflow",
       "skills": [
-        "./wiki-doc-author",
-        "./sop-to-spec",
-        "./skill-author",
-        "./dev-api-template",
-        "./dev-bugfix",
-        "./dev-feature",
-        "./dev-refactor",
-        "./dev-investigate",
-        "./dev-review",
-        "./dev-test",
-        "./dev-loop",
-        "./agent-rules-setup"
+        "./skills/wiki-doc-author",
+        "./skills/sop-to-spec",
+        "./skills/skill-author",
+        "./skills/dev-api-template",
+        "./skills/dev-bugfix",
+        "./skills/dev-feature",
+        "./skills/dev-refactor",
+        "./skills/dev-investigate",
+        "./skills/dev-review",
+        "./skills/dev-test",
+        "./skills/dev-loop",
+        "./skills/agent-rules-setup",
+        "./skills/using-kungfu"
       ]
-    },
-    {
-      "name": "superpowers",
-      "source": {
-        "source": "url",
-        "url": "https://github.com/obra/superpowers.git",
-        "ref": "main"
-      },
-      "description": "External — brainstorming, subagent-driven dev with code review, systematic debugging, red/green TDD, and skill authoring. Points at the public upstream; run localize.sh to swap it for an internal mirror. No sha = follows the default branch, so `/plugin marketplace update` pulls the latest.",
-      "author": {
-        "name": "obra"
-      },
-      "keywords": [
-        "tdd",
-        "debugging",
-        "brainstorming",
-        "external"
-      ],
-      "category": "development",
-      "homepage": "https://github.com/obra/superpowers"
-    },
-    {
-      "name": "andrej-karpathy-skills",
-      "source": {
-        "source": "url",
-        "url": "https://github.com/forrestchang/andrej-karpathy-skills.git",
-        "ref": "main"
-      },
-      "description": "External — behavioral guidelines to reduce common LLM coding mistakes (Think Before Coding, Simplicity, …). Points at the public upstream; run localize.sh to swap it for an internal mirror. No sha = follows the default branch.",
-      "author": {
-        "name": "forrestchang"
-      },
-      "keywords": [
-        "coding",
-        "guidelines",
-        "quality",
-        "external"
-      ],
-      "category": "development",
-      "homepage": "https://github.com/forrestchang/andrej-karpathy-skills"
     }
   ]
 }

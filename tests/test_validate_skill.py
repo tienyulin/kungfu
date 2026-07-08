@@ -1,4 +1,4 @@
-"""Tests for the skill validator (skill-author/scripts/validate_skill.py)."""
+"""Tests for the skill validator (skills/skill-author/scripts/validate_skill.py)."""
 
 # tests legitimately exercise the validator's internal helpers
 # pylint: disable=protected-access
@@ -11,7 +11,7 @@ from typing import Any
 
 from _loader import load
 
-vs: Any = load("skill-author/scripts/validate_skill.py")
+vs: Any = load("skills/skill-author/scripts/validate_skill.py")
 
 _FM = "---\nname: {n}\ndescription: {d}\n---\n# body\n"
 _GOOD_DESC = '測試用 skill。Triggers - "做測試"、"/demo-skill"。'

@@ -1,19 +1,28 @@
 #!/usr/bin/env bash
 # skills-sync.sh — run ONCE per machine; updates arrive automatically afterwards.
 #
-#  • Claude Code  : install the BUNDLE plugin (this repo's own skills as one plugin)
-#                   plus the external mirror plugins, then enable marketplace
-#                   auto-update. From then on every Claude Code startup refreshes the
-#                   marketplace and updates installed plugins — a merged change OR a
-#                   NEW skill (added to the bundle) reaches everyone with zero action.
-#  • Gemini / Codex / Cline / OpenCode : sync this repo's OWN skills (bare SKILL.md
-#                   dirs) into each agent. SKILL.md is read natively by Claude Code,
-#                   Codex CLI, Gemini CLI, OpenCode and Cline (>=3.48, native
-#                   on-demand Skills), so we just SYMLINK the one source dir into
-#                   each agent's skills location — zero content duplication (Gemini
-#                   and OpenCode both read the neutral ~/.agents/skills; Cline reads
-#                   ~/.cline/skills). Symlinks track marketplace updates
-#                   automatically; only a brand-new skill needs a re-run here.
+#  • Claude Code  : install the BUNDLE plugin (this repo's own skills as one plugin),
+#                   then enable marketplace auto-update. From then on every Claude Code
+#                   startup refreshes the marketplace and updates installed plugins — a
+#                   merged change OR a NEW skill (added to the bundle) reaches everyone
+#                   with zero action.
+#  • external skills : listed in external-skills.json (single source), installed into
+#                   EVERY detected agent — Claude included — by sync_external_skills,
+#                   each via that agent's native mechanism (Claude/Codex: the repo's own
+#                   marketplace; Gemini: extension; OpenCode/Cline/plain: skill-drop).
+#                   They refresh on re-run (not marketplace auto-update). --no-external skips.
+#  • Gemini / Codex / Cline / OpenCode : this repo IS a superpowers-style adapter
+#                   repo — own skills live in skills/, and per-agent adapters
+#                   (gemini-extension.json, .codex-plugin/, .opencode/) sit at the
+#                   root. Install kungfu-self into each agent via its native
+#                   mechanism: Gemini `extensions link <repo>`, Codex `plugin
+#                   marketplace add <repo>` + `plugin add kungfu@kungfu-dev`.
+#                   OpenCode ships a committed .opencode/ plugin too, but the local
+#                   sync skill-drops skills/*/ into ~/.agents/skills instead (its
+#                   plugin path needs an npm-published package — out of scope here).
+#                   Cline is the only one with NO native install → skill-drop into
+#                   ~/.cline/skills. See wire_own_skills. Only a brand-new skill
+#                   needs a re-run.
 #  • --constitution (OPT-IN, default off): inject agent-rules/rules/CONSTITUTION.md
 #                   into each detected agent at session start via its HOOK mechanism
 #                   (content read from the marketplace file at session time → always
@@ -61,8 +70,9 @@ MARKETPLACE_JSON="$SCRIPT_DIR/.claude-plugin/marketplace.json"
 CONSTITUTION="${CONSTITUTION:-0}"   # set by --constitution; opt-in, default off
 
 # Print the plugin plan as "INSTALL <name>" / "RETIRE <name>" lines.
-# INSTALL: the bundle (source "./" listing >1 skill) + external mirror plugins +
-#          any local single-skill plugin NOT covered by the bundle.
+# INSTALL: the bundle (source "./" listing >1 skill) + any local single-skill
+#          plugin NOT covered by the bundle. (External skills are NOT here — they
+#          install via sync_external_skills from external-skills.json.)
 # RETIRE:  local single-skill plugins whose skill the bundle already ships —
 #          installing both would double-load the skill, and individually installed
 #          plugins don't pick up NEW skills; the bundle does.
@@ -116,7 +126,7 @@ PY
 # This repo's own skills = direct subdirs that contain a SKILL.md.
 own_skill_dirs() {
   local d
-  for d in "$SCRIPT_DIR"/*/; do
+  for d in "$SCRIPT_DIR"/skills/*/; do
     [ -f "${d}SKILL.md" ] && basename "$d"
   done
 }
@@ -211,7 +221,7 @@ homeref() {  # <abs path> [sh|tilde]
 
 situational_paths_body() {
   local rules="$SCRIPT_DIR/agent-rules/rules" n
-  echo "## 情境檔路徑（憲法「情境檔」節說何時讀，這裡是去哪讀 — 用讀檔工具開）"
+  echo "## Situation 路徑（Constitution「Situation」節說何時讀，這裡是去哪讀 — 用讀檔工具開）"
   echo "（路徑以 ~ 開頭者代表你的家目錄；用讀檔工具開時自行展開。）"
   for n in DECISIONS SAFETY ANTIPATTERNS; do
     [ -f "$rules/$n.md" ] && echo "- $n: $(homeref "$rules/$n.md" tilde)"
@@ -266,7 +276,7 @@ wire_constitution() {
     echo "  ⚠ --constitution：找不到 ${const_src}，跳過"
     return 1
   fi
-  echo "→ 憲法（--constitution）：用各家 hook 在 session 開頭注入（讀 marketplace 檔，內容自動跟新）"
+  echo "→ Constitution（--constitution）：用各家 hook 在 session 開頭注入（讀 marketplace 檔，內容自動跟新）"
 
   # shared situational-paths file, regenerated on every run — read by the
   # hooks together with the constitution itself.
@@ -380,7 +390,7 @@ SHEOF
   return 0
 }
 
-# SAFETY guard (PreToolUse-level interception of destructive commands) for the
+# Guard (PreToolUse-level interception of destructive commands) for the
 # detected agents — upgrades SAFETY.md §1 from "the model read the rule" to "the
 # host blocks the call". Claude Code gets this from the agent-rules plugin itself.
 wire_guard() {
@@ -388,10 +398,10 @@ wire_guard() {
   local guard="$SCRIPT_DIR/agent-rules/hooks/guard.py" guard_ref
   guard_ref="$(homeref "$SCRIPT_DIR/agent-rules/hooks/guard.py" sh)"
   if [ ! -f "$guard" ]; then
-    echo "  ⚠ 找不到 ${guard}，跳過 SAFETY guard"
+    echo "  ⚠ 找不到 ${guard}，跳過 Guard"
     return 0
   fi
-  echo "→ SAFETY guard（--constitution）：hook 層攔破壞性指令（pattern 清單＝SAFETY.md §1）"
+  echo "→ Guard（--constitution）：hook 層攔破壞性指令（pattern 清單＝SAFETY.md §1）"
   if [ "$codex" = 1 ]; then
     merge_json_hook "$home/.codex/hooks.json" "PreToolUse" \
       "{\"hooks\":[{\"type\":\"command\",\"command\":\"python3 \\\"$guard_ref\\\" --agent codex\",\"statusMessage\":\"agent-rules guard\",\"timeout\":15}]}"
@@ -488,6 +498,28 @@ drop_skill_dirs() {  # <repo-clone> <target-skills-dir>
   return 0
 }
 
+# marketplace name / plugin names from a repo's .claude-plugin/marketplace.json
+# (used to install an external repo into Claude Code via its own marketplace).
+claude_mp_name() {  # <path> → marketplace name
+  python3 - "$1" <<'PY'
+import json, sys
+try:
+    print(json.load(open(sys.argv[1], encoding="utf-8")).get("name", ""))
+except Exception:
+    pass
+PY
+}
+claude_mp_plugins() {  # <path> → space-separated plugin names
+  python3 - "$1" <<'PY'
+import json, sys
+try:
+    d = json.load(open(sys.argv[1], encoding="utf-8"))
+    print(" ".join(p.get("name", "") for p in d.get("plugins", []) if p.get("name")))
+except Exception:
+    pass
+PY
+}
+
 # Install the external (third-party) skill repos listed in external-skills.json
 # into the detected NON-Claude agents. superpowers-style repos ship a native
 # adapter per agent (gemini-extension.json / .opencode / .codex-plugin) → use that
@@ -501,15 +533,18 @@ sync_external_skills() {  # <home> <cline_present> <cline_skills>
   local list; list="$(external_skill_list)"
   [ -n "$list" ] || return 0
 
-  local has_gemini=0 has_codex=0 has_opencode=0
+  local has_gemini=0 has_codex=0 has_opencode=0 has_claude=0
   command -v gemini   >/dev/null 2>&1 && has_gemini=1
   { command -v codex    >/dev/null 2>&1 || [ -d "$home/.codex" ]; } && has_codex=1
   { command -v opencode >/dev/null 2>&1 || [ -d "$home/.config/opencode" ]; } && has_opencode=1
-  [ "$has_gemini$has_codex$has_opencode$cline_present" = "0000" ] && return 0
+  # Claude external install runs only in the default flow; `agents` mode is defined
+  # as "cross-agent only, never touch Claude plugins", so it's excluded there.
+  { command -v claude >/dev/null 2>&1 && [ "${MODE:-}" != "agents" ]; } && has_claude=1
+  [ "$has_gemini$has_codex$has_opencode$cline_present$has_claude" = "00000" ] && return 0
 
   echo "→ external skills（external-skills.json）：裝進偵測到的非 Claude agent"
   local ext_root="$home/.agents/external"; mkdir -p "$ext_root"
-  local name url ref clone has_g has_o has_c sel
+  local name url ref clone has_g has_o has_c sel cmp cplug
   while IFS=$'\t' read -r name url ref; do
     [ -n "$name" ] || continue
     echo "  • $name"
@@ -580,63 +615,120 @@ sync_external_skills() {  # <home> <cline_present> <cline_skills>
     if [ "$cline_present" = 1 ] && [ -n "$cline_skills" ]; then
       drop_skill_dirs "$clone" "$cline_skills" && echo "    Cline    → skill-drop $cline_skills"
     fi
+
+    # Claude Code — a repo that is its own marketplace (.claude-plugin/marketplace.json)
+    # → add it + install its plugins (bootstrap loads via the plugin hook). A plain
+    # skill repo → drop skills/*/ into ~/.claude/skills (Claude auto-discovers those).
+    if [ "$has_claude" = 1 ]; then
+      if [ -f "$clone/.claude-plugin/marketplace.json" ]; then
+        cmp="$(claude_mp_name "$clone/.claude-plugin/marketplace.json")"
+        if [ -n "$cmp" ]; then
+          claude plugin marketplace add "$url" >/dev/null 2>&1 \
+            || claude plugin marketplace update "$cmp" >/dev/null 2>&1 || true
+          for cplug in $(claude_mp_plugins "$clone/.claude-plugin/marketplace.json"); do
+            claude plugin install "$cplug@$cmp" >/dev/null 2>&1 \
+              || claude plugin update "$cplug@$cmp" >/dev/null 2>&1 || true
+          done
+          echo "    Claude   → marketplace add + install（${cmp}）"
+        fi
+      elif drop_skill_dirs "$clone" "$home/.claude/skills"; then
+        echo "    Claude   → skill-drop ~/.claude/skills"
+      fi
+    fi
   done <<< "$list"
 }
 
-# Gemini has NO skill-dir mechanism (only `extensions`), so our own skills never
-# reach it via ~/.agents/skills. Wrap them in a generated Gemini extension: a dir
-# with gemini-extension.json + skills/<name> symlinks, then `gemini extensions
-# link` it. `link` (not install) records a LIVE reference — later re-runs just
-# refresh the symlinks and Gemini reflects them, no re-link. Only runs if the
-# gemini CLI is present.
-wire_gemini_own_skills() {  # <home>
-  command -v gemini >/dev/null 2>&1 || return 0
-  local home="$1" ext="$1/.agents/gemini-kungfu" skill link tgt
-  mkdir -p "$ext/skills"
-  printf '{\n  "name": "kungfu-skills",\n  "version": "0.0.0",\n  "contextFileName": "GEMINI.md"\n}\n' > "$ext/gemini-extension.json"
-  printf '# Kungfu skills\n本 extension 收錄 kungfu 的自家 skill；相關任務時照各 SKILL.md 走。\n' > "$ext/GEMINI.md"
-  for skill in $(own_skill_dirs); do
-    ln -sfn "$SCRIPT_DIR/$skill" "$ext/skills/$skill"
-  done
-  # prune our stale symlinks (skill renamed/removed upstream)
-  for link in "$ext/skills"/*; do
+# remove OUR stale symlinks (skill renamed/removed) from a skills dir — only
+# symlinks pointing into this repo whose target vanished; user files stay.
+prune_own_dead() {  # <dir>
+  local d="$1" link
+  [ -n "$d" ] && [ -d "$d" ] || return 0
+  for link in "$d"/*; do
     [ -L "$link" ] || continue
-    tgt="$(readlink "$link")"
-    case "$tgt" in "$SCRIPT_DIR"/*) [ -e "$tgt" ] || rm -f "$link" ;; esac
+    case "$(readlink "$link")" in "$SCRIPT_DIR"/*) [ -e "$(readlink "$link")" ] || rm -f "$link" ;; esac
   done
-  # `link` records the extension at ~/.gemini/extensions/<name>. Judge idempotency
-  # + success by that dir, NOT `gemini extensions list` (it misbehaves in a fresh
-  # HOME) — same lesson as the external installs.
-  local marker="$home/.gemini/extensions/kungfu-skills"
-  if [ -d "$marker" ]; then
-    echo "  Gemini   → 自家 skill extension 已連結（kungfu-skills，更新自動反映）"
-  else
-    # yes answers trust/skills prompts; pipefail would flag SIGPIPE on success.
-    ( set +o pipefail; yes | gemini extensions link "$ext" >/dev/null 2>&1 ) || true
-    [ -d "$marker" ] \
-      && echo "  Gemini   → 自家 skill 生成 extension 並連結（kungfu-skills）" \
-      || echo "  ⚠ Gemini：自家 skill extension link 失敗"
+}
+
+# Install THIS repo (kungfu — it ships committed per-agent adapters at its root)
+# into each detected non-Claude agent using that agent's native mechanism, so own
+# skills reach the agent the same way an external adapter repo does. Claude Code
+# gets them via the marketplace bundle, not here. Replaces the pre-adapter approach
+# (hand-symlinking each skill + a generated Gemini extension).
+wire_own_skills() {  # <home> <cline_present> <cline_skills>
+  local home="$1" cline_present="$2" cline_skills="$3" repo="$SCRIPT_DIR" link
+  echo "→ 自家 skill：把 kungfu 裝進偵測到的非 Claude agent（committed adapter）"
+
+  # Gemini — committed gemini-extension.json → link the repo (live). Judge by
+  # ~/.gemini/extensions/kungfu (link creates it), not the flaky `list`.
+  if command -v gemini >/dev/null 2>&1; then
+    # migrate off #65's generated extension
+    [ -d "$home/.gemini/extensions/kungfu-skills" ] && \
+      { ( set +o pipefail; yes | gemini extensions uninstall kungfu-skills >/dev/null 2>&1 ) || true; }
+    rm -rf "$home/.agents/gemini-kungfu"
+    if [ -d "$home/.gemini/extensions/kungfu" ]; then
+      echo "  Gemini   → kungfu extension 已連結（更新自動反映）"
+    else
+      ( set +o pipefail; yes | gemini extensions link "$repo" >/dev/null 2>&1 ) || true
+      [ -d "$home/.gemini/extensions/kungfu" ] \
+        && echo "  Gemini   → kungfu extension 連結（committed adapter）" \
+        || echo "  ⚠ Gemini：kungfu extension 連結失敗"
+    fi
+  fi
+
+  # Codex — committed .codex-plugin + .agents marketplace → marketplace add + add.
+  if command -v codex >/dev/null 2>&1; then
+    # migrate: own skills now come via the plugin, drop old ~/.codex/skills symlinks
+    if [ -d "$home/.codex/skills" ]; then
+      for link in "$home/.codex/skills"/*; do
+        [ -L "$link" ] || continue
+        case "$(readlink "$link")" in "$SCRIPT_DIR"/*) rm -f "$link" ;; esac
+      done
+    fi
+    codex plugin marketplace add "$repo" </dev/null >/dev/null 2>&1 || true
+    if codex plugin list 2>/dev/null | grep -F "kungfu@kungfu-dev" | grep -q "not installed"; then
+      codex plugin add kungfu@kungfu-dev </dev/null >/dev/null 2>&1 \
+        && echo "  Codex    → kungfu plugin 裝好" || echo "  ⚠ Codex：kungfu plugin 裝失敗"
+    elif codex plugin list 2>/dev/null | grep -q "kungfu@kungfu-dev"; then
+      echo "  Codex    → kungfu plugin 已裝"
+    else
+      echo "  ⚠ Codex：marketplace 找不到 kungfu"
+    fi
+  fi
+
+  # OpenCode — reads ~/.agents/skills natively → skill-drop (the .opencode plugin
+  # path needs an npm-published package; out of scope for the local sync).
+  if command -v opencode >/dev/null 2>&1 || [ -d "$home/.config/opencode" ]; then
+    drop_skill_dirs "$repo" "$home/.agents/skills" && echo "  OpenCode → skill-drop ~/.agents/skills"
+    prune_own_dead "$home/.agents/skills"
+  fi
+
+  # Cline — no native install → skill-drop into its Skills dir.
+  if [ "$cline_present" = 1 ] && [ -n "$cline_skills" ]; then
+    drop_skill_dirs "$repo" "$cline_skills" && echo "  Cline    → skill-drop $cline_skills"
+    prune_own_dead "$cline_skills"
   fi
 }
 
 sync_agents() {
   local home="$HOME" did=0
-  local gemini=0 codex=0 opencode=0 agents_dir=0 cline_dir=""
+  local gemini=0 codex=0 opencode=0 cline_dir=""
 
-  # Gemini CLI reads ~/.agents/skills natively (neutral interop dir); also ~/.gemini.
+  # Detect agents by dir presence (marks did + ensures the neutral ~/.agents/skills
+  # that OpenCode reads; Gemini reaches skills via its extension, not this dir).
   if [ -d "$home/.gemini" ] || [ -d "$home/.agents" ]; then
     gemini=1
   fi
-  # OpenCode reads ~/.agents/skills natively too (plus ~/.config/opencode/skills).
   if [ -d "$home/.config/opencode" ]; then
     opencode=1
   fi
   if [ "$gemini" = 1 ] || [ "$opencode" = 1 ]; then
-    mkdir -p "$home/.agents/skills"; agents_dir=1; did=1
+    mkdir -p "$home/.agents/skills"; did=1
   fi
-  # Codex CLI: ~/.codex/skills
+  # Codex present (detect by ~/.codex) → needs its hooks wired below. Own skills
+  # reach Codex via the committed plugin + ~/.agents/skills, NOT ~/.codex/skills
+  # (wire_own_skills migrates off that old path), so nothing is created here.
   if [ -d "$home/.codex" ]; then
-    mkdir -p "$home/.codex/skills"; codex=1; did=1
+    codex=1; did=1
   fi
   # Cline: detect by INSTALL, not by its data dir. The data dir (~/Documents/Cline
   # on macOS, ~/Cline on Linux/WSL — cline#9994) only appears after the first
@@ -689,33 +781,15 @@ sync_agents() {
     return 0
   fi
 
-  echo "→ 跨 agent：同步自家 skill 到偵測到的 agent"
-  local skill src
-  for skill in $(own_skill_dirs); do
-    src="$SCRIPT_DIR/$skill"
-    [ "$agents_dir" = 1 ]     && ln -sfn "$src" "$home/.agents/skills/$skill"
-    [ "$codex" = 1 ]          && ln -sfn "$src" "$home/.codex/skills/$skill"
-    [ -n "$cline_skills" ]    && ln -sfn "$src" "$cline_skills/$skill"
-    echo "  • $skill"
-  done
-  # prune OUR stale entries (skills renamed/removed upstream): only symlinks
-  # pointing INTO this repo with a vanished target, and only pointer rules we
-  # generated — anything the user made themselves is left alone.
-  local d link tgt rd f
-  for d in "$home/.agents/skills" "$home/.codex/skills" "$cline_skills"; do
-    [ -n "$d" ] && [ -d "$d" ] || continue
-    for link in "$d"/*; do
-      [ -L "$link" ] || continue
-      tgt="$(readlink "$link")"
-      case "$tgt" in
-        "$SCRIPT_DIR"/*) [ -e "$tgt" ] || { rm -f "$link"; echo "  − $(basename "$link")（已改名/移除，清掉 stale symlink）"; } ;;
-      esac
-    done
-  done
+  # Own skills → detected non-Claude agents, via kungfu's committed adapters
+  # (Gemini extension / Codex plugin) or skill-drop (OpenCode/Cline).
+  wire_own_skills "$home" "$cline_present" "$cline_skills"
+
   # migrate off the pre-3.48 approach: we used to write an always-on pointer .md
   # per skill into Cline's Rules dir (and older builds into ~/.cline/rules). Now
   # that Cline has native on-demand Skills those cards are obsolete — remove OURS
   # (constitution/paths files + the pointer cards); the user's own rules stay.
+  local rd f
   for rd in "$cline_base/Rules" "$home/.cline/rules"; do
     [ -n "$rd" ] && [ -d "$rd" ] || continue
     for f in "$rd"/*.md; do
@@ -729,14 +803,6 @@ sync_agents() {
     done
     rmdir "$rd" 2>/dev/null || true
   done
-
-  [ "$gemini" = 1 ]      && echo "  Gemini   → ~/.agents/skills"
-  [ "$opencode" = 1 ]    && echo "  OpenCode → ~/.agents/skills（原生讀取，與 Gemini 共用）"
-  [ "$codex" = 1 ]       && echo "  Codex    → ~/.codex/skills"
-  [ "$cline_present" = 1 ] && echo "  Cline    → $cline_skills （原生 Skills，on-demand）"
-
-  # Gemini can't read skill dirs — wrap our own skills in a generated extension.
-  wire_gemini_own_skills "$home"
 
   # External third-party skill repos (external-skills.json) → detected non-Claude
   # agents, via each agent's native installer (or skill-drop). Default on; --no-external skips.

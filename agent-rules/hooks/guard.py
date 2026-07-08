@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""agent-rules SAFETY guard — PreToolUse-level enforcement of SAFETY.md §1.
+"""agent-rules Guard — PreToolUse-level enforcement of SAFETY.md §1.
 
 Reads the agent's hook payload from stdin, extracts the shell command, and if
 it matches a destructive pattern answers with that agent's block/ask response.

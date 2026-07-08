@@ -7,7 +7,7 @@ from typing import Any
 
 from _loader import load
 
-lf: Any = load("wiki-doc-author/scripts/lint_frontmatter.py")
+lf: Any = load("skills/wiki-doc-author/scripts/lint_frontmatter.py")
 
 
 class TestLintFile(unittest.TestCase):

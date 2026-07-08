@@ -5,7 +5,7 @@ from typing import Any
 
 from _loader import load
 
-oc: Any = load("wiki-doc-author/scripts/openapi_completeness.py")
+oc: Any = load("skills/wiki-doc-author/scripts/openapi_completeness.py")
 
 _COMPLETE = {
     "paths": {

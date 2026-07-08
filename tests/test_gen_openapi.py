@@ -1,4 +1,4 @@
-"""Tests for gen_openapi.py (wiki-doc-author/scripts/gen_openapi.py)."""
+"""Tests for gen_openapi.py (skills/wiki-doc-author/scripts/gen_openapi.py)."""
 
 import contextlib
 import io
@@ -12,7 +12,7 @@ from typing import Any
 
 from _loader import load
 
-gen: Any = load("wiki-doc-author/scripts/gen_openapi.py")
+gen: Any = load("skills/wiki-doc-author/scripts/gen_openapi.py")
 
 
 def _run(args: list) -> int:

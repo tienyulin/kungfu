@@ -30,7 +30,7 @@
 ## 第 3 步 — 修訂用提案，不直接動手
 
 - **觸發**：第 2 步產出任何修訂想法。
-- **動作**：憲法級檔案（KERNEL/THINKING/signals/domains）的修改**一律提案給使用者**，格式：
+- **動作**：Constitution 級檔案（KERNEL/THINKING/signals/domains）的修改**一律提案給使用者**，格式：
   ```
   PROPOSE: <改哪檔哪條>
   BECAUSE: <失敗紀錄原文（三行）>

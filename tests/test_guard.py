@@ -1,4 +1,4 @@
-"""Tests for the SAFETY guard (agent-rules/hooks/guard.py)."""
+"""Tests for the Guard (agent-rules/hooks/guard.py)."""
 
 import contextlib
 import io

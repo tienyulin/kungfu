@@ -35,7 +35,7 @@ repos:
       # The offline validator checks the real repo's spec + marketplace registration.
       - id: validate-skills
         name: validate skills
-        entry: python skill-author/scripts/validate_skill.py
+        entry: python skills/skill-author/scripts/validate_skill.py
         language: system
         pass_filenames: false
         always_run: true
@@ -53,7 +53,7 @@ repos:
         always_run: true
       - id: envrun-self-test
         name: envrun self-test
-        entry: bash skill-author/scripts/envrun.sh --self-test
+        entry: bash skills/skill-author/scripts/envrun.sh --self-test
         language: system
         pass_filenames: false
         always_run: true

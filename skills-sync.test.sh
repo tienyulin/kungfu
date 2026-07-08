@@ -105,66 +105,67 @@ self_test_guard() {
 
 self_test_agents() {
   local sb; sb="$(mktemp -d)" fail=0
-  mkdir -p "$sb/src/demo-skill" "$sb/src/agent-rules/rules" "$sb/src/agent-rules/hooks"
+  mkdir -p "$sb/src/skills/demo-skill" "$sb/src/agent-rules/rules" "$sb/src/agent-rules/hooks"
   cp "$SCRIPT_DIR/agent-rules/hooks/guard.py" "$sb/src/agent-rules/hooks/guard.py"
-  printf -- '---\nname: demo-skill\ndescription: 測試用 skill。\n---\n# body\n' > "$sb/src/demo-skill/SKILL.md"
+  printf -- '---\nname: demo-skill\ndescription: 測試用 skill。\n---\n# body\n' > "$sb/src/skills/demo-skill/SKILL.md"
   printf -- '# 憲法\nLAW-MARKER-42\n' > "$sb/src/agent-rules/rules/CONSTITUTION.md"
   printf -- '# D\n' > "$sb/src/agent-rules/rules/DECISIONS.md"
   printf -- '# S\n' > "$sb/src/agent-rules/rules/SAFETY.md"
   printf -- '# A\n' > "$sb/src/agent-rules/rules/ANTIPATTERNS.md"
 
-  # Stub the gemini CLI so wire_gemini_own_skills (called from sync_agents) never
-  # hits the real tool. `extensions link` drops a marker; `extensions list` echoes
-  # the name once linked, so the idempotency + success checks resolve.
+  # Stub the agent CLIs so wire_own_skills (from sync_agents) never hits the real
+  # tools: gemini `extensions link` → creates ~/.gemini/extensions/kungfu; codex
+  # `plugin list` reports kungfu "not installed" and `plugin add` logs a marker;
+  # opencode just needs to exist (its skill-drop is filesystem).
   local stub="$sb/stub"; mkdir -p "$stub"
   cat > "$stub/gemini" <<'EOF'
 #!/bin/sh
-# mimic `gemini extensions link` creating ~/.gemini/extensions/<name>
-[ "$1 $2" = "extensions link" ] && mkdir -p "$HOME/.gemini/extensions/kungfu-skills"
+[ "$1 $2" = "extensions link" ] && mkdir -p "$HOME/.gemini/extensions/kungfu"
 exit 0
 EOF
-  chmod +x "$stub/gemini"
+  cat > "$stub/codex" <<EOF
+#!/bin/sh
+[ "\$1 \$2 \$3" = "plugin add kungfu@kungfu-dev" ] && : > "$sb/.codex-added"
+[ "\$1 \$2" = "plugin list" ] && echo "kungfu@kungfu-dev  not installed  0.0  /x"
+exit 0
+EOF
+  printf '#!/bin/sh\nexit 0\n' > "$stub/opencode"
+  chmod +x "$stub"/gemini "$stub"/codex "$stub"/opencode
   export PATH="$stub:$PATH"
 
-  # case 1: all agent homes present (constitution OFF by default)
+  # case 1: gemini + codex + cline homes present (constitution OFF by default).
+  # Own skills reach agents via committed adapters (gemini extension, codex plugin)
+  # or skill-drop (opencode ~/.agents, cline ~/.cline).
   mkdir -p "$sb/h1/.gemini" "$sb/h1/.codex" "$sb/h1/.cline"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h1"; sync_agents >/dev/null )
-  [ -L "$sb/h1/.agents/skills/demo-skill" ] || { echo "  FAIL: gemini ~/.agents symlink"; fail=1; }
-  [ "$(readlink "$sb/h1/.codex/skills/demo-skill" 2>/dev/null)" = "$sb/src/demo-skill" ] \
-    || { echo "  FAIL: codex symlink target"; fail=1; }
-  [ "$(readlink "$sb/h1/.cline/skills/demo-skill" 2>/dev/null)" = "$sb/src/demo-skill" ] \
-    || { echo "  FAIL: cline native skill symlink"; fail=1; }
+  [ -d "$sb/h1/.gemini/extensions/kungfu" ] || { echo "  FAIL: gemini kungfu extension not linked"; fail=1; }
+  [ -f "$sb/.codex-added" ] || { echo "  FAIL: codex kungfu plugin not installed"; fail=1; }
+  [ "$(readlink "$sb/h1/.cline/skills/demo-skill" 2>/dev/null)" = "$sb/src/skills/demo-skill" ] \
+    || { echo "  FAIL: cline skill-drop"; fail=1; }
+  [ -L "$sb/h1/.agents/skills/demo-skill" ] || { echo "  FAIL: opencode ~/.agents skill-drop"; fail=1; }
   [ -e "$sb/h1/.codex/AGENTS.md" ] && { echo "  FAIL: constitution written without --constitution"; fail=1; }
   [ -e "$sb/h1/.gemini/GEMINI.md" ] && { echo "  FAIL: gemini constitution written without flag"; fail=1; }
-  # own skills wrapped as a generated Gemini extension + linked
-  [ -f "$sb/h1/.agents/gemini-kungfu/gemini-extension.json" ] || { echo "  FAIL: gemini extension manifest not generated"; fail=1; }
-  [ "$(readlink "$sb/h1/.agents/gemini-kungfu/skills/demo-skill" 2>/dev/null)" = "$sb/src/demo-skill" ] \
-    || { echo "  FAIL: gemini extension skill symlink"; fail=1; }
-  [ -d "$sb/h1/.gemini/extensions/kungfu-skills" ] || { echo "  FAIL: gemini extensions link not called"; fail=1; }
 
   # case 2: no agent homes → nothing created
   mkdir -p "$sb/h2"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h2"; sync_agents >/dev/null )
   [ -e "$sb/h2/.agents" ] && { echo "  FAIL: created agent dir when none detected"; fail=1; }
 
-  # case 3: idempotent — re-run, symlink still valid (not nested)
+  # case 3: idempotent — re-run, skill-drop symlink still valid (not nested)
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h1"; sync_agents >/dev/null )
-  [ "$(readlink "$sb/h1/.codex/skills/demo-skill" 2>/dev/null)" = "$sb/src/demo-skill" ] \
+  [ "$(readlink "$sb/h1/.cline/skills/demo-skill" 2>/dev/null)" = "$sb/src/skills/demo-skill" ] \
     || { echo "  FAIL: not idempotent"; fail=1; }
 
-  # case 3b: stale prune + migration — a dangling skill symlink (renamed upstream)
-  # is removed in every skills dir incl. Cline's; a user's own symlink is kept; and
-  # a leftover pre-3.48 pointer card in ~/.cline/rules migrates away (user file stays).
-  ln -s "$sb/src/renamed-away" "$sb/h1/.codex/skills/renamed-away"
-  ln -s "$sb/src/renamed-away" "$sb/h1/.cline/skills/renamed-away"
-  ln -s "$sb/elsewhere/thing" "$sb/h1/.codex/skills/users-own"
+  # case 3b: stale prune (renamed skill) in the skill-drop dirs + pre-3.48 pointer
+  # card migration; a user's own symlink / rule stays.
+  ln -s "$sb/src/skills/renamed-away" "$sb/h1/.cline/skills/renamed-away"
+  ln -s "$sb/elsewhere/thing" "$sb/h1/.cline/skills/users-own"
   mkdir -p "$sb/h1/.cline/rules"
-  printf '# Skill: gone\n\ngone.\n\n完整步驟在 `%s/gone-skill/SKILL.md`。（這是指向 kungfu 的指標規則）\n' "$sb/src" > "$sb/h1/.cline/rules/gone-skill.md"
+  printf '# Skill: gone\n\ngone.\n\n完整步驟在 `%s/skills/gone/SKILL.md`。（這是指向 kungfu 的指標規則）\n' "$sb/src" > "$sb/h1/.cline/rules/gone-skill.md"
   printf '# my note\n' > "$sb/h1/.cline/rules/my-note.md"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h1"; sync_agents >/dev/null )
-  [ -L "$sb/h1/.codex/skills/renamed-away" ] && { echo "  FAIL: stale codex symlink not pruned"; fail=1; }
   [ -L "$sb/h1/.cline/skills/renamed-away" ] && { echo "  FAIL: stale cline skill symlink not pruned"; fail=1; }
-  [ -L "$sb/h1/.codex/skills/users-own" ] || { echo "  FAIL: user's own symlink pruned"; fail=1; }
+  [ -L "$sb/h1/.cline/skills/users-own" ] || { echo "  FAIL: user's own symlink pruned"; fail=1; }
   [ -f "$sb/h1/.cline/rules/gone-skill.md" ] && { echo "  FAIL: old pointer card not migrated away"; fail=1; }
   [ -f "$sb/h1/.cline/rules/my-note.md" ] || { echo "  FAIL: user's own cline rule pruned"; fail=1; }
 
@@ -181,7 +182,7 @@ EOF
   printf '# Skill: old\n\nold.\n\n完整步驟在 `%s/demo-skill/SKILL.md`。（這是指向 kungfu 的指標規則）\n' "$sb/src" > "$sb/h9/.cline/rules/demo-skill.md"
   printf '# my own cline rule\n' > "$sb/h9/.cline/rules/keep-me.md"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h9"; sync_agents >/dev/null )
-  [ "$(readlink "$sb/h9/.cline/skills/demo-skill" 2>/dev/null)" = "$sb/src/demo-skill" ] \
+  [ "$(readlink "$sb/h9/.cline/skills/demo-skill" 2>/dev/null)" = "$sb/src/skills/demo-skill" ] \
     || { echo "  FAIL: both-layouts native skill symlink"; fail=1; }
   [ -f "$sb/h9/.cline/rules/demo-skill.md" ] \
     && { echo "  FAIL: old pointer card not migrated out of ~/.cline/rules"; fail=1; }
@@ -374,18 +375,18 @@ PY
   # case 9: sticky --constitution — opt in once → marker; later PLAIN run
   # auto-enables; --no-constitution removes the marker. Runs the real script.
   mkdir -p "$sb/hs/Cline"
-  ( HOME="$sb/hs"; bash "$SCRIPT_DIR/skills-sync.sh" agents --constitution >/dev/null 2>&1 )
+  ( HOME="$sb/hs"; bash "$SCRIPT_DIR/skills-sync.sh" agents --no-external --constitution >/dev/null 2>&1 )
   [ -f "$sb/hs/.agents/.constitution-on" ] || { echo "  FAIL: marker not written on --constitution"; fail=1; }
   rm -f "$sb/hs/Cline/Hooks/TaskStart"
-  ( HOME="$sb/hs"; bash "$SCRIPT_DIR/skills-sync.sh" agents >/dev/null 2>&1 )   # plain, no flag
+  ( HOME="$sb/hs"; bash "$SCRIPT_DIR/skills-sync.sh" agents --no-external >/dev/null 2>&1 )   # plain, no flag
   [ -f "$sb/hs/Cline/Hooks/TaskStart" ] \
     || { echo "  FAIL: plain run did not auto-enable via marker"; fail=1; }
-  ( HOME="$sb/hs"; bash "$SCRIPT_DIR/skills-sync.sh" agents --no-constitution >/dev/null 2>&1 )
+  ( HOME="$sb/hs"; bash "$SCRIPT_DIR/skills-sync.sh" agents --no-external --no-constitution >/dev/null 2>&1 )
   [ -e "$sb/hs/.agents/.constitution-on" ] && { echo "  FAIL: --no-constitution left the marker"; fail=1; }
 
   rm -rf "$sb"
   if [ "$fail" = 0 ]; then
-    echo "self-test OK — agents: symlinks + cline-native-skills(ext/declared/forced detect + one-run + pointer-card migration) + skip-absent + idempotent + opencode + constitution(opt-in/sticky/hooks/migration-strip/preserve/idempotent/exec-verified/home-relative-portable)"
+    echo "self-test OK — agents: own-skills-via-adapters(gemini ext / codex plugin / opencode+cline drop) + cline detect(ext/declared/forced, one-run) + pointer-card migration + skip-absent + idempotent + opencode + constitution(opt-in/sticky/hooks/migration-strip/preserve/idempotent/exec-verified/home-relative-portable)"
   else
     exit 1
   fi
@@ -400,9 +401,11 @@ self_test_external() {
     printf -- '---\nname: %s\ndescription: x\n---\n# body\n' "$sk" > "$r/skills/$sk/SKILL.md"
     if [ "${3:-}" = adapters ]; then
       printf '{}' > "$r/gemini-extension.json"
-      mkdir -p "$r/.opencode" "$r/.codex-plugin"
+      mkdir -p "$r/.opencode" "$r/.codex-plugin" "$r/.claude-plugin"
       printf '//x\n' > "$r/.opencode/plugin.js"      # non-empty: git tracks the dir
       printf '{}\n'   > "$r/.codex-plugin/plugin.json"
+      # Claude marketplace adapter: repo is its own marketplace (superpowers-like)
+      printf '{"name":"%s-mkt","plugins":[{"name":"%s-plugin"}]}\n' "$2" "$2" > "$r/.claude-plugin/marketplace.json"
     fi
     ( cd "$r" && git init -q -b main && git add -A \
         && git -c user.email=t@t -c user.name=t commit -qm x ) >/dev/null 2>&1
@@ -431,6 +434,10 @@ EOF
 #!/bin/sh
 echo "opencode \$*" >> "$log"; exit 0
 EOF
+  cat > "$bin/claude"   <<EOF
+#!/bin/sh
+echo "claude \$*" >> "$log"; exit 0
+EOF
   chmod +x "$bin"/*
 
   local h="$sb/h"; mkdir -p "$h/.cline/skills" "$h/.config/opencode"
@@ -451,6 +458,12 @@ EOF
   [ -L "$h/.agents/skills/bb" ] || { echo "  FAIL: repoB not dropped into ~/.agents/skills"; fail=1; }
   [ -L "$h/.cline/skills/bb" ]  || { echo "  FAIL: repoB not dropped into cline"; fail=1; }
   grep -q "gemini extensions install $sb/repoB" "$log" && { echo "  FAIL: gemini install wrongly called for plain repo"; fail=1; }
+  # Claude: adapter repo (its own .claude-plugin/marketplace.json) → marketplace add + install
+  grep -q "claude plugin marketplace add $sb/repoA" "$log" || { echo "  FAIL: claude marketplace add not called (adapter repo)"; fail=1; }
+  grep -q "claude plugin install aa-plugin@aa-mkt" "$log"   || { echo "  FAIL: claude plugin install not called"; fail=1; }
+  [ -L "$h/.claude/skills/aa" ] && { echo "  FAIL: adapter repo wrongly skill-dropped to ~/.claude/skills"; fail=1; }
+  # Claude: plain repo (no Claude marketplace) → skill-drop into ~/.claude/skills
+  [ -L "$h/.claude/skills/bb" ] || { echo "  FAIL: repoB not dropped into ~/.claude/skills"; fail=1; }
 
   # --no-external skips entirely
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h2"; PATH="$bin:$PATH"; NO_EXTERNAL=1
@@ -458,7 +471,7 @@ EOF
   [ -e "$sb/h2/.agents/external" ] && { echo "  FAIL: --no-external still ran"; fail=1; }
 
   rm -rf "$sb"
-  [ "$fail" = 0 ] && echo "self-test OK — external: clone + native-install(gemini/opencode/codex) for adapter repos + skill-drop(plain + cline) + no-external opt-out" || return 1
+  [ "$fail" = 0 ] && echo "self-test OK — external: clone + native-install(gemini/opencode/codex/claude) for adapter repos + skill-drop(plain + cline + claude) + no-external opt-out" || return 1
 }
 
 self_test
