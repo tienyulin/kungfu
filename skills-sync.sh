@@ -11,18 +11,14 @@
 #                   each via that agent's native mechanism (Claude/Codex: the repo's own
 #                   marketplace; Gemini: extension; OpenCode/Cline/plain: skill-drop).
 #                   They refresh on re-run (not marketplace auto-update). --no-external skips.
-#  • Gemini / Codex / Cline / OpenCode : this repo IS a superpowers-style adapter
-#                   repo — own skills live in skills/, and per-agent adapters
-#                   (gemini-extension.json, .codex-plugin/, .opencode/) sit at the
-#                   root. Install kungfu-self into each agent via its native
-#                   mechanism: Gemini `extensions link <repo>`, Codex `plugin
-#                   marketplace add <repo>` + `plugin add kungfu@kungfu-dev`.
-#                   OpenCode ships a committed .opencode/ plugin too, but the local
-#                   sync skill-drops skills/*/ into ~/.agents/skills instead (its
-#                   plugin path needs an npm-published package — out of scope here).
-#                   Cline is the only one with NO native install → skill-drop into
-#                   ~/.cline/skills. See wire_own_skills. Only a brand-new skill
-#                   needs a re-run.
+#  • Gemini / Codex / OpenCode / Cline : own skills live in skills/. Gemini, Codex
+#                   and OpenCode all read ~/.agents/skills natively, so kungfu
+#                   skill-drops skills/*/ there ONCE for all three. We do NOT install
+#                   kungfu as a Gemini extension or Codex plugin: those expose the
+#                   SAME skills a second time, and Gemini/Codex then warn "skill
+#                   conflict" on every startup (double-load vs the shared drop).
+#                   Cline reads its own dir → skill-drop into ~/.cline/skills.
+#                   See wire_own_skills. Only a brand-new skill needs a re-run.
 #  • --constitution (OPT-IN, default off): inject agent-rules/rules/CONSTITUTION.md
 #                   into each detected agent at session start via its HOOK mechanism
 #                   (content read from the marketplace file at session time → always
@@ -655,54 +651,47 @@ prune_own_dead() {  # <dir>
 # gets them via the marketplace bundle, not here. Replaces the pre-adapter approach
 # (hand-symlinking each skill + a generated Gemini extension).
 wire_own_skills() {  # <home> <cline_present> <cline_skills>
-  local home="$1" cline_present="$2" cline_skills="$3" repo="$SCRIPT_DIR" link
-  echo "→ 自家 skill：把 kungfu 裝進偵測到的非 Claude agent（committed adapter）"
+  local home="$1" cline_present="$2" cline_skills="$3" repo="$SCRIPT_DIR" link ext
+  echo "→ 自家 skill：skill-drop 進共用目錄 ~/.agents/skills（Gemini/Codex/OpenCode 都原生讀）"
 
-  # Gemini — committed gemini-extension.json → link the repo (live). Judge by
-  # ~/.gemini/extensions/kungfu (link creates it), not the flaky `list`.
-  if command -v gemini >/dev/null 2>&1; then
-    # migrate off #65's generated extension
-    [ -d "$home/.gemini/extensions/kungfu-skills" ] && \
-      { ( set +o pipefail; yes | gemini extensions uninstall kungfu-skills >/dev/null 2>&1 ) || true; }
-    rm -rf "$home/.agents/gemini-kungfu"
-    if [ -d "$home/.gemini/extensions/kungfu" ]; then
-      echo "  Gemini   → kungfu extension 已連結（更新自動反映）"
-    else
-      ( set +o pipefail; yes | gemini extensions link "$repo" >/dev/null 2>&1 ) || true
-      [ -d "$home/.gemini/extensions/kungfu" ] \
-        && echo "  Gemini   → kungfu extension 連結（committed adapter）" \
-        || echo "  ⚠ Gemini：kungfu extension 連結失敗"
-    fi
+  # Gemini, Codex and OpenCode ALL read ~/.agents/skills natively, so ONE drop
+  # feeds all three. We deliberately do NOT install kungfu as a Gemini extension or
+  # a Codex plugin: those expose the same skills a SECOND time, double-loading
+  # against ~/.agents/skills — Gemini (≥ its skills-dir release) and Codex then warn
+  # "skill conflict" on every startup. Single source = the shared drop.
+  if command -v gemini >/dev/null 2>&1 || command -v codex >/dev/null 2>&1 || [ -d "$home/.codex" ] \
+     || command -v opencode >/dev/null 2>&1 || [ -d "$home/.config/opencode" ]; then
+    drop_skill_dirs "$repo" "$home/.agents/skills" \
+      && echo "  → skill-drop ~/.agents/skills（Gemini/Codex/OpenCode 共讀，單一來源）"
+    prune_own_dead "$home/.agents/skills"
   fi
 
-  # Codex — committed .codex-plugin + .agents marketplace → marketplace add + add.
+  # Migrate off the earlier per-agent native installs of kungfu-self (#65/#66) —
+  # they now double-load against the shared drop above.
+  if command -v gemini >/dev/null 2>&1; then
+    for ext in kungfu kungfu-skills; do
+      [ -d "$home/.gemini/extensions/$ext" ] \
+        && { ( set +o pipefail; yes | gemini extensions uninstall "$ext" >/dev/null 2>&1 ) || true; \
+             echo "  Gemini   − 移除舊 $ext extension（改走 ~/.agents/skills，免重複載入）"; }
+    done
+    rm -rf "$home/.agents/gemini-kungfu"
+  fi
   if command -v codex >/dev/null 2>&1; then
-    # migrate: own skills now come via the plugin, drop old ~/.codex/skills symlinks
+    if codex plugin list 2>/dev/null | grep -q "kungfu@kungfu-dev"; then
+      codex plugin remove kungfu@kungfu-dev </dev/null >/dev/null 2>&1 || true
+      codex plugin marketplace remove kungfu-dev </dev/null >/dev/null 2>&1 || true
+      echo "  Codex    − 移除舊 kungfu plugin（改走 ~/.agents/skills）"
+    fi
+    # also drop the pre-3.48 ~/.codex/skills own-skill symlinks, if any linger
     if [ -d "$home/.codex/skills" ]; then
       for link in "$home/.codex/skills"/*; do
         [ -L "$link" ] || continue
         case "$(readlink "$link")" in "$SCRIPT_DIR"/*) rm -f "$link" ;; esac
       done
     fi
-    codex plugin marketplace add "$repo" </dev/null >/dev/null 2>&1 || true
-    if codex plugin list 2>/dev/null | grep -F "kungfu@kungfu-dev" | grep -q "not installed"; then
-      codex plugin add kungfu@kungfu-dev </dev/null >/dev/null 2>&1 \
-        && echo "  Codex    → kungfu plugin 裝好" || echo "  ⚠ Codex：kungfu plugin 裝失敗"
-    elif codex plugin list 2>/dev/null | grep -q "kungfu@kungfu-dev"; then
-      echo "  Codex    → kungfu plugin 已裝"
-    else
-      echo "  ⚠ Codex：marketplace 找不到 kungfu"
-    fi
   fi
 
-  # OpenCode — reads ~/.agents/skills natively → skill-drop (the .opencode plugin
-  # path needs an npm-published package; out of scope for the local sync).
-  if command -v opencode >/dev/null 2>&1 || [ -d "$home/.config/opencode" ]; then
-    drop_skill_dirs "$repo" "$home/.agents/skills" && echo "  OpenCode → skill-drop ~/.agents/skills"
-    prune_own_dead "$home/.agents/skills"
-  fi
-
-  # Cline — no native install → skill-drop into its Skills dir.
+  # Cline — its own Skills dir (not the shared ~/.agents/skills).
   if [ "$cline_present" = 1 ] && [ -n "$cline_skills" ]; then
     drop_skill_dirs "$repo" "$cline_skills" && echo "  Cline    → skill-drop $cline_skills"
     prune_own_dead "$cline_skills"
@@ -781,8 +770,8 @@ sync_agents() {
     return 0
   fi
 
-  # Own skills → detected non-Claude agents, via kungfu's committed adapters
-  # (Gemini extension / Codex plugin) or skill-drop (OpenCode/Cline).
+  # Own skills → skill-drop into ~/.agents/skills (Gemini/Codex/OpenCode all read it)
+  # + ~/.cline/skills (Cline); migrate off any older extension/plugin install.
   wire_own_skills "$home" "$cline_present" "$cline_skills"
 
   # migrate off the pre-3.48 approach: we used to write an always-on pointer .md

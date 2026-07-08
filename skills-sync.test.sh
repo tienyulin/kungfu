@@ -113,20 +113,20 @@ self_test_agents() {
   printf -- '# S\n' > "$sb/src/agent-rules/rules/SAFETY.md"
   printf -- '# A\n' > "$sb/src/agent-rules/rules/ANTIPATTERNS.md"
 
-  # Stub the agent CLIs so wire_own_skills (from sync_agents) never hits the real
-  # tools: gemini `extensions link` → creates ~/.gemini/extensions/kungfu; codex
-  # `plugin list` reports kungfu "not installed" and `plugin add` logs a marker;
-  # opencode just needs to exist (its skill-drop is filesystem).
+  # Stub the agent CLIs. wire_own_skills SKILL-DROPS own skills into ~/.agents/skills
+  # (shared, read by gemini/codex/opencode) and MIGRATES OFF any old kungfu install:
+  # gemini `extensions uninstall` removes the ext dir; codex `plugin list` reports it
+  # installed and `plugin remove` logs a marker. opencode just needs to exist.
   local stub="$sb/stub"; mkdir -p "$stub"
   cat > "$stub/gemini" <<'EOF'
 #!/bin/sh
-[ "$1 $2" = "extensions link" ] && mkdir -p "$HOME/.gemini/extensions/kungfu"
+[ "$1 $2" = "extensions uninstall" ] && rm -rf "$HOME/.gemini/extensions/$3"
 exit 0
 EOF
   cat > "$stub/codex" <<EOF
 #!/bin/sh
-[ "\$1 \$2 \$3" = "plugin add kungfu@kungfu-dev" ] && : > "$sb/.codex-added"
-[ "\$1 \$2" = "plugin list" ] && echo "kungfu@kungfu-dev  not installed  0.0  /x"
+[ "\$1 \$2" = "plugin list" ] && echo "kungfu@kungfu-dev  installed, enabled  0.0  /x"
+[ "\$1 \$2 \$3" = "plugin remove kungfu@kungfu-dev" ] && : > "$sb/.codex-removed"
 exit 0
 EOF
   printf '#!/bin/sh\nexit 0\n' > "$stub/opencode"
@@ -134,15 +134,15 @@ EOF
   export PATH="$stub:$PATH"
 
   # case 1: gemini + codex + cline homes present (constitution OFF by default).
-  # Own skills reach agents via committed adapters (gemini extension, codex plugin)
-  # or skill-drop (opencode ~/.agents, cline ~/.cline).
-  mkdir -p "$sb/h1/.gemini" "$sb/h1/.codex" "$sb/h1/.cline"
+  # Own skills reach gemini/codex/opencode via the SINGLE ~/.agents/skills drop and
+  # cline via ~/.cline; a pre-existing kungfu extension/plugin is migrated off.
+  mkdir -p "$sb/h1/.gemini/extensions/kungfu" "$sb/h1/.codex" "$sb/h1/.cline"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h1"; sync_agents >/dev/null )
-  [ -d "$sb/h1/.gemini/extensions/kungfu" ] || { echo "  FAIL: gemini kungfu extension not linked"; fail=1; }
-  [ -f "$sb/.codex-added" ] || { echo "  FAIL: codex kungfu plugin not installed"; fail=1; }
+  [ -L "$sb/h1/.agents/skills/demo-skill" ] || { echo "  FAIL: own skill not dropped into shared ~/.agents/skills"; fail=1; }
   [ "$(readlink "$sb/h1/.cline/skills/demo-skill" 2>/dev/null)" = "$sb/src/skills/demo-skill" ] \
     || { echo "  FAIL: cline skill-drop"; fail=1; }
-  [ -L "$sb/h1/.agents/skills/demo-skill" ] || { echo "  FAIL: opencode ~/.agents skill-drop"; fail=1; }
+  [ -d "$sb/h1/.gemini/extensions/kungfu" ] && { echo "  FAIL: old gemini kungfu extension not migrated off"; fail=1; }
+  [ -f "$sb/.codex-removed" ] || { echo "  FAIL: old codex kungfu plugin not removed"; fail=1; }
   [ -e "$sb/h1/.codex/AGENTS.md" ] && { echo "  FAIL: constitution written without --constitution"; fail=1; }
   [ -e "$sb/h1/.gemini/GEMINI.md" ] && { echo "  FAIL: gemini constitution written without flag"; fail=1; }
 
@@ -386,7 +386,7 @@ PY
 
   rm -rf "$sb"
   if [ "$fail" = 0 ]; then
-    echo "self-test OK — agents: own-skills-via-adapters(gemini ext / codex plugin / opencode+cline drop) + cline detect(ext/declared/forced, one-run) + pointer-card migration + skip-absent + idempotent + opencode + constitution(opt-in/sticky/hooks/migration-strip/preserve/idempotent/exec-verified/home-relative-portable)"
+    echo "self-test OK — agents: own-skills-via-shared-drop(~/.agents/skills gemini/codex/opencode + cline) + migrate-off(old ext/plugin) + cline detect(ext/declared/forced, one-run) + pointer-card migration + skip-absent + idempotent + opencode + constitution(opt-in/sticky/hooks/migration-strip/preserve/idempotent/exec-verified/home-relative-portable)"
   else
     exit 1
   fi
