@@ -583,6 +583,42 @@ sync_external_skills() {  # <home> <cline_present> <cline_skills>
   done <<< "$list"
 }
 
+# Gemini has NO skill-dir mechanism (only `extensions`), so our own skills never
+# reach it via ~/.agents/skills. Wrap them in a generated Gemini extension: a dir
+# with gemini-extension.json + skills/<name> symlinks, then `gemini extensions
+# link` it. `link` (not install) records a LIVE reference — later re-runs just
+# refresh the symlinks and Gemini reflects them, no re-link. Only runs if the
+# gemini CLI is present.
+wire_gemini_own_skills() {  # <home>
+  command -v gemini >/dev/null 2>&1 || return 0
+  local home="$1" ext="$1/.agents/gemini-kungfu" skill link tgt
+  mkdir -p "$ext/skills"
+  printf '{\n  "name": "kungfu-skills",\n  "version": "0.0.0",\n  "contextFileName": "GEMINI.md"\n}\n' > "$ext/gemini-extension.json"
+  printf '# Kungfu skills\n本 extension 收錄 kungfu 的自家 skill；相關任務時照各 SKILL.md 走。\n' > "$ext/GEMINI.md"
+  for skill in $(own_skill_dirs); do
+    ln -sfn "$SCRIPT_DIR/$skill" "$ext/skills/$skill"
+  done
+  # prune our stale symlinks (skill renamed/removed upstream)
+  for link in "$ext/skills"/*; do
+    [ -L "$link" ] || continue
+    tgt="$(readlink "$link")"
+    case "$tgt" in "$SCRIPT_DIR"/*) [ -e "$tgt" ] || rm -f "$link" ;; esac
+  done
+  # `link` records the extension at ~/.gemini/extensions/<name>. Judge idempotency
+  # + success by that dir, NOT `gemini extensions list` (it misbehaves in a fresh
+  # HOME) — same lesson as the external installs.
+  local marker="$home/.gemini/extensions/kungfu-skills"
+  if [ -d "$marker" ]; then
+    echo "  Gemini   → 自家 skill extension 已連結（kungfu-skills，更新自動反映）"
+  else
+    # yes answers trust/skills prompts; pipefail would flag SIGPIPE on success.
+    ( set +o pipefail; yes | gemini extensions link "$ext" >/dev/null 2>&1 ) || true
+    [ -d "$marker" ] \
+      && echo "  Gemini   → 自家 skill 生成 extension 並連結（kungfu-skills）" \
+      || echo "  ⚠ Gemini：自家 skill extension link 失敗"
+  fi
+}
+
 sync_agents() {
   local home="$HOME" did=0
   local gemini=0 codex=0 opencode=0 agents_dir=0 cline_dir=""
@@ -698,6 +734,9 @@ sync_agents() {
   [ "$opencode" = 1 ]    && echo "  OpenCode → ~/.agents/skills（原生讀取，與 Gemini 共用）"
   [ "$codex" = 1 ]       && echo "  Codex    → ~/.codex/skills"
   [ "$cline_present" = 1 ] && echo "  Cline    → $cline_skills （原生 Skills，on-demand）"
+
+  # Gemini can't read skill dirs — wrap our own skills in a generated extension.
+  wire_gemini_own_skills "$home"
 
   # External third-party skill repos (external-skills.json) → detected non-Claude
   # agents, via each agent's native installer (or skill-drop). Default on; --no-external skips.
