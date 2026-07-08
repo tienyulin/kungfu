@@ -373,6 +373,77 @@ PY
   fi
 }
 
+# External skills: adapter repo → native install per agent (stub CLIs record the
+# calls); plain-skill repo → skill-drop; Cline always skill-drop; --no-external skips.
+self_test_external() {
+  local sb; sb="$(mktemp -d)" fail=0
+  mk_repo() {  # <dir> <skillname> [adapters]
+    local r="$1" sk="$2"; mkdir -p "$r/skills/$sk"
+    printf -- '---\nname: %s\ndescription: x\n---\n# body\n' "$sk" > "$r/skills/$sk/SKILL.md"
+    if [ "${3:-}" = adapters ]; then
+      printf '{}' > "$r/gemini-extension.json"
+      mkdir -p "$r/.opencode" "$r/.codex-plugin"
+      printf '//x\n' > "$r/.opencode/plugin.js"      # non-empty: git tracks the dir
+      printf '{}\n'   > "$r/.codex-plugin/plugin.json"
+    fi
+    ( cd "$r" && git init -q -b main && git add -A \
+        && git -c user.email=t@t -c user.name=t commit -qm x ) >/dev/null 2>&1
+  }
+  mk_repo "$sb/repoA" aa adapters   # superpowers-like (has adapters)
+  mk_repo "$sb/repoB" bb            # karpathy-like (plain skill only)
+
+  mkdir -p "$sb/src"
+  cat > "$sb/src/external-skills.json" <<JSON
+{"skills":[{"name":"repoA","url":"$sb/repoA","ref":"main"},{"name":"repoB","url":"$sb/repoB","ref":"main"}]}
+JSON
+
+  # stub CLIs on PATH — record every call; codex list reports repoA "not installed".
+  local bin="$sb/bin" log="$sb/calls.log"; mkdir -p "$bin"
+  cat > "$bin/gemini"   <<EOF
+#!/bin/sh
+echo "gemini \$*" >> "$log"; exit 0
+EOF
+  cat > "$bin/codex"    <<EOF
+#!/bin/sh
+echo "codex \$*" >> "$log"
+[ "\$*" = "plugin list" ] && echo "repoA@fakemkt  not installed  1.0  /x"
+exit 0
+EOF
+  cat > "$bin/opencode" <<EOF
+#!/bin/sh
+echo "opencode \$*" >> "$log"; exit 0
+EOF
+  chmod +x "$bin"/*
+
+  local h="$sb/h"; mkdir -p "$h/.cline/skills" "$h/.config/opencode"
+  ( SCRIPT_DIR="$sb/src"; HOME="$h"; PATH="$bin:$PATH"
+    sync_external_skills "$h" 1 "$h/.cline/skills" ) >/dev/null 2>&1
+
+  [ -d "$h/.agents/external/repoA/.git" ] || { echo "  FAIL: repoA not cloned"; fail=1; }
+  # adapter repo → native installs invoked
+  grep -q "gemini extensions install $sb/repoA" "$log" || { echo "  FAIL: gemini install not called (adapter repo)"; fail=1; }
+  grep -q "opencode plugin repoA@git" "$log"           || { echo "  FAIL: opencode plugin not called"; fail=1; }
+  grep -q "codex plugin marketplace add $sb/repoA" "$log" || { echo "  FAIL: codex marketplace add not called"; fail=1; }
+  grep -q "codex plugin add repoA@fakemkt" "$log"      || { echo "  FAIL: codex plugin add not called"; fail=1; }
+  # adapter repo NOT skill-dropped into ~/.agents/skills (native install handles it)
+  [ -L "$h/.agents/skills/aa" ] && { echo "  FAIL: adapter repo wrongly skill-dropped to ~/.agents/skills"; fail=1; }
+  # adapter repo IS dropped into Cline (no native install there)
+  [ -L "$h/.cline/skills/aa" ] || { echo "  FAIL: repoA skill not dropped into cline"; fail=1; }
+  # plain repo → skill-drop to ~/.agents/skills + cline; gemini NOT installed for it
+  [ -L "$h/.agents/skills/bb" ] || { echo "  FAIL: repoB not dropped into ~/.agents/skills"; fail=1; }
+  [ -L "$h/.cline/skills/bb" ]  || { echo "  FAIL: repoB not dropped into cline"; fail=1; }
+  grep -q "gemini extensions install $sb/repoB" "$log" && { echo "  FAIL: gemini install wrongly called for plain repo"; fail=1; }
+
+  # --no-external skips entirely
+  ( SCRIPT_DIR="$sb/src"; HOME="$sb/h2"; PATH="$bin:$PATH"; NO_EXTERNAL=1
+    sync_external_skills "$sb/h2" 0 "" ) >/dev/null 2>&1
+  [ -e "$sb/h2/.agents/external" ] && { echo "  FAIL: --no-external still ran"; fail=1; }
+
+  rm -rf "$sb"
+  [ "$fail" = 0 ] && echo "self-test OK — external: clone + native-install(gemini/opencode/codex) for adapter repos + skill-drop(plain + cline) + no-external opt-out" || return 1
+}
+
 self_test
 self_test_guard
 self_test_agents
+self_test_external

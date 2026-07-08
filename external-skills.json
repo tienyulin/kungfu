@@ -1,0 +1,15 @@
+{
+  "comment": "Cross-agent external skill sources. Independent of the Claude marketplace (.claude-plugin/marketplace.json). skills-sync.sh reads this to install these third-party skill repos into whichever non-Claude agents it detects (Gemini/Codex/OpenCode/Cline), using each agent's native mechanism where the repo ships an adapter, else dropping the plain SKILL.md dirs into that agent's skills path. Add an entry: name (install id), url (git), ref (branch/tag/sha).",
+  "skills": [
+    {
+      "name": "superpowers",
+      "url": "https://github.com/obra/superpowers.git",
+      "ref": "main"
+    },
+    {
+      "name": "andrej-karpathy-skills",
+      "url": "https://github.com/forrestchang/andrej-karpathy-skills.git",
+      "ref": "main"
+    }
+  ]
+}
