@@ -6,8 +6,8 @@ that it's registered in .claude-plugin/marketplace.json. Replaces the external
 `skills-ref` tool so it works on an air-gapped intranet.
 
 Usage (from repo root):
-  python skills/skill-author/scripts/validate_skill.py            # all skills + marketplace
-  python skills/skill-author/scripts/validate_skill.py <skill>    # one skill dir (e.g. skills/dev-bugfix)
+  python skills/skill-author/scripts/validate_skill.py           # all skills + marketplace
+  python skills/skill-author/scripts/validate_skill.py <skill>   # one skill dir, e.g. dev-bugfix
 """
 
 import json
@@ -156,12 +156,16 @@ def main(argv):
     else:
         # own skills live under skills/<name>/ ; identifiers stay repo-relative
         # (e.g. "skills/dev-bugfix") so they match marketplace.json's ./skills/<name>.
-        skills = [
-            os.path.join("skills", d)
-            for d in sorted(os.listdir(skills_root))
-            if os.path.isdir(os.path.join(skills_root, d))
-            and os.path.isfile(os.path.join(skills_root, d, "SKILL.md"))
-        ] if os.path.isdir(skills_root) else []
+        skills = (
+            [
+                os.path.join("skills", d)
+                for d in sorted(os.listdir(skills_root))
+                if os.path.isdir(os.path.join(skills_root, d))
+                and os.path.isfile(os.path.join(skills_root, d, "SKILL.md"))
+            ]
+            if os.path.isdir(skills_root)
+            else []
+        )
 
     for s in skills:
         e, w = validate_skill(s)
