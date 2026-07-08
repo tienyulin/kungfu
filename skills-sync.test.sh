@@ -105,9 +105,9 @@ self_test_guard() {
 
 self_test_agents() {
   local sb; sb="$(mktemp -d)" fail=0
-  mkdir -p "$sb/src/demo-skill" "$sb/src/agent-rules/rules" "$sb/src/agent-rules/hooks"
+  mkdir -p "$sb/src/skills/demo-skill" "$sb/src/agent-rules/rules" "$sb/src/agent-rules/hooks"
   cp "$SCRIPT_DIR/agent-rules/hooks/guard.py" "$sb/src/agent-rules/hooks/guard.py"
-  printf -- '---\nname: demo-skill\ndescription: 測試用 skill。\n---\n# body\n' > "$sb/src/demo-skill/SKILL.md"
+  printf -- '---\nname: demo-skill\ndescription: 測試用 skill。\n---\n# body\n' > "$sb/src/skills/demo-skill/SKILL.md"
   printf -- '# 憲法\nLAW-MARKER-42\n' > "$sb/src/agent-rules/rules/CONSTITUTION.md"
   printf -- '# D\n' > "$sb/src/agent-rules/rules/DECISIONS.md"
   printf -- '# S\n' > "$sb/src/agent-rules/rules/SAFETY.md"
@@ -130,15 +130,15 @@ EOF
   mkdir -p "$sb/h1/.gemini" "$sb/h1/.codex" "$sb/h1/.cline"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h1"; sync_agents >/dev/null )
   [ -L "$sb/h1/.agents/skills/demo-skill" ] || { echo "  FAIL: gemini ~/.agents symlink"; fail=1; }
-  [ "$(readlink "$sb/h1/.codex/skills/demo-skill" 2>/dev/null)" = "$sb/src/demo-skill" ] \
+  [ "$(readlink "$sb/h1/.codex/skills/demo-skill" 2>/dev/null)" = "$sb/src/skills/demo-skill" ] \
     || { echo "  FAIL: codex symlink target"; fail=1; }
-  [ "$(readlink "$sb/h1/.cline/skills/demo-skill" 2>/dev/null)" = "$sb/src/demo-skill" ] \
+  [ "$(readlink "$sb/h1/.cline/skills/demo-skill" 2>/dev/null)" = "$sb/src/skills/demo-skill" ] \
     || { echo "  FAIL: cline native skill symlink"; fail=1; }
   [ -e "$sb/h1/.codex/AGENTS.md" ] && { echo "  FAIL: constitution written without --constitution"; fail=1; }
   [ -e "$sb/h1/.gemini/GEMINI.md" ] && { echo "  FAIL: gemini constitution written without flag"; fail=1; }
   # own skills wrapped as a generated Gemini extension + linked
   [ -f "$sb/h1/.agents/gemini-kungfu/gemini-extension.json" ] || { echo "  FAIL: gemini extension manifest not generated"; fail=1; }
-  [ "$(readlink "$sb/h1/.agents/gemini-kungfu/skills/demo-skill" 2>/dev/null)" = "$sb/src/demo-skill" ] \
+  [ "$(readlink "$sb/h1/.agents/gemini-kungfu/skills/demo-skill" 2>/dev/null)" = "$sb/src/skills/demo-skill" ] \
     || { echo "  FAIL: gemini extension skill symlink"; fail=1; }
   [ -d "$sb/h1/.gemini/extensions/kungfu-skills" ] || { echo "  FAIL: gemini extensions link not called"; fail=1; }
 
@@ -149,7 +149,7 @@ EOF
 
   # case 3: idempotent — re-run, symlink still valid (not nested)
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h1"; sync_agents >/dev/null )
-  [ "$(readlink "$sb/h1/.codex/skills/demo-skill" 2>/dev/null)" = "$sb/src/demo-skill" ] \
+  [ "$(readlink "$sb/h1/.codex/skills/demo-skill" 2>/dev/null)" = "$sb/src/skills/demo-skill" ] \
     || { echo "  FAIL: not idempotent"; fail=1; }
 
   # case 3b: stale prune + migration — a dangling skill symlink (renamed upstream)
@@ -181,7 +181,7 @@ EOF
   printf '# Skill: old\n\nold.\n\n完整步驟在 `%s/demo-skill/SKILL.md`。（這是指向 kungfu 的指標規則）\n' "$sb/src" > "$sb/h9/.cline/rules/demo-skill.md"
   printf '# my own cline rule\n' > "$sb/h9/.cline/rules/keep-me.md"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h9"; sync_agents >/dev/null )
-  [ "$(readlink "$sb/h9/.cline/skills/demo-skill" 2>/dev/null)" = "$sb/src/demo-skill" ] \
+  [ "$(readlink "$sb/h9/.cline/skills/demo-skill" 2>/dev/null)" = "$sb/src/skills/demo-skill" ] \
     || { echo "  FAIL: both-layouts native skill symlink"; fail=1; }
   [ -f "$sb/h9/.cline/rules/demo-skill.md" ] \
     && { echo "  FAIL: old pointer card not migrated out of ~/.cline/rules"; fail=1; }

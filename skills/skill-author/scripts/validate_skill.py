@@ -6,8 +6,8 @@ that it's registered in .claude-plugin/marketplace.json. Replaces the external
 `skills-ref` tool so it works on an air-gapped intranet.
 
 Usage (from repo root):
-  python skill-author/scripts/validate_skill.py            # all skills + marketplace
-  python skill-author/scripts/validate_skill.py <skill>    # one skill dir
+  python skills/skill-author/scripts/validate_skill.py            # all skills + marketplace
+  python skills/skill-author/scripts/validate_skill.py <skill>    # one skill dir (e.g. skills/dev-bugfix)
 """
 
 import json
@@ -128,12 +128,12 @@ def _check_envrun_copies(root):
     """envrun.sh is duplicated across skills' scripts/ dirs (a skill can't
     reference files outside its own dir); the copies must stay byte-identical
     or they silently drift. Returns errs."""
+    skills_root = os.path.join(root, "skills")
     paths = sorted(
-        os.path.join(d, "scripts", "envrun.sh")
-        for d in os.listdir(root)
-        if os.path.isdir(d)
-        and d not in SKIP
-        and os.path.isfile(os.path.join(d, "scripts", "envrun.sh"))
+        os.path.join(skills_root, d, "scripts", "envrun.sh")
+        for d in (os.listdir(skills_root) if os.path.isdir(skills_root) else [])
+        if os.path.isdir(os.path.join(skills_root, d))
+        and os.path.isfile(os.path.join(skills_root, d, "scripts", "envrun.sh"))
     )
     blobs = set()
     for p in paths:
@@ -151,14 +151,18 @@ def main(argv):
     root = os.getcwd()
     errs, warns = [], []
 
+    skills_root = os.path.join(root, "skills")
     if len(argv) > 1:
         skills = [argv[1].rstrip("/")]
     else:
+        # own skills live under skills/<name>/ ; identifiers stay repo-relative
+        # (e.g. "skills/dev-bugfix") so they match marketplace.json's ./skills/<name>.
         skills = [
-            d
-            for d in sorted(os.listdir(root))
-            if os.path.isdir(d) and d not in SKIP and os.path.isfile(os.path.join(d, "SKILL.md"))
-        ]
+            os.path.join("skills", d)
+            for d in sorted(os.listdir(skills_root))
+            if os.path.isdir(os.path.join(skills_root, d))
+            and os.path.isfile(os.path.join(skills_root, d, "SKILL.md"))
+        ] if os.path.isdir(skills_root) else []
 
     for s in skills:
         e, w = validate_skill(s)

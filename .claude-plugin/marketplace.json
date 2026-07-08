@@ -24,7 +24,7 @@
       ],
       "category": "workflow",
       "skills": [
-        "./wiki-doc-author"
+        "./skills/wiki-doc-author"
       ]
     },
     {
@@ -43,7 +43,7 @@
       ],
       "category": "workflow",
       "skills": [
-        "./sop-to-spec"
+        "./skills/sop-to-spec"
       ]
     },
     {
@@ -62,7 +62,7 @@
       ],
       "category": "workflow",
       "skills": [
-        "./skill-author"
+        "./skills/skill-author"
       ]
     },
     {
@@ -82,7 +82,7 @@
       ],
       "category": "development",
       "skills": [
-        "./dev-api-template"
+        "./skills/dev-api-template"
       ]
     },
     {
@@ -116,7 +116,7 @@
       ],
       "category": "development",
       "skills": [
-        "./dev-bugfix"
+        "./skills/dev-bugfix"
       ]
     },
     {
@@ -134,7 +134,7 @@
       ],
       "category": "development",
       "skills": [
-        "./dev-feature"
+        "./skills/dev-feature"
       ]
     },
     {
@@ -151,7 +151,7 @@
       ],
       "category": "development",
       "skills": [
-        "./dev-refactor"
+        "./skills/dev-refactor"
       ]
     },
     {
@@ -169,7 +169,7 @@
       ],
       "category": "development",
       "skills": [
-        "./dev-investigate"
+        "./skills/dev-investigate"
       ]
     },
     {
@@ -187,7 +187,7 @@
       ],
       "category": "development",
       "skills": [
-        "./dev-review"
+        "./skills/dev-review"
       ]
     },
     {
@@ -206,7 +206,7 @@
       ],
       "category": "development",
       "skills": [
-        "./dev-loop"
+        "./skills/dev-loop"
       ]
     },
     {
@@ -225,7 +225,7 @@
       ],
       "category": "development",
       "skills": [
-        "./dev-test"
+        "./skills/dev-test"
       ]
     },
     {
@@ -243,7 +243,7 @@
       ],
       "category": "workflow",
       "skills": [
-        "./agent-rules-setup"
+        "./skills/agent-rules-setup"
       ]
     },
     {
@@ -262,18 +262,18 @@
       ],
       "category": "workflow",
       "skills": [
-        "./wiki-doc-author",
-        "./sop-to-spec",
-        "./skill-author",
-        "./dev-api-template",
-        "./dev-bugfix",
-        "./dev-feature",
-        "./dev-refactor",
-        "./dev-investigate",
-        "./dev-review",
-        "./dev-test",
-        "./dev-loop",
-        "./agent-rules-setup"
+        "./skills/wiki-doc-author",
+        "./skills/sop-to-spec",
+        "./skills/skill-author",
+        "./skills/dev-api-template",
+        "./skills/dev-bugfix",
+        "./skills/dev-feature",
+        "./skills/dev-refactor",
+        "./skills/dev-investigate",
+        "./skills/dev-review",
+        "./skills/dev-test",
+        "./skills/dev-loop",
+        "./skills/agent-rules-setup"
       ]
     },
     {

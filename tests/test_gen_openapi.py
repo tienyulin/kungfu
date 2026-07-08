@@ -12,7 +12,7 @@ from typing import Any
 
 from _loader import load
 
-gen: Any = load("wiki-doc-author/scripts/gen_openapi.py")
+gen: Any = load("skills/wiki-doc-author/scripts/gen_openapi.py")
 
 
 def _run(args: list) -> int:

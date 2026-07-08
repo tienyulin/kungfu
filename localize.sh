@@ -30,7 +30,7 @@ FILES=(
   "skills-sync.sh"
   ".claude-plugin/marketplace.json"
   "external-skills.json"
-  "agent-rules-setup/SKILL.md"
+  "skills/agent-rules-setup/SKILL.md"
 )
 
 self_test() {

@@ -116,7 +116,7 @@ PY
 # This repo's own skills = direct subdirs that contain a SKILL.md.
 own_skill_dirs() {
   local d
-  for d in "$SCRIPT_DIR"/*/; do
+  for d in "$SCRIPT_DIR"/skills/*/; do
     [ -f "${d}SKILL.md" ] && basename "$d"
   done
 }
@@ -596,7 +596,7 @@ wire_gemini_own_skills() {  # <home>
   printf '{\n  "name": "kungfu-skills",\n  "version": "0.0.0",\n  "contextFileName": "GEMINI.md"\n}\n' > "$ext/gemini-extension.json"
   printf '# Kungfu skills\n本 extension 收錄 kungfu 的自家 skill；相關任務時照各 SKILL.md 走。\n' > "$ext/GEMINI.md"
   for skill in $(own_skill_dirs); do
-    ln -sfn "$SCRIPT_DIR/$skill" "$ext/skills/$skill"
+    ln -sfn "$SCRIPT_DIR/skills/$skill" "$ext/skills/$skill"
   done
   # prune our stale symlinks (skill renamed/removed upstream)
   for link in "$ext/skills"/*; do
@@ -692,7 +692,7 @@ sync_agents() {
   echo "→ 跨 agent：同步自家 skill 到偵測到的 agent"
   local skill src
   for skill in $(own_skill_dirs); do
-    src="$SCRIPT_DIR/$skill"
+    src="$SCRIPT_DIR/skills/$skill"
     [ "$agents_dir" = 1 ]     && ln -sfn "$src" "$home/.agents/skills/$skill"
     [ "$codex" = 1 ]          && ln -sfn "$src" "$home/.codex/skills/$skill"
     [ -n "$cline_skills" ]    && ln -sfn "$src" "$cline_skills/$skill"
