@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 # skills-sync.sh — run ONCE per machine; updates arrive automatically afterwards.
 #
-#  • Claude Code  : install the BUNDLE plugin (this repo's own skills as one plugin)
-#                   plus the external mirror plugins, then enable marketplace
-#                   auto-update. From then on every Claude Code startup refreshes the
-#                   marketplace and updates installed plugins — a merged change OR a
-#                   NEW skill (added to the bundle) reaches everyone with zero action.
+#  • Claude Code  : install the BUNDLE plugin (this repo's own skills as one plugin),
+#                   then enable marketplace auto-update. From then on every Claude Code
+#                   startup refreshes the marketplace and updates installed plugins — a
+#                   merged change OR a NEW skill (added to the bundle) reaches everyone
+#                   with zero action.
+#  • external skills : listed in external-skills.json (single source), installed into
+#                   EVERY detected agent — Claude included — by sync_external_skills,
+#                   each via that agent's native mechanism (Claude/Codex: the repo's own
+#                   marketplace; Gemini: extension; OpenCode/Cline/plain: skill-drop).
+#                   They refresh on re-run (not marketplace auto-update). --no-external skips.
 #  • Gemini / Codex / Cline / OpenCode : this repo IS a superpowers-style adapter
 #                   repo — own skills live in skills/, and per-agent adapters
 #                   (gemini-extension.json, .codex-plugin/, .opencode/) sit at the
@@ -65,8 +70,9 @@ MARKETPLACE_JSON="$SCRIPT_DIR/.claude-plugin/marketplace.json"
 CONSTITUTION="${CONSTITUTION:-0}"   # set by --constitution; opt-in, default off
 
 # Print the plugin plan as "INSTALL <name>" / "RETIRE <name>" lines.
-# INSTALL: the bundle (source "./" listing >1 skill) + external mirror plugins +
-#          any local single-skill plugin NOT covered by the bundle.
+# INSTALL: the bundle (source "./" listing >1 skill) + any local single-skill
+#          plugin NOT covered by the bundle. (External skills are NOT here — they
+#          install via sync_external_skills from external-skills.json.)
 # RETIRE:  local single-skill plugins whose skill the bundle already ships —
 #          installing both would double-load the skill, and individually installed
 #          plugins don't pick up NEW skills; the bundle does.
@@ -384,7 +390,7 @@ SHEOF
   return 0
 }
 
-# SAFETY guard (PreToolUse-level interception of destructive commands) for the
+# Guard (PreToolUse-level interception of destructive commands) for the
 # detected agents — upgrades SAFETY.md §1 from "the model read the rule" to "the
 # host blocks the call". Claude Code gets this from the agent-rules plugin itself.
 wire_guard() {
@@ -392,10 +398,10 @@ wire_guard() {
   local guard="$SCRIPT_DIR/agent-rules/hooks/guard.py" guard_ref
   guard_ref="$(homeref "$SCRIPT_DIR/agent-rules/hooks/guard.py" sh)"
   if [ ! -f "$guard" ]; then
-    echo "  ⚠ 找不到 ${guard}，跳過 Safety"
+    echo "  ⚠ 找不到 ${guard}，跳過 Guard"
     return 0
   fi
-  echo "→ Safety（--constitution）：hook 層攔破壞性指令（pattern 清單＝SAFETY.md §1）"
+  echo "→ Guard（--constitution）：hook 層攔破壞性指令（pattern 清單＝SAFETY.md §1）"
   if [ "$codex" = 1 ]; then
     merge_json_hook "$home/.codex/hooks.json" "PreToolUse" \
       "{\"hooks\":[{\"type\":\"command\",\"command\":\"python3 \\\"$guard_ref\\\" --agent codex\",\"statusMessage\":\"agent-rules guard\",\"timeout\":15}]}"
@@ -492,6 +498,28 @@ drop_skill_dirs() {  # <repo-clone> <target-skills-dir>
   return 0
 }
 
+# marketplace name / plugin names from a repo's .claude-plugin/marketplace.json
+# (used to install an external repo into Claude Code via its own marketplace).
+claude_mp_name() {  # <path> → marketplace name
+  python3 - "$1" <<'PY'
+import json, sys
+try:
+    print(json.load(open(sys.argv[1], encoding="utf-8")).get("name", ""))
+except Exception:
+    pass
+PY
+}
+claude_mp_plugins() {  # <path> → space-separated plugin names
+  python3 - "$1" <<'PY'
+import json, sys
+try:
+    d = json.load(open(sys.argv[1], encoding="utf-8"))
+    print(" ".join(p.get("name", "") for p in d.get("plugins", []) if p.get("name")))
+except Exception:
+    pass
+PY
+}
+
 # Install the external (third-party) skill repos listed in external-skills.json
 # into the detected NON-Claude agents. superpowers-style repos ship a native
 # adapter per agent (gemini-extension.json / .opencode / .codex-plugin) → use that
@@ -505,15 +533,18 @@ sync_external_skills() {  # <home> <cline_present> <cline_skills>
   local list; list="$(external_skill_list)"
   [ -n "$list" ] || return 0
 
-  local has_gemini=0 has_codex=0 has_opencode=0
+  local has_gemini=0 has_codex=0 has_opencode=0 has_claude=0
   command -v gemini   >/dev/null 2>&1 && has_gemini=1
   { command -v codex    >/dev/null 2>&1 || [ -d "$home/.codex" ]; } && has_codex=1
   { command -v opencode >/dev/null 2>&1 || [ -d "$home/.config/opencode" ]; } && has_opencode=1
-  [ "$has_gemini$has_codex$has_opencode$cline_present" = "0000" ] && return 0
+  # Claude external install runs only in the default flow; `agents` mode is defined
+  # as "cross-agent only, never touch Claude plugins", so it's excluded there.
+  { command -v claude >/dev/null 2>&1 && [ "${MODE:-}" != "agents" ]; } && has_claude=1
+  [ "$has_gemini$has_codex$has_opencode$cline_present$has_claude" = "00000" ] && return 0
 
   echo "→ external skills（external-skills.json）：裝進偵測到的非 Claude agent"
   local ext_root="$home/.agents/external"; mkdir -p "$ext_root"
-  local name url ref clone has_g has_o has_c sel
+  local name url ref clone has_g has_o has_c sel cmp cplug
   while IFS=$'\t' read -r name url ref; do
     [ -n "$name" ] || continue
     echo "  • $name"
@@ -583,6 +614,26 @@ sync_external_skills() {  # <home> <cline_present> <cline_skills>
     # Cline — no native install → skill-drop into its Skills dir.
     if [ "$cline_present" = 1 ] && [ -n "$cline_skills" ]; then
       drop_skill_dirs "$clone" "$cline_skills" && echo "    Cline    → skill-drop $cline_skills"
+    fi
+
+    # Claude Code — a repo that is its own marketplace (.claude-plugin/marketplace.json)
+    # → add it + install its plugins (bootstrap loads via the plugin hook). A plain
+    # skill repo → drop skills/*/ into ~/.claude/skills (Claude auto-discovers those).
+    if [ "$has_claude" = 1 ]; then
+      if [ -f "$clone/.claude-plugin/marketplace.json" ]; then
+        cmp="$(claude_mp_name "$clone/.claude-plugin/marketplace.json")"
+        if [ -n "$cmp" ]; then
+          claude plugin marketplace add "$url" >/dev/null 2>&1 \
+            || claude plugin marketplace update "$cmp" >/dev/null 2>&1 || true
+          for cplug in $(claude_mp_plugins "$clone/.claude-plugin/marketplace.json"); do
+            claude plugin install "$cplug@$cmp" >/dev/null 2>&1 \
+              || claude plugin update "$cplug@$cmp" >/dev/null 2>&1 || true
+          done
+          echo "    Claude   → marketplace add + install（${cmp}）"
+        fi
+      elif drop_skill_dirs "$clone" "$home/.claude/skills"; then
+        echo "    Claude   → skill-drop ~/.claude/skills"
+      fi
     fi
   done <<< "$list"
 }

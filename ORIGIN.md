@@ -3,7 +3,7 @@
 紀錄這個 repo 的制度部分是怎麼來的，方便日後查。其餘文件不重複這段。
 
 - **2026-07-05** — `agent-rules` 紀律系統（Constitution 、dev-* playbook、Situation DECISIONS /
-  SAFETY / ANTIPATTERNS、Safety）與 vendored 的 `judgment/` 通用判斷制度，
+  SAFETY / ANTIPATTERNS、Guard）與 vendored 的 `judgment/` 通用判斷制度，
   最初在一次 Claude Fable 5 session 中寫成，之後改走本 repo 正常的 PR + CI 流程維護。
   `judgment/` 的原始快照另存於 `github.com/tienyulin/judgment`。
 

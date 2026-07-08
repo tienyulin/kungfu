@@ -401,9 +401,11 @@ self_test_external() {
     printf -- '---\nname: %s\ndescription: x\n---\n# body\n' "$sk" > "$r/skills/$sk/SKILL.md"
     if [ "${3:-}" = adapters ]; then
       printf '{}' > "$r/gemini-extension.json"
-      mkdir -p "$r/.opencode" "$r/.codex-plugin"
+      mkdir -p "$r/.opencode" "$r/.codex-plugin" "$r/.claude-plugin"
       printf '//x\n' > "$r/.opencode/plugin.js"      # non-empty: git tracks the dir
       printf '{}\n'   > "$r/.codex-plugin/plugin.json"
+      # Claude marketplace adapter: repo is its own marketplace (superpowers-like)
+      printf '{"name":"%s-mkt","plugins":[{"name":"%s-plugin"}]}\n' "$2" "$2" > "$r/.claude-plugin/marketplace.json"
     fi
     ( cd "$r" && git init -q -b main && git add -A \
         && git -c user.email=t@t -c user.name=t commit -qm x ) >/dev/null 2>&1
@@ -432,6 +434,10 @@ EOF
 #!/bin/sh
 echo "opencode \$*" >> "$log"; exit 0
 EOF
+  cat > "$bin/claude"   <<EOF
+#!/bin/sh
+echo "claude \$*" >> "$log"; exit 0
+EOF
   chmod +x "$bin"/*
 
   local h="$sb/h"; mkdir -p "$h/.cline/skills" "$h/.config/opencode"
@@ -452,6 +458,12 @@ EOF
   [ -L "$h/.agents/skills/bb" ] || { echo "  FAIL: repoB not dropped into ~/.agents/skills"; fail=1; }
   [ -L "$h/.cline/skills/bb" ]  || { echo "  FAIL: repoB not dropped into cline"; fail=1; }
   grep -q "gemini extensions install $sb/repoB" "$log" && { echo "  FAIL: gemini install wrongly called for plain repo"; fail=1; }
+  # Claude: adapter repo (its own .claude-plugin/marketplace.json) → marketplace add + install
+  grep -q "claude plugin marketplace add $sb/repoA" "$log" || { echo "  FAIL: claude marketplace add not called (adapter repo)"; fail=1; }
+  grep -q "claude plugin install aa-plugin@aa-mkt" "$log"   || { echo "  FAIL: claude plugin install not called"; fail=1; }
+  [ -L "$h/.claude/skills/aa" ] && { echo "  FAIL: adapter repo wrongly skill-dropped to ~/.claude/skills"; fail=1; }
+  # Claude: plain repo (no Claude marketplace) → skill-drop into ~/.claude/skills
+  [ -L "$h/.claude/skills/bb" ] || { echo "  FAIL: repoB not dropped into ~/.claude/skills"; fail=1; }
 
   # --no-external skips entirely
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h2"; PATH="$bin:$PATH"; NO_EXTERNAL=1
@@ -459,7 +471,7 @@ EOF
   [ -e "$sb/h2/.agents/external" ] && { echo "  FAIL: --no-external still ran"; fail=1; }
 
   rm -rf "$sb"
-  [ "$fail" = 0 ] && echo "self-test OK — external: clone + native-install(gemini/opencode/codex) for adapter repos + skill-drop(plain + cline) + no-external opt-out" || return 1
+  [ "$fail" = 0 ] && echo "self-test OK — external: clone + native-install(gemini/opencode/codex/claude) for adapter repos + skill-drop(plain + cline + claude) + no-external opt-out" || return 1
 }
 
 self_test

@@ -4,7 +4,7 @@
     "name": "tienyulin"
   },
   "metadata": {
-    "description": "Kungfu — the team's AI-agent skills marketplace: install a move, know the move. A shared Claude Code marketplace any project/agent can install from, plus the agent-rules discipline system (Constitution + Playbooks + Safety) and mirrored external skills."
+    "description": "Kungfu — the team's AI-agent skills marketplace: install a move, know the move. A shared Claude Code marketplace any project/agent can install from, plus the agent-rules discipline system (Constitution + Playbooks + Guard). External open-source skills install cross-agent via skills-sync (external-skills.json), not this marketplace."
   },
   "plugins": [
     {
@@ -232,7 +232,7 @@
       "name": "agent-rules-setup",
       "source": "./",
       "strict": false,
-      "description": "Runs this marketplace's skills-sync.sh for the user — installs the team skills and wires the agent-rules Constitution + Safety into other agents (Codex/Gemini/Cline/OpenCode). The user never needs to know where the script lives; the skill locates it.",
+      "description": "Runs this marketplace's skills-sync.sh for the user — installs the team skills and wires the agent-rules Constitution + Guard into other agents (Codex/Gemini/Cline/OpenCode). The user never needs to know where the script lives; the skill locates it.",
       "author": {
         "name": "tienyulin"
       },
@@ -294,46 +294,6 @@
         "./skills/agent-rules-setup",
         "./skills/using-kungfu"
       ]
-    },
-    {
-      "name": "superpowers",
-      "source": {
-        "source": "url",
-        "url": "https://github.com/obra/superpowers.git",
-        "ref": "main"
-      },
-      "description": "External — brainstorming, subagent-driven dev with code review, systematic debugging, red/green TDD, and skill authoring. Points at the public upstream; run localize.sh to swap it for an internal mirror. No sha = follows the default branch, so `/plugin marketplace update` pulls the latest.",
-      "author": {
-        "name": "obra"
-      },
-      "keywords": [
-        "tdd",
-        "debugging",
-        "brainstorming",
-        "external"
-      ],
-      "category": "development",
-      "homepage": "https://github.com/obra/superpowers"
-    },
-    {
-      "name": "andrej-karpathy-skills",
-      "source": {
-        "source": "url",
-        "url": "https://github.com/forrestchang/andrej-karpathy-skills.git",
-        "ref": "main"
-      },
-      "description": "External — behavioral guidelines to reduce common LLM coding mistakes (Think Before Coding, Simplicity, …). Points at the public upstream; run localize.sh to swap it for an internal mirror. No sha = follows the default branch.",
-      "author": {
-        "name": "forrestchang"
-      },
-      "keywords": [
-        "coding",
-        "guidelines",
-        "quality",
-        "external"
-      ],
-      "category": "development",
-      "homepage": "https://github.com/forrestchang/andrej-karpathy-skills"
     }
   ]
 }
