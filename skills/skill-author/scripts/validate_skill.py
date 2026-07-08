@@ -19,7 +19,6 @@ NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")  # kebab, no leading/trailin
 MAX_NAME = 64
 MAX_DESC = 1024
 MAX_LINES = 500
-SKIP = {"template", "scripts", "references", "assets", ".git", ".claude-plugin"}
 
 
 def _frontmatter(path):

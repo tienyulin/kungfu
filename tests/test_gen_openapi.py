@@ -1,4 +1,4 @@
-"""Tests for gen_openapi.py (wiki-doc-author/scripts/gen_openapi.py)."""
+"""Tests for gen_openapi.py (skills/wiki-doc-author/scripts/gen_openapi.py)."""
 
 import contextlib
 import io

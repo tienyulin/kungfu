@@ -1,4 +1,4 @@
-"""Tests for the skill validator (skill-author/scripts/validate_skill.py)."""
+"""Tests for the skill validator (skills/skill-author/scripts/validate_skill.py)."""
 
 # tests legitimately exercise the validator's internal helpers
 # pylint: disable=protected-access

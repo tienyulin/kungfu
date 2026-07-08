@@ -18,8 +18,8 @@ description: 在這個 kungfu repo 裡新增或修改一個 Claude Code skill，
 ```
 
 在本 repo 新增一個**可安裝**的 skill。心智模型：一個 skill = 一個資料夾
-（`<name>/SKILL.md` ＋ 選填 `scripts/`、`references/`）放在 repo root，再在
-`.claude-plugin/marketplace.json` 註冊。
+（`skills/<name>/SKILL.md` ＋ 選填 `scripts/`、`references/`）放在 `skills/` 子目錄下
+（superpowers-style 佈局），再在 `.claude-plugin/marketplace.json` 註冊。
 
 **先確認位置**：所有指令都要在 kungfu repo root 下執行 —— 判別法：cwd 有
 `.claude-plugin/marketplace.json`。（這個 repo 常是別的專案的 submodule，路徑通常是
@@ -36,7 +36,7 @@ bump submodule pointer，否則該 checkout 內載入的仍是舊版。
 ## Step 1 — 命名 + 建目錄
 
 - `name`：kebab-case、≤64 字、須等於目錄名（其餘格式規則 validator 會擋，不用背）。
-- repo root 下 `mkdir <name>`，放 `SKILL.md`（＋需要時 `scripts/`、`references/`）。
+- `mkdir skills/<name>`，放 `SKILL.md`（＋需要時 `scripts/`、`references/`）。
 
 ## Step 2 — 寫 SKILL.md
 
@@ -80,11 +80,11 @@ description: <做什麼 + 何時用>。Triggers - "<中文觸發句>"、"<englis
   "author": { "name": "tienyulin" },
   "keywords": ["..."],
   "category": "workflow",
-  "skills": ["./<name>"]
+  "skills": ["./skills/<name>"]
 }
 ```
 
-**② 把 `"./<name>"` 加進既有 bundle plugin（`"name": "kungfu"` 那個條目）的
+**② 把 `"./skills/<name>"` 加進既有 bundle plugin（`"name": "kungfu"` 那個條目）的
 `skills` 陣列**——它長這樣，只動它的 `skills`（bundle 的 description 刻意不枚舉成員
 名單，不用改）：
 ```json
@@ -92,7 +92,7 @@ description: <做什麼 + 何時用>。Triggers - "<中文觸發句>"、"<englis
   "name": "kungfu",
   "source": "./",
   "description": "Bundle — installs this repo's own skills at once (…)",
-  "skills": ["./wiki-doc-author", "./sop-to-spec", "./skill-author", "./<name>"]
+  "skills": ["./skills/wiki-doc-author", "./skills/sop-to-spec", "./skills/<name>"]
 }
 ```
 成員裝的是 bundle ＋ marketplace auto-update：skill 進 bundle、merge 進 main，
@@ -104,10 +104,10 @@ description: <做什麼 + 何時用>。Triggers - "<中文觸發句>"、"<englis
 ```bash
 # 1) 離線 validator（頂替需外網的官方 skills-ref；含 marketplace 註冊/bundle/version/
 #    envrun 同步檢查）。經 envrun 跑 = 用本 repo 的 devcontainer（沒起且有 CLI 會自動起）
-bash skill-author/scripts/envrun.sh python3 skill-author/scripts/validate_skill.py <name>   # 或不帶參數驗全部
+bash skills/skill-author/scripts/envrun.sh python3 skills/skill-author/scripts/validate_skill.py <name>   # 或不帶參數驗全部
 ```
 envrun exit 2（起不了容器）時的**唯一例外**：validator 本身純 stdlib，可直接
-`python3 skill-author/scripts/validate_skill.py` host 直跑；black/mypy 等其他工具鏈
+`python3 skills/skill-author/scripts/validate_skill.py` host 直跑；black/mypy 等其他工具鏈
 指令不適用此例外——照 envrun 印出的選項原樣轉述給使用者選（只轉述，不代跑）。
 
 2) 本地安裝實測 —— **先查這台機器有沒有已註冊的同名 marketplace**：

@@ -77,7 +77,7 @@ skills/<skill-name>/
 
 ```bash
 # 離線驗證器（純 stdlib、無外連）— frontmatter/命名/marketplace 註冊
-python skill-author/scripts/validate_skill.py            # 驗全部，或帶 <skill-name> 驗單一
+python skills/skill-author/scripts/validate_skill.py            # 驗全部，或帶 <skill-name> 驗單一
 
 # 本地安裝實測（測完移除，別污染設定）
 claude plugin marketplace add "$PWD"
@@ -94,4 +94,4 @@ claude plugin marketplace remove kungfu
 - [ ] `scripts/` 純 stdlib；引用相對、只深一層
 - [ ] prose 中文、專有名詞英文+解釋
 - [ ] 加進 `marketplace.json`（自身 plugin + bundle）—— 不設 `version`（commit 即更新）
-- [ ] `skills-ref validate` 過、本地 install 實測過
+- [ ] `validate_skill.py` 全綠、本地 install 實測過

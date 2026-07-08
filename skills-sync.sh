@@ -657,18 +657,18 @@ wire_own_skills() {  # <home> <cline_present> <cline_skills>
 
 sync_agents() {
   local home="$HOME" did=0
-  local gemini=0 codex=0 opencode=0 agents_dir=0 cline_dir=""
+  local gemini=0 codex=0 opencode=0 cline_dir=""
 
-  # Gemini CLI reads ~/.agents/skills natively (neutral interop dir); also ~/.gemini.
+  # Detect agents by dir presence (marks did + ensures the neutral ~/.agents/skills
+  # that OpenCode reads; Gemini reaches skills via its extension, not this dir).
   if [ -d "$home/.gemini" ] || [ -d "$home/.agents" ]; then
     gemini=1
   fi
-  # OpenCode reads ~/.agents/skills natively too (plus ~/.config/opencode/skills).
   if [ -d "$home/.config/opencode" ]; then
     opencode=1
   fi
   if [ "$gemini" = 1 ] || [ "$opencode" = 1 ]; then
-    mkdir -p "$home/.agents/skills"; agents_dir=1; did=1
+    mkdir -p "$home/.agents/skills"; did=1
   fi
   # Codex CLI: ~/.codex/skills
   if [ -d "$home/.codex" ]; then

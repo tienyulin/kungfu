@@ -17,8 +17,8 @@
 #   6. Otherwise exit 2 and print the options (install CLI / start via
 #      VS Code / ENVRUN_HOST=1). Never silently falls back to the host.
 #
-# Usage: bash skill-author/scripts/envrun.sh <command...>
-#        bash skill-author/scripts/envrun.sh --self-test
+# Usage: bash skills/skill-author/scripts/envrun.sh <command...>
+#        bash skills/skill-author/scripts/envrun.sh --self-test
 # Env vars for the command must be passed as arguments, not as a prefix:
 #   envrun.sh env K=V <command...>     # works in every branch
 #   K=V envrun.sh <command...>         # LOST when exec'ing into a container
