@@ -194,7 +194,7 @@
       "name": "dev-loop",
       "source": "./",
       "strict": false,
-      "description": "End-to-end autonomous iteration loop for one coding requirement (loop engineering): lock intent once, establish machine gates, then act-observe-adjust until all gates are green and a PR is opened — no step-by-step human prompting; blocked work escalates via three-strike instead of thrashing.",
+      "description": "Goal-based end-to-end autonomous iteration loop for one coding requirement: first decide loop-vs-single-turn, lock intent once with quantified DONE MEANS, establish machine gates, then act-observe-adjust until all gates are green and a PR is opened — no step-by-step human prompting. Pilots a sample before bulk changes, scripts deterministic steps, hands review to a fresh-context reviewer, proposes repeated failures back into the system (VERIFY.md gates), and escalates via three-strike instead of thrashing.",
       "author": {
         "name": "tienyulin"
       },

@@ -21,5 +21,7 @@
 
 規則：
 - 至少一個 `unit` 類 gate＋至少一個 `smoke` 類（非測試觀察）。
+- 通過判準越**量化**越好（exit code、數字門檻、統計行、HTTP 狀態）——量化判準
+  agent 才能自驗，無從放水。
 - 指令假設在 repo root 執行；要環境（container/env var）就把前置寫進 run 裡。
 - 改了驗證方式 → 同 PR 更新 VERIFY.md（清單即真相）。
