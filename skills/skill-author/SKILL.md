@@ -100,8 +100,8 @@ Claude 成員裝的是 bundle ＋ marketplace auto-update：skill 進 bundle、m
 版本，每個 commit 都算新版；設了反而要手動 bump，漏 bump = 收不到更新。
 
 這步接的是 **Claude 通道**（marketplace + validator gate）。skill 是**跨 agent** 的：
-只要它在 `skills/` 下，各家用自己的機制自動撿到同一份、不必另外註冊：Gemini（extension）、
-Codex（plugin）、OpenCode／Cline（skill-drop 進其原生讀的目錄）。
+只要它在 `skills/` 下，`skills-sync` 就 skill-drop 進各 agent 原生讀的目錄、不必另外註冊：
+Gemini／Codex／OpenCode → `~/.agents/skills`（共讀一份），Cline → `~/.cline/skills`。
 
 ## Step 4 — 驗證
 
@@ -115,7 +115,7 @@ envrun exit 2（起不了容器）時的**唯一例外**：validator 本身純 s
 指令不適用此例外——照 envrun 印出的選項原樣轉述給使用者選（只轉述，不代跑）。
 
 2) 本地安裝實測（**這步只驗 Claude 通道**——其他 agent 不經 marketplace，skill 進
-`skills/` 後由各家 adapter 自動撿取，Step 3 註冊即足夠，不必另測）—— **先查這台機器
+`skills/` 後由 `skills-sync` skill-drop 到各 agent，Step 3 註冊即足夠，不必另測）—— **先查這台機器
 有沒有已註冊的同名 marketplace**：
 ```bash
 claude plugin marketplace list | grep kungfu

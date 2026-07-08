@@ -16,9 +16,10 @@ skills/<skill-name>/
 └── assets/           # 選填：範本/資源
 ```
 
-- skill 目錄放在 **`skills/` 子目錄**下（superpowers-style 佈局）—— `marketplace.json` 的
-  `skills` 用 `./skills/<name>` 路徑指向它們；repo root 的各家 adapter
-  （`gemini-extension.json`、`.codex-plugin/`、`.opencode/`）共用這個 `skills/` 目錄。
+- skill 目錄放在 **`skills/` 子目錄**下 —— `marketplace.json` 的 `skills` 用
+  `./skills/<name>` 路徑指向它們（Claude 通道）；其他 agent 由 `skills-sync.sh`
+  skill-drop 進它們原生讀的目錄（Gemini／Codex／OpenCode → `~/.agents/skills`、
+  Cline → `~/.cline/skills`），新 skill 自動隨之到位。
 
 ## 2. SKILL.md frontmatter（官方欄位）
 
