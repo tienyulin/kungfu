@@ -113,6 +113,19 @@ self_test_agents() {
   printf -- '# S\n' > "$sb/src/agent-rules/rules/SAFETY.md"
   printf -- '# A\n' > "$sb/src/agent-rules/rules/ANTIPATTERNS.md"
 
+  # Stub the gemini CLI so wire_gemini_own_skills (called from sync_agents) never
+  # hits the real tool. `extensions link` drops a marker; `extensions list` echoes
+  # the name once linked, so the idempotency + success checks resolve.
+  local stub="$sb/stub"; mkdir -p "$stub"
+  cat > "$stub/gemini" <<'EOF'
+#!/bin/sh
+# mimic `gemini extensions link` creating ~/.gemini/extensions/<name>
+[ "$1 $2" = "extensions link" ] && mkdir -p "$HOME/.gemini/extensions/kungfu-skills"
+exit 0
+EOF
+  chmod +x "$stub/gemini"
+  export PATH="$stub:$PATH"
+
   # case 1: all agent homes present (constitution OFF by default)
   mkdir -p "$sb/h1/.gemini" "$sb/h1/.codex" "$sb/h1/.cline"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h1"; sync_agents >/dev/null )
@@ -123,6 +136,11 @@ self_test_agents() {
     || { echo "  FAIL: cline native skill symlink"; fail=1; }
   [ -e "$sb/h1/.codex/AGENTS.md" ] && { echo "  FAIL: constitution written without --constitution"; fail=1; }
   [ -e "$sb/h1/.gemini/GEMINI.md" ] && { echo "  FAIL: gemini constitution written without flag"; fail=1; }
+  # own skills wrapped as a generated Gemini extension + linked
+  [ -f "$sb/h1/.agents/gemini-kungfu/gemini-extension.json" ] || { echo "  FAIL: gemini extension manifest not generated"; fail=1; }
+  [ "$(readlink "$sb/h1/.agents/gemini-kungfu/skills/demo-skill" 2>/dev/null)" = "$sb/src/demo-skill" ] \
+    || { echo "  FAIL: gemini extension skill symlink"; fail=1; }
+  [ -d "$sb/h1/.gemini/extensions/kungfu-skills" ] || { echo "  FAIL: gemini extensions link not called"; fail=1; }
 
   # case 2: no agent homes → nothing created
   mkdir -p "$sb/h2"

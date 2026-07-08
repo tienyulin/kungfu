@@ -172,7 +172,7 @@ adapter＋給沒 adapter 的 agent 當 skill-drop 來源）。預設開；不想
 |---|---|---|---|
 | Claude Code | plugin bundle | plugin SessionStart hook | plugin PreToolUse → **ask**（彈確認給使用者） |
 | Codex | `~/.codex/skills/`（symlink） | `~/.codex/hooks.json` SessionStart | 同檔 PreToolUse → deny＋理由 |
-| Gemini | **憲法/guard 有；自家 skill 尚未**（Gemini 無 skill 目錄機制，只吃 extension——見註） | `~/.gemini/settings.json` SessionStart | 同檔 BeforeTool → deny＋理由 |
+| Gemini | 生成的 extension `kungfu-skills`（`gemini extensions link`；Gemini 只吃 extension，見註） | `~/.gemini/settings.json` SessionStart | 同檔 BeforeTool → deny＋理由 |
 | Cline | `~/.cline/skills/`（symlink，原生 on-demand Skills ≥3.48） | `Hooks/TaskStart` script | `Hooks/PreToolUse` script → cancel |
 | OpenCode | `~/.agents/skills/`（與 Gemini 共用 symlink） | `opencode.json` `instructions[]`（其 plugin API 無 session-start 注入 hook，instructions 即官方常駐機制） | 生成 guard plugin JS → throw |
 
@@ -192,12 +192,13 @@ adapter＋給沒 adapter 的 agent 當 skill-drop 來源）。預設開；不想
 - Cline hooks 限 macOS/Linux；只有 `~/.cline` CLI 佈局（無 app base）時憲法退回 rules symlink。
 - 憲法或 guard 的 pattern 改版：**誰都不用重跑**——hook 現讀 marketplace 檔。
   唯一例外：guard pattern 清單改動要同步 `guard.py` 與生成的 OpenCode JS 兩處（維護者的事）。
-- **Gemini 的自家 skill 註記**（實測 gemini-cli 0.49）：Gemini **沒有** skill 目錄機制
-  （只有 `extensions`，無 skills 指令），所以往 `~/.agents/skills` 放 skill 對它是 no-op
-  ——**自家 skill 目前不會進 Gemini**。憲法/guard 走 hook、不受影響；外部 mirror 靠各家自己
-  ship 的 `gemini-extension.json` 進得去。要讓自家 skill 也進 Gemini，得為它們生一個
-  gemini extension（未做）。Codex／OpenCode 實測都讀 `~/.agents/skills`（Codex 連
-  `~/.codex/skills` 也讀），自家 skill 正常到手。
+- **Gemini 的自家 skill 走 extension**（實測 gemini-cli 0.49）：Gemini **沒有** skill 目錄機制
+  （只有 `extensions`，無 skills 指令），純 SKILL.md 目錄它不讀。所以 skills-sync 幫自家 skill
+  **生一個 Gemini extension**：`~/.agents/gemini-kungfu/`（`gemini-extension.json`＋`skills/<name>`
+  symlink 到來源）＋ `gemini extensions link`——link 是**活連結**，之後重跑只更新 symlink、
+  Gemini 自動反映，不用重裝。憲法/guard 另走 hook。外部 mirror（superpowers）靠它自己 ship 的
+  `gemini-extension.json` 進；沒 gemini adapter 的純 skill（karpathy）Gemini 仍吃不到。
+  Codex／OpenCode 實測都讀 `~/.agents/skills`（Codex 連 `~/.codex/skills` 也讀），不需這層。
 
 ### dev-loop — 把需求丟進圈裡（loop engineering）
 
