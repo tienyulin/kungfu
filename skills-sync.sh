@@ -221,7 +221,7 @@ homeref() {  # <abs path> [sh|tilde]
 
 situational_paths_body() {
   local rules="$SCRIPT_DIR/agent-rules/rules" n
-  echo "## Situation 路徑（Constitution「Situation」節說何時讀，這裡是去哪讀 — 用讀檔工具開）"
+  echo "## Situations 路徑（Constitution「Situations」節說何時讀，這裡是去哪讀 — 用讀檔工具開）"
   echo "（路徑以 ~ 開頭者代表你的家目錄；用讀檔工具開時自行展開。）"
   for n in DECISIONS SAFETY ANTIPATTERNS; do
     [ -f "$rules/$n.md" ] && echo "- $n: $(homeref "$rules/$n.md" tilde)"
