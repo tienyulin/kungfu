@@ -247,6 +247,24 @@
       ]
     },
     {
+      "name": "using-kungfu",
+      "source": "./",
+      "strict": false,
+      "description": "Bootstrap meta-skill: reach for the right kungfu skill before acting. Loaded at session start by the cross-agent adapters (Gemini/OpenCode); complements the agent-rules constitution. Triggers - the start of any task.",
+      "author": {
+        "name": "tienyulin"
+      },
+      "keywords": [
+        "bootstrap",
+        "skills",
+        "meta"
+      ],
+      "category": "workflow",
+      "skills": [
+        "./skills/using-kungfu"
+      ]
+    },
+    {
       "name": "kungfu",
       "source": "./",
       "strict": false,
@@ -273,7 +291,8 @@
         "./skills/dev-review",
         "./skills/dev-test",
         "./skills/dev-loop",
-        "./skills/agent-rules-setup"
+        "./skills/agent-rules-setup",
+        "./skills/using-kungfu"
       ]
     },
     {
