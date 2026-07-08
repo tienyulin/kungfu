@@ -386,7 +386,7 @@ PY
 
   rm -rf "$sb"
   if [ "$fail" = 0 ]; then
-    echo "self-test OK — agents: symlinks + cline-native-skills(ext/declared/forced detect + one-run + pointer-card migration) + skip-absent + idempotent + opencode + constitution(opt-in/sticky/hooks/migration-strip/preserve/idempotent/exec-verified/home-relative-portable)"
+    echo "self-test OK — agents: own-skills-via-adapters(gemini ext / codex plugin / opencode+cline drop) + cline detect(ext/declared/forced, one-run) + pointer-card migration + skip-absent + idempotent + opencode + constitution(opt-in/sticky/hooks/migration-strip/preserve/idempotent/exec-verified/home-relative-portable)"
   else
     exit 1
   fi

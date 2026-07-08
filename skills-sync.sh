@@ -6,14 +6,15 @@
 #                   auto-update. From then on every Claude Code startup refreshes the
 #                   marketplace and updates installed plugins — a merged change OR a
 #                   NEW skill (added to the bundle) reaches everyone with zero action.
-#  • Gemini / Codex / Cline / OpenCode : sync this repo's OWN skills (bare SKILL.md
-#                   dirs) into each agent. SKILL.md is read natively by Claude Code,
-#                   Codex CLI, Gemini CLI, OpenCode and Cline (>=3.48, native
-#                   on-demand Skills), so we just SYMLINK the one source dir into
-#                   each agent's skills location — zero content duplication (Gemini
-#                   and OpenCode both read the neutral ~/.agents/skills; Cline reads
-#                   ~/.cline/skills). Symlinks track marketplace updates
-#                   automatically; only a brand-new skill needs a re-run here.
+#  • Gemini / Codex / Cline / OpenCode : this repo IS a superpowers-style adapter
+#                   repo — own skills live in skills/, and per-agent adapters
+#                   (gemini-extension.json, .codex-plugin/, .opencode/) sit at the
+#                   root. Install kungfu-self into each agent via its native
+#                   mechanism: Gemini `extensions link <repo>`, Codex `plugin
+#                   marketplace add <repo>` + `plugin add kungfu@kungfu-dev`.
+#                   OpenCode/Cline (no local native install) get skills/*/ dropped
+#                   into the dir they read natively (~/.agents/skills, ~/.cline/skills).
+#                   See wire_own_skills. Only a brand-new skill needs a re-run.
 #  • --constitution (OPT-IN, default off): inject agent-rules/rules/CONSTITUTION.md
 #                   into each detected agent at session start via its HOOK mechanism
 #                   (content read from the marketplace file at session time → always

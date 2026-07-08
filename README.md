@@ -111,13 +111,13 @@ host 裝一次、每個容器共用、跟電腦一致：
 
 | skill | 做什麼 |
 |---|---|
-| [`wiki-doc-author`](wiki-doc-author/SKILL.md) | 產出餵進 wiki processor 的源頭文件 —— API（README + openapi.json）、cronjob/worker/CLI、純知識，都一份 README 搞定。附純 stdlib 工具。 |
-| [`sop-to-spec`](sop-to-spec/SKILL.md) | 把維運 SOP（DBA runbook、infra 程序…）轉成「人能審、AI 能照著實作三層 FastAPI 服務」的 spec。 |
-| [`dev-api-template`](dev-api-template/SKILL.md) | 組織 API template 的**功能與架構參考**：查它有哪些內建工具、架構怎麼分層，開發時當默認藍圖（可偏離、非強制）。facts 可 rescan 改成公司內部版。 |
-| [`skill-author`](skill-author/SKILL.md) | 在本 repo 新增/修改一個**可安裝**的 skill —— 照標準產 SKILL.md、註冊進 marketplace。 |
+| [`wiki-doc-author`](skills/wiki-doc-author/SKILL.md) | 產出餵進 wiki processor 的源頭文件 —— API（README + openapi.json）、cronjob/worker/CLI、純知識，都一份 README 搞定。附純 stdlib 工具。 |
+| [`sop-to-spec`](skills/sop-to-spec/SKILL.md) | 把維運 SOP（DBA runbook、infra 程序…）轉成「人能審、AI 能照著實作三層 FastAPI 服務」的 spec。 |
+| [`dev-api-template`](skills/dev-api-template/SKILL.md) | 組織 API template 的**功能與架構參考**：查它有哪些內建工具、架構怎麼分層，開發時當默認藍圖（可偏離、非強制）。facts 可 rescan 改成公司內部版。 |
+| [`skill-author`](skills/skill-author/SKILL.md) | 在本 repo 新增/修改一個**可安裝**的 skill —— 照標準產 SKILL.md、註冊進 marketplace。 |
 | `dev-*` 六本 playbook（bugfix / feature / refactor / investigate / review / test） | 開發任務的固定作業流程，見下方〈agent-rules〉。 |
-| [`dev-loop`](dev-loop/SKILL.md) | **一個需求自己做到好**：loop engineering 的端到端迭代圈，見下方〈dev-loop〉。 |
-| [`agent-rules-setup`](agent-rules-setup/SKILL.md) | 叫 Claude 代跑 skills-sync —— 找腳本、選模式、跑、轉述警告。**使用者不用知道腳本在哪。** |
+| [`dev-loop`](skills/dev-loop/SKILL.md) | **一個需求自己做到好**：loop engineering 的端到端迭代圈，見下方〈dev-loop〉。 |
+| [`agent-rules-setup`](skills/agent-rules-setup/SKILL.md) | 叫 Claude 代跑 skills-sync —— 找腳本、選模式、跑、轉述警告。**使用者不用知道腳本在哪。** |
 
 ### 常駐 plugin（不是 skill，要單獨裝一次——`skills-sync.sh` 會自動裝）
 
@@ -162,7 +162,7 @@ adapter＋給沒 adapter 的 agent 當 skill-drop 來源）。預設開；不想
 |---|---|---|
 | **憲法**（常駐） | [12 條硬規則](agent-rules/rules/CONSTITUTION.md)：證據先於宣稱、先重現再修、最小 diff、錯誤逐字引用、禁幻覺 API、測試唯讀、三振停手、破壞性操作需確認…＋回合終檢 6 題 | 各家 session-start hook 注入，**現讀 marketplace 檔＝永遠最新** |
 | **judgment**（常駐入口＋按需展開） | 通用判斷制度 32 檔，vendored 於 [agent-rules/judgment/](agent-rules/judgment/README.md)：[INDEX](agent-rules/judgment/INDEX.md)＝憲法沒覆蓋的 7 條判斷法則（目的>字面、可逆×範圍、成本對稱、預設值+ASSUMED…）＋兩層路由表；17 個任務域檔（部署/除錯/架構/研究/摘要/事故/資安/Oracle…）＋ 11 個訊號檔（卡關/選擇/權衡/驗證/自我進化…） | INDEX 隨憲法**同一支 hook** 常駐注入（含各檔絕對路徑）；域檔 agent 照路由表自己開——開工時查任務型、過程中對訊號型，**任何時刻最多 2 檔**（防發散） |
-| **Playbooks**（按需） | 六本固定流程：[bugfix](dev-bugfix/SKILL.md)（先重現→根因→最小修→機器驗證）、[feature](dev-feature/SKILL.md)（驗收清單先行）、[refactor](dev-refactor/SKILL.md)（行為零改變）、[investigate](dev-investigate/SKILL.md)（答案不是 diff）、[review](dev-review/SKILL.md)（每個 finding 要有觸發條件）、[test](dev-test/SKILL.md)（每條測試 kill-proof） | skill 觸發詞路由，進 bundle 自動到手 |
+| **Playbooks**（按需） | 六本固定流程：[bugfix](skills/dev-bugfix/SKILL.md)（先重現→根因→最小修→機器驗證）、[feature](skills/dev-feature/SKILL.md)（驗收清單先行）、[refactor](skills/dev-refactor/SKILL.md)（行為零改變）、[investigate](skills/dev-investigate/SKILL.md)（答案不是 diff）、[review](skills/dev-review/SKILL.md)（每個 finding 要有觸發條件）、[test](skills/dev-test/SKILL.md)（每條測試 kill-proof） | skill 觸發詞路由，進 bundle 自動到手 |
 | **情境檔**（按需讀） | [DECISIONS](agent-rules/rules/DECISIONS.md)（問 vs 做查表）、[SAFETY](agent-rules/rules/SAFETY.md)（護欄協定）、[ANTIPATTERNS](agent-rules/rules/ANTIPATTERNS.md)（15 種失敗氣味） | 憲法說何時讀；hook 一併注入**絕對路徑**，agent 要用時自己開（不常駐、不脹 context） |
 | **SAFETY guard**（機械強制） | [`guard.py`](agent-rules/hooks/guard.py) 在 PreToolUse 層攔 `rm -rf`、force-push、`git reset --hard`、`DROP`、無 WHERE 的 DELETE、`sudo`… ——**模型自不自覺都過不了關**；擋下的理由文字引導 agent 走 SAFETY §1 協定（亮指令→使用者同意→使用者跑） | hook，同下表 |
 
@@ -171,10 +171,10 @@ adapter＋給沒 adapter 的 agent 當 skill-drop 來源）。預設開；不想
 | agent | skills | 憲法（常駐注入） | SAFETY guard |
 |---|---|---|---|
 | Claude Code | plugin bundle | plugin SessionStart hook | plugin PreToolUse → **ask**（彈確認給使用者） |
-| Codex | `~/.codex/skills/`（symlink） | `~/.codex/hooks.json` SessionStart | 同檔 PreToolUse → deny＋理由 |
-| Gemini | 生成的 extension `kungfu-skills`（`gemini extensions link`；Gemini 只吃 extension，見註） | `~/.gemini/settings.json` SessionStart | 同檔 BeforeTool → deny＋理由 |
-| Cline | `~/.cline/skills/`（symlink，原生 on-demand Skills ≥3.48） | `Hooks/TaskStart` script | `Hooks/PreToolUse` script → cancel |
-| OpenCode | `~/.agents/skills/`（與 Gemini 共用 symlink） | `opencode.json` `instructions[]`（其 plugin API 無 session-start 注入 hook，instructions 即官方常駐機制） | 生成 guard plugin JS → throw |
+| Codex | `codex plugin`（committed `.codex-plugin` adapter） | `~/.codex/hooks.json` SessionStart | 同檔 PreToolUse → deny＋理由 |
+| Gemini | `gemini extensions link`（committed `gemini-extension.json`；Gemini 只吃 extension） | `~/.gemini/settings.json` SessionStart | 同檔 BeforeTool → deny＋理由 |
+| Cline | `~/.cline/skills/`（skill-drop，原生 on-demand Skills ≥3.48） | `Hooks/TaskStart` script | `Hooks/PreToolUse` script → cancel |
+| OpenCode | `~/.agents/skills/`（skill-drop，OpenCode 原生讀） | `opencode.json` `instructions[]`（其 plugin API 無 session-start 注入 hook，instructions 即官方常駐機制） | 生成 guard plugin JS → throw |
 
 - Claude Code 部分**裝了 plugin 就有**，不用旗標。
 - 其他 agent 的憲法＋guard 走 **`--constitution` 旗標，opt-in、預設不做**——因為要寫你的
@@ -192,13 +192,15 @@ adapter＋給沒 adapter 的 agent 當 skill-drop 來源）。預設開；不想
 - Cline hooks 限 macOS/Linux；只有 `~/.cline` CLI 佈局（無 app base）時憲法退回 rules symlink。
 - 憲法或 guard 的 pattern 改版：**誰都不用重跑**——hook 現讀 marketplace 檔。
   唯一例外：guard pattern 清單改動要同步 `guard.py` 與生成的 OpenCode JS 兩處（維護者的事）。
-- **Gemini 的自家 skill 走 extension**（實測 gemini-cli 0.49）：Gemini **沒有** skill 目錄機制
-  （只有 `extensions`，無 skills 指令），純 SKILL.md 目錄它不讀。所以 skills-sync 幫自家 skill
-  **生一個 Gemini extension**：`~/.agents/gemini-kungfu/`（`gemini-extension.json`＋`skills/<name>`
-  symlink 到來源）＋ `gemini extensions link`——link 是**活連結**，之後重跑只更新 symlink、
-  Gemini 自動反映，不用重裝。憲法/guard 另走 hook。外部 mirror（superpowers）靠它自己 ship 的
-  `gemini-extension.json` 進；沒 gemini adapter 的純 skill（karpathy）Gemini 仍吃不到。
-  Codex／OpenCode 實測都讀 `~/.agents/skills`（Codex 連 `~/.codex/skills` 也讀），不需這層。
+- **kungfu 自己就是一個 adapter repo**（superpowers-style）：skill 都在 `skills/`，repo root
+  ship 了各家 adapter（`gemini-extension.json`＋`GEMINI.md`、`.codex-plugin/`＋
+  `.agents/plugins/marketplace.json`、`.opencode/`）。`skills-sync` 偵測到 agent，就用它的原生
+  機制把 **kungfu 自己**裝進去——Gemini `gemini extensions link <repo>`（實測 0.49；`link`＝
+  活連結，重跑自動反映）、Codex `codex plugin marketplace add <repo>` ＋ `plugin add
+  kungfu@kungfu-dev`。Gemini／Codex 因此還會載入 `skills/using-kungfu` bootstrap（GEMINI.md
+  `@import`）。**OpenCode／Cline 無法從本機 clone 原生裝**（opencode plugin 要 npm package；
+  Cline 無安裝機制）→ skill-drop `skills/*/` 進它們原生讀的目錄（`~/.agents/skills`／
+  `~/.cline/skills`）。憲法/guard 一律另走 hook，跟這層無關。
 
 ### dev-loop — 把需求丟進圈裡（loop engineering）
 
@@ -255,13 +257,12 @@ adapter＋給沒 adapter 的 agent 當 skill-drop 來源）。預設開；不想
 
 ### 跨 agent skills 同步細節
 
-SKILL.md 是跨 agent 共用格式（Claude／Codex／OpenCode／Cline≥3.48 原生讀 skill 目錄；
-**Gemini 例外——只吃 extension，見〈支援矩陣〉Gemini 註記**），腳本
-**symlink 同一份來源**進各 agent 的 skills 位置（Cline 走 `~/.cline/skills/` 的原生
-on-demand Skills——不占常駐 context，講到相關才載入）。symlink 指向 marketplace 下載目錄
-→ 內容跟著 auto-update 走。以上是**自家 skill**；**外部 mirror（`external-skills.json`）
-現在也會裝進各非 Claude agent**——用各家原生機制或 skill-drop，機制與矩陣見上方
-〈外部開源 skills〉。
+**kungfu 自己就是 superpowers-style adapter repo**：skill 都在 `skills/`，repo root ship 了各家
+adapter（`gemini-extension.json`＋`GEMINI.md`、`.codex-plugin/`＋`.agents/plugins/marketplace.json`、
+`.opencode/`）＋一個 `skills/using-kungfu` bootstrap。`skills-sync` 偵測到 agent 就用它的原生
+機制把 kungfu 自己裝進去（Gemini `extensions link`、Codex `plugin add`），OpenCode／Cline 走
+skill-drop（見〈支援矩陣〉Gemini 註記）。內容跟著 marketplace clone 的 auto-update／重跑走。
+**外部 mirror（`external-skills.json`）**也是同一套邏輯，機制與矩陣見上方〈外部開源 skills〉。
 
 ### 進階：只裝某幾個 / 離線
 

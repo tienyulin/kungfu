@@ -9,15 +9,16 @@
 ## 1. 目錄結構（官方）
 
 ```
-<skill-name>/
+skills/<skill-name>/
 ├── SKILL.md          # 必要：frontmatter + 指示
 ├── scripts/          # 選填：可執行工具（純 stdlib、無相依）
 ├── references/       # 選填：漸進揭露的細節文件
 └── assets/           # 選填：範本/資源
 ```
 
-- skill 目錄放在 **repo root**（不是 `skills/` 子目錄）—— `marketplace.json` 的 `skills` 用自訂路徑
-  指向它們，安裝走 plugin（見 §5）。
+- skill 目錄放在 **`skills/` 子目錄**下（superpowers-style 佈局）—— `marketplace.json` 的
+  `skills` 用 `./skills/<name>` 路徑指向它們；repo root 的各家 adapter
+  （`gemini-extension.json`、`.codex-plugin/`、`.opencode/`）共用這個 `skills/` 目錄。
 
 ## 2. SKILL.md frontmatter（官方欄位）
 
@@ -60,16 +61,17 @@
 
   "keywords": ["..."],
   "category": "workflow",
-  "skills": ["./<skill-name>"]
+  "skills": ["./skills/<skill-name>"]
 }
 ```
-- 同時把 `"./<skill-name>"` 加進 bundle plugin `kungfu` 的 `skills` 陣列 ——
+- 同時把 `"./skills/<skill-name>"` 加進 bundle plugin `kungfu` 的 `skills` 陣列 ——
   **merge 進 main 即全隊自動拿到**（成員裝的是 bundle + marketplace auto-update，session
   啟動自動帶新 skill），不用通知任何人重裝。
 - **不要設 `version`** —— 省略它，Claude 就用 git commit SHA 當版本：每次 push 都算新版，user
   `/plugin marketplace update` + update 即拿最新，零手動 bump。（設了 version 反而要每次手動改，漏改 = 收不到更新。）
-- **跨 agent 自動納入**：只要 skill 是 repo root 下含 `SKILL.md` 的目錄，`skills-sync.sh` 的跨 agent
-  step 會自動 symlink 給 Gemini/Codex、並為 Cline 生 pointer rule —— 不用另外設定。
+- **跨 agent 自動納入**：只要 skill 在 `skills/` 下（含 `SKILL.md`），`skills-sync.sh` 把 kungfu
+  自己當 adapter repo 裝進各 agent（Gemini extension link／Codex plugin／OpenCode·Cline
+  skill-drop），新 skill 隨之到位——不用另外設定。
 
 ## 6. 驗證（提交前）
 
