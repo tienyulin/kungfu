@@ -81,15 +81,18 @@ INDEX 的路由表新增檔案時要同步更新。
 
 ## 安裝（三選一——只在「不裝 agent-rules plugin、單獨使用本制度」時需要）
 
+（下方 `<judgment 目錄>` = 你放 judgment 的位置：kungfu 裡 vendored 的 `agent-rules/judgment/`，
+或你自己 clone 的 judgment repo；填成該機器上的實際絕對路徑。）
+
 1. **CLAUDE.md 指令**（最簡單）：加一行
-   `每個 session 開始時，先讀 /Users/tienyu/Project/judgment/KERNEL.md 並遵守其中規則與路由表。`
+   `每個 session 開始時，先讀 <judgment 目錄>/KERNEL.md 並遵守其中規則與路由表。`
 2. **SessionStart hook**（最可靠）：settings.json 的 hooks 加
    ```json
    {
      "hooks": {
        "SessionStart": [
          { "hooks": [ { "type": "command",
-             "command": "cat /Users/tienyu/Project/judgment/KERNEL.md" } ] }
+             "command": "cat <judgment 目錄>/KERNEL.md" } ] }
        ]
      }
    }
