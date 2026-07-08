@@ -69,7 +69,7 @@ git clone https://github.com/tienyulin/kungfu.git ~/kungfu
 bash ~/kungfu/skills-sync.sh agents --constitution
 ```
 
-- skills（pointer rule／symlink）、憲法 hook、SAFETY guard 全部照裝——這段完全不用
+- skills（symlink／Cline 原生 Skills）、憲法 hook、SAFETY guard 全部照裝——這段完全不用
   `claude` CLI（直接跑預設模式也行，腳本偵測不到 `claude` 會自動跳過 plugin 段）。
 - **更新一樣全自動**：hook 每次觸發會背景 git pull 這份 clone（6 小時節流），
   跟有 Claude Code 的人同一套 self-refresh 機制。
@@ -162,7 +162,7 @@ adapter＋給沒 adapter 的 agent 當 skill-drop 來源）。預設開；不想
 |---|---|---|
 | **憲法**（常駐） | [12 條硬規則](agent-rules/rules/CONSTITUTION.md)：證據先於宣稱、先重現再修、最小 diff、錯誤逐字引用、禁幻覺 API、測試唯讀、三振停手、破壞性操作需確認…＋回合終檢 6 題 | 各家 session-start hook 注入，**現讀 marketplace 檔＝永遠最新** |
 | **judgment**（常駐入口＋按需展開） | 通用判斷制度 32 檔，vendored 於 [agent-rules/judgment/](agent-rules/judgment/README.md)：[INDEX](agent-rules/judgment/INDEX.md)＝憲法沒覆蓋的 7 條判斷法則（目的>字面、可逆×範圍、成本對稱、預設值+ASSUMED…）＋兩層路由表；17 個任務域檔（部署/除錯/架構/研究/摘要/事故/資安/Oracle…）＋ 11 個訊號檔（卡關/選擇/權衡/驗證/自我進化…） | INDEX 隨憲法**同一支 hook** 常駐注入（含各檔絕對路徑）；域檔 agent 照路由表自己開——開工時查任務型、過程中對訊號型，**任何時刻最多 2 檔**（防發散） |
-| **Playbooks**（按需） | 五本固定流程：[bugfix](dev-bugfix/SKILL.md)（先重現→根因→最小修→機器驗證）、[feature](dev-feature/SKILL.md)（驗收清單先行）、[refactor](dev-refactor/SKILL.md)（行為零改變）、[investigate](dev-investigate/SKILL.md)（答案不是 diff）、[review](dev-review/SKILL.md)（每個 finding 要有觸發條件） | skill 觸發詞路由，進 bundle 自動到手 |
+| **Playbooks**（按需） | 六本固定流程：[bugfix](dev-bugfix/SKILL.md)（先重現→根因→最小修→機器驗證）、[feature](dev-feature/SKILL.md)（驗收清單先行）、[refactor](dev-refactor/SKILL.md)（行為零改變）、[investigate](dev-investigate/SKILL.md)（答案不是 diff）、[review](dev-review/SKILL.md)（每個 finding 要有觸發條件）、[test](dev-test/SKILL.md)（每條測試 kill-proof） | skill 觸發詞路由，進 bundle 自動到手 |
 | **情境檔**（按需讀） | [DECISIONS](agent-rules/rules/DECISIONS.md)（問 vs 做查表）、[SAFETY](agent-rules/rules/SAFETY.md)（護欄協定）、[ANTIPATTERNS](agent-rules/rules/ANTIPATTERNS.md)（15 種失敗氣味） | 憲法說何時讀；hook 一併注入**絕對路徑**，agent 要用時自己開（不常駐、不脹 context） |
 | **SAFETY guard**（機械強制） | [`guard.py`](agent-rules/hooks/guard.py) 在 PreToolUse 層攔 `rm -rf`、force-push、`git reset --hard`、`DROP`、無 WHERE 的 DELETE、`sudo`… ——**模型自不自覺都過不了關**；擋下的理由文字引導 agent 走 SAFETY §1 協定（亮指令→使用者同意→使用者跑） | hook，同下表 |
 
@@ -253,8 +253,9 @@ adapter＋給沒 adapter 的 agent 當 skill-drop 來源）。預設開；不想
 SKILL.md 是跨 agent 共用格式（Claude/Codex/Gemini/OpenCode／Cline≥3.48 都原生讀），腳本
 **symlink 同一份來源**進各 agent 的 skills 位置（Cline 走 `~/.cline/skills/` 的原生
 on-demand Skills——不占常駐 context，講到相關才載入）。symlink 指向 marketplace 下載目錄
-→ 內容跟著 auto-update 走。只同步**自家 skill**；外部 mirror 上游各自支援多 agent，不由
-這裡轉。
+→ 內容跟著 auto-update 走。以上是**自家 skill**；**外部 mirror（`external-skills.json`）
+現在也會裝進各非 Claude agent**——用各家原生機制或 skill-drop，機制與矩陣見上方
+〈外部開源 skills〉。
 
 ### 進階：只裝某幾個 / 離線
 
@@ -274,8 +275,8 @@ on-demand Skills——不占常駐 context，講到相關才載入）。symlink 
 [`localize.config.example`](localize.config.example) → `localize.config`，填入你的
 內部 URL，跑 `bash localize.sh`——它一次把 `skills-sync.sh`、`marketplace.json`、
 README、`agent-rules-setup` 裡的預設 URL 全部換掉。先 `bash localize.sh --dry-run`
-可預覽。離線驗證：`bash skills-sync.sh --self-test`（plugin plan／guard／跨 agent
-三套全綠才算過）。
+可預覽。離線驗證：`bash skills-sync.sh --self-test`（plugin plan／guard／跨 agent／
+external 四套全綠才算過）。
 
 ### 加自家 skill
 
