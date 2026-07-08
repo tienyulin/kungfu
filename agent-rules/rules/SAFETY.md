@@ -6,7 +6,7 @@
 
 ## 1. 破壞性指令 (destructive commands) 協定
 
-每次都要重新明確確認的指令（憲法 Law 9）。這份清單同時由 **agent-rules guard hook
+每次都要重新明確確認的指令（Constitution Law 9）。這份清單同時由 **agent-rules guard hook
 機械執行**（`agent-rules/hooks/guard.py`——Claude Code 走 plugin 的 PreToolUse，
 其他 agent 由 `skills-sync.sh --constitution` 接線）：被 hook 擋下不代表不能做，
 代表**先走完本協定**——亮出指令、取得使用者同回合明確同意，由使用者確認或自己跑。

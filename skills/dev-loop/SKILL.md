@@ -67,7 +67,7 @@ ROUTE: <playbook 名> （原因: <需求屬於哪型，一句>）
 1. 跑全部 GATES，貼逐字輸出。
 2. 全綠 → 出圈，去 Step 4。
 3. 有紅 → 失敗輸出＝新 context：
-   a. 逐字引用關鍵錯誤行（憲法 Law 4）。
+   a. 逐字引用關鍵錯誤行（Constitution Law 4）。
    b. 寫一行新假設；一次只改一個東西（Law 5），沒效先 revert。
    c. 同一個障礙（同一 gate 同類錯誤）第 3 次紅 → 出圈，走 LOOP ESCALATED（Law 8）。
    d. 輪數用完（LOOP BUDGET）→ 出圈，走 LOOP ESCALATED。
@@ -100,7 +100,7 @@ ERROR (逐字): <最後一輪失敗輸出>
 BEST HYPOTHESIS: <目前最佳猜測>
 NEED FROM YOU: <一個具體問題>
 ```
-升級是成果不是失敗（憲法 Law 8）——絕不用第 6 輪硬凹。
+升級是成果不是失敗（Constitution Law 8）——絕不用第 6 輪硬凹。
 
 ## 完成定義
 - [ ] Step 0 之後沒有再問過人（或有標注 Assumed）

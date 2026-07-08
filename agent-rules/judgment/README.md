@@ -1,7 +1,7 @@
 # judgment/ — 通用判斷力制度
 
 > **這份是線上使用版**（vendored 進 agent-rules plugin，隨 marketplace autoUpdate 發佈）。
-> 觸發方式：INDEX.md 隨憲法的 SessionStart hook 自動常駐注入（含各檔絕對路徑），
+> 觸發方式：INDEX.md 隨 Constitution 的 SessionStart hook 自動常駐注入（含各檔絕對路徑），
 > 其餘 31 檔由 agent 照 INDEX 路由表按需 Read——不用安裝、不用手動載入。
 > 修訂走本 repo 的 PR＋CI；原始快照在 github.com/tienyulin/judgment。由來與時間見根目錄 ORIGIN.md。
 
@@ -73,8 +73,8 @@ domains/ 每檔固定格式：觸發（可觀察）→ 動作（可執行）→ 
 
 ## 與 agent-rules 並用（INDEX.md）
 
-環境裡已有 agent-rules 憲法常駐時，**不要**再常駐 KERNEL（兩部憲法重疊會互相稀釋）。
-改用 [INDEX.md](INDEX.md)：它只含憲法沒覆蓋的 7 條增量法則＋完整路由表，
+環境裡已有 agent-rules Constitution 常駐時，**不要**再常駐 KERNEL（兩部 Constitution 重疊會互相稀釋）。
+改用 [INDEX.md](INDEX.md)：它只含 Constitution 沒覆蓋的 7 條增量法則＋完整路由表，
 由 agent-rules 的注入管線一起送進 session（`@JUDGMENT@` placeholder 由注入器換成本 repo 路徑）。
 KERNEL 與全部檔案原樣保留——單獨使用、或當 train 其他 skill 的素材時，照下方安裝法。
 INDEX 的路由表新增檔案時要同步更新。
@@ -102,7 +102,7 @@ INDEX 的路由表新增檔案時要同步更新。
 
 ## 與 agent-rules/ 的關係
 
-agent-rules 的憲法管**寫程式的執行紀律**；本系統管**通用判斷**。兩者相容；
+agent-rules 的 Constitution 管**寫程式的執行紀律**；本系統管**通用判斷**。兩者相容；
 重疊處（三振、逐字引用、完成定義）規則一致，衝突時以使用者最新訊息為準。
 
 ## 修訂標準（給未來想改規則的 session）

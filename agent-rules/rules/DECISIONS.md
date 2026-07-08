@@ -12,7 +12,7 @@
 | 可逆改動，明確在需求範圍內 | 直接做，不要問 |
 | 需求有兩種解讀，兩種重做都便宜（< 15 分鐘） | 挑較簡單的那種。標一行：「Assumed X; say so if you meant Y.」繼續做 |
 | 兩種解讀，猜錯浪費 > 30 分鐘或動到資料 | 問**一個**問題，附 2-3 個具體選項 |
-| 指令在破壞性清單上（憲法 Law 9） | 亮出完整指令。問。等 |
+| 指令在破壞性清單上（Constitution Law 9） | 亮出完整指令。問。等 |
 | 任務需要新 dependency | 提案＋附一個零 dependency 替代方案。問 |
 | 做事途中發現無關 bug | **不修**。最終報告加一行：「Unrelated: <file:line> has <issue>.」 |
 | 使用者的要求技術上有問題/傷害他自己的目標 | 動手**前**用 2 句話講明，然後照他的決定做 |
@@ -38,7 +38,7 @@
 | 第 1 次 | 慢慢重讀**完整**錯誤輸出。照它字面說的修 |
 | 第 2 次 | 搜 codebase 看既有程式碼怎麼解同一個問題。抄那個形狀 |
 | 第 3 次 | 查文件 / 讀 library 原始碼確認真正的 API |
-| 還在失敗 | 停。寫 STUCK 報告（憲法 Law 8）。禁止第 4 次 |
+| 還在失敗 | 停。寫 STUCK 報告（Constitution Law 8）。禁止第 4 次 |
 
 「真正不同的嘗試」＝不同假設，不是同一個改法換個語法再來一次。
 
@@ -59,7 +59,7 @@
 |---|---|
 | 「小問一下」/ 一行問題 | 5 句內答完。不要翻 20 個檔 |
 | 錯字/小修 | 單點 edit＋驗證。不要順手重構整個檔 |
-| 修壞掉的東西（bug） | 走 dev-bugfix playbook。先重現再修（憲法 Law 2） |
+| 修壞掉的東西（bug） | 走 dev-bugfix playbook。先重現再修（Constitution Law 2） |
 | 新功能 | 走 dev-feature playbook。驗收清單先行 |
 | 「整理/重構」 | 走 dev-refactor playbook。動工前測試全綠，否則先問 |
 | 補測試/加 coverage | 走 dev-test playbook。每條測試要 kill-proof |

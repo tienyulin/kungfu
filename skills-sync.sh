@@ -215,7 +215,7 @@ homeref() {  # <abs path> [sh|tilde]
 
 situational_paths_body() {
   local rules="$SCRIPT_DIR/agent-rules/rules" n
-  echo "## 情境檔路徑（憲法「情境檔」節說何時讀，這裡是去哪讀 — 用讀檔工具開）"
+  echo "## Situation 路徑（Constitution「Situation」節說何時讀，這裡是去哪讀 — 用讀檔工具開）"
   echo "（路徑以 ~ 開頭者代表你的家目錄；用讀檔工具開時自行展開。）"
   for n in DECISIONS SAFETY ANTIPATTERNS; do
     [ -f "$rules/$n.md" ] && echo "- $n: $(homeref "$rules/$n.md" tilde)"
@@ -270,7 +270,7 @@ wire_constitution() {
     echo "  ⚠ --constitution：找不到 ${const_src}，跳過"
     return 1
   fi
-  echo "→ 憲法（--constitution）：用各家 hook 在 session 開頭注入（讀 marketplace 檔，內容自動跟新）"
+  echo "→ Constitution（--constitution）：用各家 hook 在 session 開頭注入（讀 marketplace 檔，內容自動跟新）"
 
   # shared situational-paths file, regenerated on every run — read by the
   # hooks together with the constitution itself.
@@ -392,10 +392,10 @@ wire_guard() {
   local guard="$SCRIPT_DIR/agent-rules/hooks/guard.py" guard_ref
   guard_ref="$(homeref "$SCRIPT_DIR/agent-rules/hooks/guard.py" sh)"
   if [ ! -f "$guard" ]; then
-    echo "  ⚠ 找不到 ${guard}，跳過 SAFETY guard"
+    echo "  ⚠ 找不到 ${guard}，跳過 Safety"
     return 0
   fi
-  echo "→ SAFETY guard（--constitution）：hook 層攔破壞性指令（pattern 清單＝SAFETY.md §1）"
+  echo "→ Safety（--constitution）：hook 層攔破壞性指令（pattern 清單＝SAFETY.md §1）"
   if [ "$codex" = 1 ]; then
     merge_json_hook "$home/.codex/hooks.json" "PreToolUse" \
       "{\"hooks\":[{\"type\":\"command\",\"command\":\"python3 \\\"$guard_ref\\\" --agent codex\",\"statusMessage\":\"agent-rules guard\",\"timeout\":15}]}"

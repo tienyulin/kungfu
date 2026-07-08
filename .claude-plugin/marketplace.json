@@ -4,7 +4,7 @@
     "name": "tienyulin"
   },
   "metadata": {
-    "description": "Kungfu — the team's AI-agent skills marketplace: install a move, know the move. A shared Claude Code marketplace any project/agent can install from, plus the agent-rules discipline system (constitution + playbooks + SAFETY guard) and mirrored external skills."
+    "description": "Kungfu — the team's AI-agent skills marketplace: install a move, know the move. A shared Claude Code marketplace any project/agent can install from, plus the agent-rules discipline system (Constitution + Playbooks + Safety) and mirrored external skills."
   },
   "plugins": [
     {
@@ -232,7 +232,7 @@
       "name": "agent-rules-setup",
       "source": "./",
       "strict": false,
-      "description": "Runs this marketplace's skills-sync.sh for the user — installs the team skills and wires the agent-rules constitution + SAFETY guard into other agents (Codex/Gemini/Cline/OpenCode). The user never needs to know where the script lives; the skill locates it.",
+      "description": "Runs this marketplace's skills-sync.sh for the user — installs the team skills and wires the agent-rules Constitution + Safety into other agents (Codex/Gemini/Cline/OpenCode). The user never needs to know where the script lives; the skill locates it.",
       "author": {
         "name": "tienyulin"
       },
