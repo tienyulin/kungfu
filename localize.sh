@@ -29,6 +29,7 @@ FILES=(
   "README.md"
   "skills-sync.sh"
   ".claude-plugin/marketplace.json"
+  "external-skills.json"
   "agent-rules-setup/SKILL.md"
 )
 
@@ -40,7 +41,10 @@ self_test() {
   printf 'add %s\nclone %s\nssh %s\nsee https://github.com/%s\n' \
     "$H" "$H" "$S" "$DEFAULT_MARKETPLACE" > "$tmp/README.md"
   printf 'url %s\n' "$(gh_https "$DEFAULT_SUPERPOWERS")" > "$tmp/skills-sync.sh"
-  ( cd "$tmp"; FILES=("README.md" "skills-sync.sh"); apply "https://git.corp/x/kf.git" "https://git.corp/m/sp.git" "" )
+  # external-skills.json carries the same external mirror URLs (https .git form)
+  printf '{"skills":[{"name":"superpowers","url":"%s","ref":"main"},{"name":"k","url":"%s","ref":"main"}]}\n' \
+    "$(gh_https "$DEFAULT_SUPERPOWERS")" "$(gh_https "$DEFAULT_KARPATHY")" > "$tmp/external-skills.json"
+  ( cd "$tmp"; FILES=("README.md" "skills-sync.sh" "external-skills.json"); apply "https://git.corp/x/kf.git" "https://git.corp/m/sp.git" "https://git.corp/m/kp.git" )
   # both https(2) and ssh(1) install forms became the target = 3 occurrences
   [ "$(grep -Fo "https://git.corp/x/kf.git" "$tmp/README.md" | wc -l | tr -d ' ')" = 3 ] \
     || { echo "  FAIL: https+ssh install forms not all replaced"; fail=1; }
@@ -50,6 +54,9 @@ self_test() {
   grep -qF "see https://github.com/$DEFAULT_MARKETPLACE" "$tmp/README.md" \
     || { echo "  FAIL: bare attribution link clobbered"; fail=1; }
   grep -qF "https://git.corp/m/sp.git" "$tmp/skills-sync.sh" || { echo "  FAIL: superpowers not replaced"; fail=1; }
+  grep -qF "https://git.corp/m/sp.git" "$tmp/external-skills.json" || { echo "  FAIL: external-skills.json superpowers not replaced"; fail=1; }
+  grep -qF "https://git.corp/m/kp.git" "$tmp/external-skills.json" || { echo "  FAIL: external-skills.json karpathy not replaced"; fail=1; }
+  grep -qF "github.com/$DEFAULT_SUPERPOWERS" "$tmp/external-skills.json" && { echo "  FAIL: external-skills.json still has public superpowers URL"; fail=1; }
   # idempotent: a second run changes nothing
   before="$(cat "$tmp/README.md")"
   ( cd "$tmp"; FILES=("README.md"); apply "https://git.corp/x/kf.git" "" "" )
