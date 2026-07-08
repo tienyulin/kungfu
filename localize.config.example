@@ -2,8 +2,9 @@
 # git URLs, then run:  bash localize.sh   (preview first with --dry-run)
 #
 # localize.sh rewrites the DEFAULT public URLs (below, in comments) to these
-# values across README.md, skills-sync.sh, .claude-plugin/marketplace.json and
-# agent-rules-setup/SKILL.md. Both github URL forms are recognized and replaced:
+# values across README.md, skills-sync.sh, .claude-plugin/marketplace.json,
+# external-skills.json and skills/agent-rules-setup/SKILL.md. Both github URL
+# forms are recognized and replaced:
 #   https://github.com/<owner>/<repo>.git  AND  git@github.com:<owner>/<repo>.git
 # Your replacement value can be https or ssh — whatever your host uses.
 # Leave a value empty/commented to keep its default.

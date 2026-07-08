@@ -54,13 +54,14 @@ description: Convert an operations SOP (any domain — DBA runbooks, infra proce
 | 2 風險分級 | 每個操作分 `read` / `reversible` / `irreversible`（SOP 有「警告/需審批/無法復原」→ 一律 irreversible） | [references/spec-template.md](references/spec-template.md) §風險分級 |
 | 3 產 spec | 先寫 Part A（給人），再照模板填 Part B（給 agent），逐端點過完逼問清單 | 模板：[references/spec-template.md](references/spec-template.md)；逼問清單：[references/checklists.md](references/checklists.md) |
 | 4 自檢 | 跑完自檢清單（含 fresh-repo 測試、Part A 白話測試） | [references/checklists.md](references/checklists.md) |
-| 5 盲審閘門 | 用 Agent 工具 spawn 一個乾淨 context 的 subagent 盲審 spec（完整 prompt 與隔離規則見 checklists）；**HIGH > 0 不准寫 code**；發現與處置記入 `specs/REVIEWS.md`（格式見 checklists） | [references/checklists.md](references/checklists.md) |
+| 5 盲審閘門 | 用 subagent 機制 spawn 一個乾淨 context 的 subagent 盲審 spec（完整 prompt 與隔離規則見 checklists）；**HIGH > 0 不准寫 code**；發現與處置記入 `specs/REVIEWS.md`（格式見 checklists） | [references/checklists.md](references/checklists.md) |
 | 6 實作回饋 | 實作階段發現缺陷 → 歸因（SOP/skill/spec/code）修對應層，不是只修 code | [references/checklists.md](references/checklists.md) §歸因表 |
 
 ## 本 skill 的邊界
 
 **本次呼叫交付到「spec 通過盲審」為止（Step 1–5）。** 實作是另一件事：本 agent 已讀
-SOP，自己實作會違反鐵律 1。使用者要求實作時，用 Agent 工具 spawn 新 agent，prompt
+SOP，自己實作會違反鐵律 1。使用者要求實作時，用 subagent 機制 spawn 新 agent
+（Claude Code 是 Agent 工具；其他 agent 用各自的 sub-task／subagent 功能），prompt
 **整段照抄**（`<spec 路徑>` 換掉）：
 
 > 你是實作 agent。**唯一的規格來源是 `<spec 路徑>`，先完整讀它。禁止讀 SOP、

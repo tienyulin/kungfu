@@ -12,9 +12,12 @@
 #                   root. Install kungfu-self into each agent via its native
 #                   mechanism: Gemini `extensions link <repo>`, Codex `plugin
 #                   marketplace add <repo>` + `plugin add kungfu@kungfu-dev`.
-#                   OpenCode/Cline (no local native install) get skills/*/ dropped
-#                   into the dir they read natively (~/.agents/skills, ~/.cline/skills).
-#                   See wire_own_skills. Only a brand-new skill needs a re-run.
+#                   OpenCode ships a committed .opencode/ plugin too, but the local
+#                   sync skill-drops skills/*/ into ~/.agents/skills instead (its
+#                   plugin path needs an npm-published package — out of scope here).
+#                   Cline is the only one with NO native install → skill-drop into
+#                   ~/.cline/skills. See wire_own_skills. Only a brand-new skill
+#                   needs a re-run.
 #  • --constitution (OPT-IN, default off): inject agent-rules/rules/CONSTITUTION.md
 #                   into each detected agent at session start via its HOOK mechanism
 #                   (content read from the marketplace file at session time → always
@@ -670,9 +673,11 @@ sync_agents() {
   if [ "$gemini" = 1 ] || [ "$opencode" = 1 ]; then
     mkdir -p "$home/.agents/skills"; did=1
   fi
-  # Codex CLI: ~/.codex/skills
+  # Codex present (detect by ~/.codex) → needs its hooks wired below. Own skills
+  # reach Codex via the committed plugin + ~/.agents/skills, NOT ~/.codex/skills
+  # (wire_own_skills migrates off that old path), so nothing is created here.
   if [ -d "$home/.codex" ]; then
-    mkdir -p "$home/.codex/skills"; codex=1; did=1
+    codex=1; did=1
   fi
   # Cline: detect by INSTALL, not by its data dir. The data dir (~/Documents/Cline
   # on macOS, ~/Cline on Linux/WSL — cline#9994) only appears after the first

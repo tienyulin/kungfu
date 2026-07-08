@@ -1,6 +1,6 @@
 ---
 name: skill-author
-description: 在這個 kungfu repo 裡新增或修改一個 Claude Code skill，並讓它可被安裝。照官方 Agent Skills spec + 本 repo 慣例產出合規 SKILL.md、scripts/references，並註冊進 .claude-plugin/marketplace.json。開發者想加/改 skill 時用。Triggers - "寫一個 skill"、"新增 skill"、"author a skill"、"add a skill to kungfu"、"/skill-author"。
+description: 在這個 kungfu repo 裡新增或修改一個 skill（跨 agent：Claude Code／Gemini／Codex／OpenCode／Cline 都吃同一份），並讓它可被安裝。照官方 Agent Skills spec + 本 repo 慣例產出合規 SKILL.md、scripts/references，並註冊進 .claude-plugin/marketplace.json。開發者想加/改 skill 時用。Triggers - "寫一個 skill"、"新增 skill"、"author a skill"、"add a skill to kungfu"、"/skill-author"。
 ---
 
 # skill-author
@@ -51,7 +51,7 @@ description: <做什麼 + 何時用>。Triggers - "<中文觸發句>"、"<englis
 
 **description 決定 skill 會不會被選中**，是最關鍵的一欄：
 - 第三人稱、≤1024 字，講 what + when，結尾 `Triggers -` 列具體中英觸發句。
-- 「稍微 pushy」= 把使用時機寫寬、觸發句寫多（Claude 傾向 under-trigger）。
+- 「稍微 pushy」= 把使用時機寫寬、觸發句寫多（模型傾向 under-trigger）。
   例：「開發者要寫或修這些文件時用」勝過「可用於文件撰寫」。
 
 **body**（≤500 行，超過就拆進 `references/`）：
@@ -60,7 +60,7 @@ description: <做什麼 + 何時用>。Triggers - "<中文觸發句>"、"<englis
 - **弱模型相容（必讀）**：團隊執行模型能力參差，skill 要寫到最弱的模型也走得完 ——
   現在去讀 [references/weak-model-rules.md](references/weak-model-rules.md)，
   五條硬規則（低自由度、封閉分流、機器 gate、進度 checklist、未定義=停）逐條套用。
-- 只寫 Claude 不知道的事（專案慣例、格式、字面值）；通識解釋、行銷句、版本沿革都不放。
+- 只寫模型不知道的事（專案慣例、格式、字面值）；通識解釋、行銷句、版本沿革都不放。
 - prose 中文，專有名詞英文＋首次出現一句解釋。
 - 引用只深一層（`references/X.md`），不要 `../`。
 - `scripts/`：純 stdlib、零相依、錯誤訊息清楚；不可引用 skill 目錄外的檔
@@ -98,6 +98,10 @@ description: <做什麼 + 何時用>。Triggers - "<中文觸發句>"、"<englis
 成員裝的是 bundle ＋ marketplace auto-update：skill 進 bundle、merge 進 main，
 全隊下次開 session 自動拿到。**不設 `version` 欄** —— 沒有它，git commit SHA 就是
 版本，每個 commit 都算新版；設了反而要手動 bump，漏 bump = 收不到更新。
+
+這步接的是 **Claude 通道**（marketplace + validator gate）。skill 是**跨 agent** 的：
+只要它在 `skills/` 下，Gemini／Codex／OpenCode／Cline 各家 adapter（`gemini-extension.json`、
+`.codex-plugin/`、`.opencode/`、Cline skill-drop）會自動撿到同一份，不必另外註冊。
 
 ## Step 4 — 驗證
 

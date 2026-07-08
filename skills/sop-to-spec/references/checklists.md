@@ -29,7 +29,7 @@
 
 ## 盲審閘門（Step 5）
 
-用 Agent 工具 spawn 一個 subagent（有 read-only 型就用它；隔離是 prompt 層約束，
+用 subagent 機制 spawn 一個 subagent（有 read-only 型就用它；隔離是 prompt 層約束，
 選型只是加一道保險），prompt **整段照抄**（`<spec 路徑>` 換掉）：
 
 > 你是一個實作前的 spec 盲審員，對本專案零背景。**只准讀這一個檔案：`<spec 路徑>`。

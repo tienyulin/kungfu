@@ -59,6 +59,7 @@
 |---|---|
 | 「小問一下」/ 一行問題 | 5 句內答完。不要翻 20 個檔 |
 | 錯字/小修 | 單點 edit＋驗證。不要順手重構整個檔 |
+| 修壞掉的東西（bug） | 走 dev-bugfix playbook。先重現再修（憲法 Law 2） |
 | 新功能 | 走 dev-feature playbook。驗收清單先行 |
 | 「整理/重構」 | 走 dev-refactor playbook。動工前測試全綠，否則先問 |
 | 補測試/加 coverage | 走 dev-test playbook。每條測試要 kill-proof |

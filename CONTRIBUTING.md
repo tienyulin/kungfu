@@ -25,7 +25,7 @@ skills/<skill-name>/
 | 欄位 | 必填 | 規則 |
 |---|---|---|
 | `name` | 是 | ≤64 字、小寫英數+連字號、**須等於目錄名**、不可頭尾/連續連字號 |
-| `description` | 是 | ≤1024 字。講 **what + when + 觸發詞**，第三人稱，**稍微 pushy**（Claude 傾向 under-trigger） |
+| `description` | 是 | ≤1024 字。講 **what + when + 觸發詞**，第三人稱，**稍微 pushy**（模型傾向 under-trigger） |
 | `license` | 否 | 短字串或指向 bundled license 檔 |
 | `compatibility` | 否 | ≤500 字。只有特殊環境需求才寫（如 `Requires Python 3.14+`） |
 | `metadata` | 否 | 字串 map。**版本不放這**（版本以 `marketplace.json` 為單一真相，見 §5） |
