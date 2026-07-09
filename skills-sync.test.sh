@@ -8,6 +8,17 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=skills-sync.sh
 source "$DIR/skills-sync.sh"
 
+# Hermetic against the invoking shell: skills-sync.sh reads these control vars via
+# ${VAR:-default}. An exported value would flip sandboxed outcomes — e.g.
+# FORCE_CLINE=1 reproduces "created agent dir when none detected", NO_EXTERNAL=1
+# skips the external sync a case expects, MODE=agents zeroes has_claude. Clear
+# them; each case sets what it needs inside its own subshell.
+unset FORCE_CLINE NO_EXTERNAL MODE JUDGMENT_DIR
+# CONSTITUTION is bare-read (`[ "$CONSTITUTION" = 1 ]`, skills-sync.sh:805) under
+# set -u and defaulted at source (:66), so it must stay DEFINED — force it off
+# (not unset) to neutralize an exported CONSTITUTION=1; cases set 1 in-subshell.
+CONSTITUTION=0
+
 self_test() {
   # lint: `$var` immediately followed by a multibyte char breaks bash 3.2
   # varname lexing under CJK UTF-8 locales (the char is absorbed into the
@@ -432,8 +443,21 @@ self_test_external() {
       # Claude marketplace adapter: repo is its own marketplace (superpowers-like)
       printf '{"name":"%s-mkt","plugins":[{"name":"%s-plugin"}]}\n' "$2" "$2" > "$r/.claude-plugin/marketplace.json"
     fi
-    ( cd "$r" && git init -q -b main && git add -A \
-        && git -c user.email=t@t -c user.name=t commit -qm x ) >/dev/null 2>&1
+    # Hermetic git: this commit runs under the invoker's ambient HOME (the sandbox
+    # HOME is only set later, at the sync call). Without isolation, a global
+    # ~/.gitconfig with commit.gpgsign=true (no usable signer), a failing
+    # core.hooksPath, or an init.templateDir would make `commit` fail → set -e
+    # aborts the whole suite SILENTLY (exit 128, no FAIL line). Neutralize all
+    # ambient config: GIT_CONFIG_GLOBAL/SYSTEM=/dev/null (git ≥2.32) plus per-
+    # command -c overrides (every version) for the two known killers. Branch name
+    # `main` (external-skills.json pins ref=main) via symbolic-ref, so no `-b`
+    # (git ≥2.28) requirement.
+    ( cd "$r"
+      export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null
+      git init -q && git symbolic-ref HEAD refs/heads/main && git add -A \
+        && git -c commit.gpgsign=false -c core.hooksPath=/dev/null \
+               -c user.email=t@t -c user.name=t commit -qm x
+    ) >/dev/null 2>&1
   }
   mk_repo "$sb/repoA" aa adapters   # superpowers-like (has adapters)
   mk_repo "$sb/repoB" bb            # karpathy-like (plain skill only)
