@@ -11,17 +11,24 @@ separately, injected at session start via a hook — the **agent-rules constitut
 
 ## The rule
 
-Before acting on a task, check whether a kungfu skill fits. If one plausibly does
-(even a ~1% chance), **invoke it and follow it exactly** — announce
-`Using <skill> to <purpose>`, then do one step at a time. Process skills run before
-implementation skills.
+Before acting on a task, **look at the skills you actually have and check whether one
+fits.** If one plausibly does (even a ~1% chance), **invoke it and follow it exactly** —
+announce `Using <skill> to <purpose>`, then do one step at a time. Process skills run
+before implementation skills.
 
-Skills you have:
+## Find the skill — read your live list, don't guess
 
-- **Coding procedures** — `dev-bugfix` (reproduce→root cause→minimal fix→verify),
-  `dev-feature`, `dev-refactor`, `dev-investigate`, `dev-review`, `dev-test`
-  (kill-proof tests), `dev-loop` (whole requirement → PR, autonomous loop).
-- **Authoring** — `wiki-doc-author`, `sop-to-spec`, `skill-author`, `dev-api-template`.
+Your harness already surfaces every installed skill by name + description (in your skill
+tool / skills list). **Scan that list and match by description** — it is the source of
+truth, not any list written here. It includes:
+
+- **kungfu's own** — coding procedures (`dev-bugfix` reproduce→root cause→minimal
+  fix→verify, `dev-feature`, `dev-refactor`, `dev-investigate`, `dev-review`, `dev-test`
+  kill-proof tests, `dev-loop` whole-requirement autonomous loop) and authoring skills
+  (`wiki-doc-author`, `sop-to-spec`, `skill-author`, `dev-api-template`).
+- **anything installed alongside kungfu** — external skill sets (e.g. superpowers,
+  karpathy) dropped into the same skills dir show up in the SAME list. Reach for those
+  too; don't assume kungfu's are the only skills you have.
 
 ## Red flags — stop and pick a skill
 
