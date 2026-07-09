@@ -540,7 +540,7 @@ sync_external_skills() {  # <home> <cline_present> <cline_skills>
 
   echo "→ external skills（external-skills.json）：裝進偵測到的非 Claude agent"
   local ext_root="$home/.agents/external"; mkdir -p "$ext_root"
-  local name url ref clone has_g has_o has_c sel cmp cplug
+  local name url ref clone has_g has_c sel cmp cplug
   while IFS=$'\t' read -r name url ref; do
     [ -n "$name" ] || continue
     echo "  • $name"
@@ -551,9 +551,8 @@ sync_external_skills() {  # <home> <cline_present> <cline_skills>
       git clone -q --branch "$ref" --depth 1 "$url" "$clone" 2>/dev/null \
         || git clone -q "$url" "$clone" 2>/dev/null || { echo "    ⚠ clone 失敗，跳過"; continue; }
     fi
-    has_g=0; has_o=0; has_c=0
+    has_g=0; has_c=0
     [ -f "$clone/gemini-extension.json" ] && has_g=1
-    [ -d "$clone/.opencode" ] && has_o=1
     { [ -d "$clone/.codex-plugin" ] || [ -f "$clone/.agents/plugins/marketplace.json" ]; } && has_c=1
 
     # Gemini — native extension (its manifest can carry the skills) or skip.
@@ -573,18 +572,17 @@ sync_external_skills() {  # <home> <cline_present> <cline_skills>
       fi
     fi
 
-    # OpenCode — native JS plugin (opencode.jsonc) or skill-drop for plain skills.
+    # OpenCode — reads ~/.agents/skills/*/SKILL.md natively (opencode docs; same
+    # path our own skills take via wire_own_skills), so a skill-drop delivers
+    # external skills too — for adapter repos and plain repos alike. We deliberately
+    # do NOT `opencode plugin "$name@git+$url"`: (1) it's redundant with the native
+    # scan, and (2) bun's installer only accepts `git+<scheme>://` URLs — scp-style
+    # ssh shorthand (`git@host:owner/repo.git`) fails with NpmInstallFailedError, so
+    # any external-skills.json / internal mirror using ssh remotes would break, and
+    # opencode-only members would get nothing. superpowers' .opencode plugin only
+    # injects a bootstrap nudge, not skill discovery — not needed here.
     if [ "$has_opencode" = 1 ]; then
-      if [ "$has_o" = 1 ] && command -v opencode >/dev/null 2>&1; then
-        if grep -qs "$name@git" "$home/.config/opencode/opencode.jsonc" "$home/.config/opencode/opencode.json"; then
-          echo "    OpenCode 已裝，跳過"
-        else
-          opencode plugin "$name@git+$url" --global </dev/null >/dev/null 2>&1 \
-            && echo "    OpenCode → plugin 裝好" || echo "    ⚠ OpenCode plugin 裝失敗"
-        fi
-      else
-        drop_skill_dirs "$clone" "$home/.agents/skills" && echo "    OpenCode → skill-drop ~/.agents/skills"
-      fi
+      drop_skill_dirs "$clone" "$home/.agents/skills" && echo "    OpenCode → skill-drop ~/.agents/skills"
     fi
 
     # Codex — native plugin via marketplace, or skill-drop (reads ~/.agents/skills).
