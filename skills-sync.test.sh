@@ -105,6 +105,14 @@ self_test_guard() {
 
 self_test_agents() {
   local sb; sb="$(mktemp -d)" fail=0
+  # Run from a NEUTRAL cwd. cline_declared() scans $PWD for a workspace that
+  # recommends the Cline extension — a real production signal, but if the
+  # invoker's cwd (or a parent workspace) declares Cline it leaks into every
+  # sandboxed case, spuriously marking Cline "present" (→ .agents created,
+  # constitution routed to Documents/Cline instead of ~/.cline/rules). $sb is
+  # empty, so detection is driven only by the per-case sandbox. Cases that test
+  # declared-detection cd into their own $sb/ws.
+  cd "$sb"
   mkdir -p "$sb/src/skills/demo-skill" "$sb/src/agent-rules/rules" "$sb/src/agent-rules/hooks"
   cp "$SCRIPT_DIR/agent-rules/hooks/guard.py" "$sb/src/agent-rules/hooks/guard.py"
   printf -- '---\nname: demo-skill\ndescription: 測試用 skill。\n---\n# body\n' > "$sb/src/skills/demo-skill/SKILL.md"
@@ -412,6 +420,7 @@ PY
 # calls); plain-skill repo → skill-drop; Cline always skill-drop; --no-external skips.
 self_test_external() {
   local sb; sb="$(mktemp -d)" fail=0
+  cd "$sb"  # neutral cwd — keep host workspace files out of cline_declared (see self_test_agents)
   mk_repo() {  # <dir> <skillname> [adapters]
     local r="$1" sk="$2"; mkdir -p "$r/skills/$sk"
     printf -- '---\nname: %s\ndescription: x\n---\n# body\n' "$sk" > "$r/skills/$sk/SKILL.md"
