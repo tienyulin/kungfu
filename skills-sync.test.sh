@@ -494,13 +494,15 @@ EOF
     sync_external_skills "$h" 1 "$h/.cline/skills" ) >/dev/null 2>&1
 
   [ -d "$h/.agents/external/repoA/.git" ] || { echo "  FAIL: repoA not cloned"; fail=1; }
-  # adapter repo → native installs invoked
+  # adapter repo → native installs invoked (gemini extension, codex plugin)
   grep -q "gemini extensions install $sb/repoA" "$log" || { echo "  FAIL: gemini install not called (adapter repo)"; fail=1; }
-  grep -q "opencode plugin repoA@git" "$log"           || { echo "  FAIL: opencode plugin not called"; fail=1; }
   grep -q "codex plugin marketplace add $sb/repoA" "$log" || { echo "  FAIL: codex marketplace add not called"; fail=1; }
   grep -q "codex plugin add repoA@fakemkt" "$log"      || { echo "  FAIL: codex plugin add not called"; fail=1; }
-  # adapter repo NOT skill-dropped into ~/.agents/skills (native install handles it)
-  [ -L "$h/.agents/skills/aa" ] && { echo "  FAIL: adapter repo wrongly skill-dropped to ~/.agents/skills"; fail=1; }
+  # OpenCode reads ~/.agents/skills natively → skill-drop, NOT `opencode plugin`
+  # (bun rejects scp-ssh urls; the CLI call would break ssh remotes). Adapter repo
+  # is dropped here too, unlike gemini/codex which have native installers.
+  grep -q "opencode plugin" "$log" && { echo "  FAIL: opencode plugin called (should skill-drop)"; fail=1; }
+  [ -L "$h/.agents/skills/aa" ] || { echo "  FAIL: adapter repo not skill-dropped to ~/.agents/skills (opencode native)"; fail=1; }
   # adapter repo IS dropped into Cline (no native install there)
   [ -L "$h/.cline/skills/aa" ] || { echo "  FAIL: repoA skill not dropped into cline"; fail=1; }
   # plain repo → skill-drop to ~/.agents/skills + cline; gemini NOT installed for it
@@ -520,7 +522,7 @@ EOF
   [ -e "$sb/h2/.agents/external" ] && { echo "  FAIL: --no-external still ran"; fail=1; }
 
   rm -rf "$sb"
-  [ "$fail" = 0 ] && echo "self-test OK — external: clone + native-install(gemini/opencode/codex/claude) for adapter repos + skill-drop(plain + cline + claude) + no-external opt-out" || return 1
+  [ "$fail" = 0 ] && echo "self-test OK — external: clone + native-install(gemini/codex/claude) for adapter repos + skill-drop(opencode always + plain + cline + claude) + no-external opt-out" || return 1
 }
 
 self_test
