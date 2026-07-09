@@ -124,9 +124,11 @@ self_test_agents() {
   # empty, so detection is driven only by the per-case sandbox. Cases that test
   # declared-detection cd into their own $sb/ws.
   cd "$sb"
-  mkdir -p "$sb/src/skills/demo-skill" "$sb/src/agent-rules/rules" "$sb/src/agent-rules/hooks"
+  mkdir -p "$sb/src/skills/demo-skill" "$sb/src/skills/using-kungfu" "$sb/src/agent-rules/rules" "$sb/src/agent-rules/hooks"
   cp "$SCRIPT_DIR/agent-rules/hooks/guard.py" "$sb/src/agent-rules/hooks/guard.py"
   printf -- '---\nname: demo-skill\ndescription: 測試用 skill。\n---\n# body\n' > "$sb/src/skills/demo-skill/SKILL.md"
+  # using-kungfu = the bootstrap nudge; --constitution injects its BODY (frontmatter stripped)
+  printf -- '---\nname: using-kungfu\ndescription: d. Triggers - x.\n---\n\nNUDGE-MARKER-77 reach for a skill before acting\n' > "$sb/src/skills/using-kungfu/SKILL.md"
   printf -- '# 憲法\nLAW-MARKER-42\n' > "$sb/src/agent-rules/rules/CONSTITUTION.md"
   printf -- '# D\n' > "$sb/src/agent-rules/rules/DECISIONS.md"
   printf -- '# S\n' > "$sb/src/agent-rules/rules/SAFETY.md"
@@ -271,9 +273,14 @@ gs = cfg["hooks"]["SessionStart"]
 ours = [g for g in gs if any("agent-rules" in h["command"] for h in g["hooks"])]
 assert len(ours) == 1, "not exactly one agent-rules hook group"
 PY
-  out="$(python3 "$sb/h4/.agents/agent-rules-gemini-hook.py")"
-  printf '%s' "$out" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert "LAW-MARKER-42" in d["hookSpecificOutput"]["additionalContext"]' \
-    || { echo "  FAIL: gemini wrapper output wrong"; fail=1; }
+  out="$(HOME="$sb/h4" python3 "$sb/h4/.agents/agent-rules-gemini-hook.py")"
+  printf '%s' "$out" | python3 -c 'import json,sys; c=json.load(sys.stdin)["hookSpecificOutput"]["additionalContext"]; assert "LAW-MARKER-42" in c, "constitution missing"; assert "NUDGE-MARKER-77" in c, "using-kungfu nudge missing"' \
+    || { echo "  FAIL: gemini wrapper output missing constitution or nudge"; fail=1; }
+  # using-kungfu nudge file generated with frontmatter stripped
+  grep -q "NUDGE-MARKER-77" "$sb/h4/.agents/agent-rules-using-kungfu.md" 2>/dev/null \
+    || { echo "  FAIL: nudge file not generated / body missing"; fail=1; }
+  grep -q "name: using-kungfu" "$sb/h4/.agents/agent-rules-using-kungfu.md" 2>/dev/null \
+    && { echo "  FAIL: nudge frontmatter not stripped"; fail=1; }
   grep -q "my gemini notes" "$sb/h4/.gemini/GEMINI.md" \
     || { echo "  FAIL: gemini user content lost during block strip"; fail=1; }
   grep -q "agent-rules-constitution:begin" "$sb/h4/.gemini/GEMINI.md" \
@@ -286,6 +293,7 @@ assert cfg["model"] == "keep-me", "clobbered other key"
 ins = cfg["instructions"]
 assert ins.count(sys.argv[2]) == 1, "constitution path missing or duplicated"
 assert any(p.endswith("agent-rules-situational-paths.md") for p in ins), "paths file missing"
+assert any(p.endswith("agent-rules-using-kungfu.md") for p in ins), "using-kungfu nudge missing"
 PY
   [ -e "$sb/h4/.config/opencode/AGENTS.md" ] \
     && { echo "  FAIL: opencode AGENTS.md should be untouched"; fail=1; }
@@ -421,7 +429,7 @@ PY
 
   rm -rf "$sb"
   if [ "$fail" = 0 ]; then
-    echo "self-test OK — agents: own-skills-via-shared-drop(~/.agents/skills gemini/codex/opencode + cline) + migrate-off(old ext/plugin) + cline detect(ext/declared/forced, one-run) + pointer-card migration + skip-absent + idempotent + opencode + constitution(opt-in/sticky/hooks/migration-strip/preserve/idempotent/exec-verified/home-relative-portable)"
+    echo "self-test OK — agents: own-skills-via-shared-drop(~/.agents/skills gemini/codex/opencode + cline) + migrate-off(old ext/plugin) + cline detect(ext/declared/forced, one-run) + pointer-card migration + skip-absent + idempotent + opencode + constitution(opt-in/sticky/hooks/migration-strip/preserve/idempotent/exec-verified/home-relative-portable/+using-kungfu-nudge)"
   else
     exit 1
   fi
@@ -467,16 +475,20 @@ self_test_external() {
 {"skills":[{"name":"repoA","url":"$sb/repoA","ref":"main"},{"name":"repoB","url":"$sb/repoB","ref":"main"}]}
 JSON
 
-  # stub CLIs on PATH — record every call; codex list reports repoA "not installed".
+  # stub CLIs on PATH — record every call. gemini `extensions uninstall <n>` removes
+  # the ext dir (migrate-off); codex `plugin list` reports a stale repoA@fakemkt so
+  # migrate-off finds and removes it.
   local bin="$sb/bin" log="$sb/calls.log"; mkdir -p "$bin"
   cat > "$bin/gemini"   <<EOF
 #!/bin/sh
-echo "gemini \$*" >> "$log"; exit 0
+echo "gemini \$*" >> "$log"
+[ "\$1 \$2" = "extensions uninstall" ] && rm -rf "\$HOME/.gemini/extensions/\$3"
+exit 0
 EOF
   cat > "$bin/codex"    <<EOF
 #!/bin/sh
 echo "codex \$*" >> "$log"
-[ "\$*" = "plugin list" ] && echo "repoA@fakemkt  not installed  1.0  /x"
+[ "\$*" = "plugin list" ] && echo "repoA@fakemkt  installed, enabled  1.0  /x"
 exit 0
 EOF
   cat > "$bin/opencode" <<EOF
@@ -490,25 +502,28 @@ EOF
   chmod +x "$bin"/*
 
   local h="$sb/h"; mkdir -p "$h/.cline/skills" "$h/.config/opencode"
+  # pre-seed a STALE native install of repoA (as an older sync would have left it) so
+  # migrate-off has something to remove
+  mkdir -p "$h/.gemini/extensions/repoA"
   ( SCRIPT_DIR="$sb/src"; HOME="$h"; PATH="$bin:$PATH"
     sync_external_skills "$h" 1 "$h/.cline/skills" ) >/dev/null 2>&1
 
   [ -d "$h/.agents/external/repoA/.git" ] || { echo "  FAIL: repoA not cloned"; fail=1; }
-  # adapter repo → native installs invoked (gemini extension, codex plugin)
-  grep -q "gemini extensions install $sb/repoA" "$log" || { echo "  FAIL: gemini install not called (adapter repo)"; fail=1; }
-  grep -q "codex plugin marketplace add $sb/repoA" "$log" || { echo "  FAIL: codex marketplace add not called"; fail=1; }
-  grep -q "codex plugin add repoA@fakemkt" "$log"      || { echo "  FAIL: codex plugin add not called"; fail=1; }
-  # OpenCode reads ~/.agents/skills natively → skill-drop, NOT `opencode plugin`
-  # (bun rejects scp-ssh urls; the CLI call would break ssh remotes). Adapter repo
-  # is dropped here too, unlike gemini/codex which have native installers.
+  # Gemini/Codex/OpenCode all read ~/.agents/skills natively → ONE shared drop feeds
+  # all three; NO gemini extension / codex plugin install (that double-loads), NO
+  # opencode plugin (bun rejects scp-ssh urls).
+  grep -q "gemini extensions install" "$log" && { echo "  FAIL: gemini extension install should not be called"; fail=1; }
+  grep -qE "codex plugin marketplace add|codex plugin add" "$log" && { echo "  FAIL: codex plugin install should not be called"; fail=1; }
   grep -q "opencode plugin" "$log" && { echo "  FAIL: opencode plugin called (should skill-drop)"; fail=1; }
-  [ -L "$h/.agents/skills/aa" ] || { echo "  FAIL: adapter repo not skill-dropped to ~/.agents/skills (opencode native)"; fail=1; }
-  # adapter repo IS dropped into Cline (no native install there)
+  # migrate off the stale native install of the SAME repo (else it double-loads)
+  grep -q "gemini extensions uninstall repoA" "$log" || { echo "  FAIL: stale gemini extension not migrated off"; fail=1; }
+  [ -d "$h/.gemini/extensions/repoA" ] && { echo "  FAIL: stale gemini extension dir not removed"; fail=1; }
+  grep -q "codex plugin remove repoA@fakemkt" "$log" || { echo "  FAIL: stale codex plugin not migrated off"; fail=1; }
+  # adapter repoA + plain repoB → shared ~/.agents/skills AND cline
+  [ -L "$h/.agents/skills/aa" ] || { echo "  FAIL: repoA not skill-dropped to ~/.agents/skills"; fail=1; }
   [ -L "$h/.cline/skills/aa" ] || { echo "  FAIL: repoA skill not dropped into cline"; fail=1; }
-  # plain repo → skill-drop to ~/.agents/skills + cline; gemini NOT installed for it
   [ -L "$h/.agents/skills/bb" ] || { echo "  FAIL: repoB not dropped into ~/.agents/skills"; fail=1; }
   [ -L "$h/.cline/skills/bb" ]  || { echo "  FAIL: repoB not dropped into cline"; fail=1; }
-  grep -q "gemini extensions install $sb/repoB" "$log" && { echo "  FAIL: gemini install wrongly called for plain repo"; fail=1; }
   # Claude: adapter repo (its own .claude-plugin/marketplace.json) → marketplace add + install
   grep -q "claude plugin marketplace add $sb/repoA" "$log" || { echo "  FAIL: claude marketplace add not called (adapter repo)"; fail=1; }
   grep -q "claude plugin install aa-plugin@aa-mkt" "$log"   || { echo "  FAIL: claude plugin install not called"; fail=1; }
@@ -522,7 +537,7 @@ EOF
   [ -e "$sb/h2/.agents/external" ] && { echo "  FAIL: --no-external still ran"; fail=1; }
 
   rm -rf "$sb"
-  [ "$fail" = 0 ] && echo "self-test OK — external: clone + native-install(gemini/codex/claude) for adapter repos + skill-drop(opencode always + plain + cline + claude) + no-external opt-out" || return 1
+  [ "$fail" = 0 ] && echo "self-test OK — external: clone + shared ~/.agents/skills drop(gemini/codex/opencode, no native install) + migrate-off(stale gemini ext/codex plugin) + cline drop + claude(marketplace-or-drop) + no-external opt-out" || return 1
 }
 
 self_test
