@@ -8,6 +8,17 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=skills-sync.sh
 source "$DIR/skills-sync.sh"
 
+# Hermetic against the invoking shell: skills-sync.sh reads these control vars via
+# ${VAR:-default}. An exported value would flip sandboxed outcomes — e.g.
+# FORCE_CLINE=1 reproduces "created agent dir when none detected", NO_EXTERNAL=1
+# skips the external sync a case expects, MODE=agents zeroes has_claude. Clear
+# them; each case sets what it needs inside its own subshell.
+unset FORCE_CLINE NO_EXTERNAL MODE JUDGMENT_DIR
+# CONSTITUTION is bare-read (`[ "$CONSTITUTION" = 1 ]`, skills-sync.sh:805) under
+# set -u and defaulted at source (:66), so it must stay DEFINED — force it off
+# (not unset) to neutralize an exported CONSTITUTION=1; cases set 1 in-subshell.
+CONSTITUTION=0
+
 self_test() {
   # lint: `$var` immediately followed by a multibyte char breaks bash 3.2
   # varname lexing under CJK UTF-8 locales (the char is absorbed into the
@@ -105,6 +116,14 @@ self_test_guard() {
 
 self_test_agents() {
   local sb; sb="$(mktemp -d)" fail=0
+  # Run from a NEUTRAL cwd. cline_declared() scans $PWD for a workspace that
+  # recommends the Cline extension — a real production signal, but if the
+  # invoker's cwd (or a parent workspace) declares Cline it leaks into every
+  # sandboxed case, spuriously marking Cline "present" (→ .agents created,
+  # constitution routed to Documents/Cline instead of ~/.cline/rules). $sb is
+  # empty, so detection is driven only by the per-case sandbox. Cases that test
+  # declared-detection cd into their own $sb/ws.
+  cd "$sb"
   mkdir -p "$sb/src/skills/demo-skill" "$sb/src/agent-rules/rules" "$sb/src/agent-rules/hooks"
   cp "$SCRIPT_DIR/agent-rules/hooks/guard.py" "$sb/src/agent-rules/hooks/guard.py"
   printf -- '---\nname: demo-skill\ndescription: 測試用 skill。\n---\n# body\n' > "$sb/src/skills/demo-skill/SKILL.md"
@@ -329,9 +348,25 @@ PY
     || { echo "  FAIL: foreign cline TaskStart clobbered"; fail=1; }
 
   # case 7b: no `claude` CLI on PATH → main flow degrades to agents-only sync,
-  # exits 0 with the skip message, writes nothing without agent dirs
+  # exits 0 with the skip message, writes nothing without agent dirs.
+  # HERMETIC PATH: `/usr/bin:/bin` is NOT guaranteed agent-free — on machines
+  # that install claude/gemini/codex there (Linux `npm -g`, system pkgs) they'd
+  # leak in and the "no agent" assertions would falsely fail. Mirror the current
+  # PATH's tools into a stub dir MINUS the four agent CLIs → base tools present,
+  # zero agents detectable, identical on every machine.
   mkdir -p "$sb/h8"
-  out="$(HOME="$sb/h8" PATH="/usr/bin:/bin" bash "$SCRIPT_DIR/skills-sync.sh" 2>&1)" \
+  local ncbin="$sb/stub_nc"; mkdir -p "$ncbin"
+  local _d _f _b
+  IFS=: read -ra _pdirs <<< "$PATH"
+  for _d in "${_pdirs[@]}"; do
+    [ -d "$_d" ] || continue
+    for _f in "$_d"/*; do
+      _b="$(basename "$_f")"
+      case "$_b" in claude | gemini | codex | opencode) continue ;; esac
+      [ -e "$ncbin/$_b" ] || { [ -x "$_f" ] && ln -sf "$_f" "$ncbin/$_b"; }
+    done
+  done
+  out="$(HOME="$sb/h8" PATH="$ncbin" bash "$SCRIPT_DIR/skills-sync.sh" 2>&1)" \
     || { echo "  FAIL: no-claude flow exited non-zero"; fail=1; }
   echo "$out" | grep -q "找不到 claude CLI" || { echo "  FAIL: no-claude skip message missing"; fail=1; }
   [ -e "$sb/h8/.agents" ] && { echo "  FAIL: no-claude flow created agent dirs"; fail=1; }
@@ -396,6 +431,7 @@ PY
 # calls); plain-skill repo → skill-drop; Cline always skill-drop; --no-external skips.
 self_test_external() {
   local sb; sb="$(mktemp -d)" fail=0
+  cd "$sb"  # neutral cwd — keep host workspace files out of cline_declared (see self_test_agents)
   mk_repo() {  # <dir> <skillname> [adapters]
     local r="$1" sk="$2"; mkdir -p "$r/skills/$sk"
     printf -- '---\nname: %s\ndescription: x\n---\n# body\n' "$sk" > "$r/skills/$sk/SKILL.md"
@@ -407,8 +443,21 @@ self_test_external() {
       # Claude marketplace adapter: repo is its own marketplace (superpowers-like)
       printf '{"name":"%s-mkt","plugins":[{"name":"%s-plugin"}]}\n' "$2" "$2" > "$r/.claude-plugin/marketplace.json"
     fi
-    ( cd "$r" && git init -q -b main && git add -A \
-        && git -c user.email=t@t -c user.name=t commit -qm x ) >/dev/null 2>&1
+    # Hermetic git: this commit runs under the invoker's ambient HOME (the sandbox
+    # HOME is only set later, at the sync call). Without isolation, a global
+    # ~/.gitconfig with commit.gpgsign=true (no usable signer), a failing
+    # core.hooksPath, or an init.templateDir would make `commit` fail → set -e
+    # aborts the whole suite SILENTLY (exit 128, no FAIL line). Neutralize all
+    # ambient config: GIT_CONFIG_GLOBAL/SYSTEM=/dev/null (git ≥2.32) plus per-
+    # command -c overrides (every version) for the two known killers. Branch name
+    # `main` (external-skills.json pins ref=main) via symbolic-ref, so no `-b`
+    # (git ≥2.28) requirement.
+    ( cd "$r"
+      export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null
+      git init -q && git symbolic-ref HEAD refs/heads/main && git add -A \
+        && git -c commit.gpgsign=false -c core.hooksPath=/dev/null \
+               -c user.email=t@t -c user.name=t commit -qm x
+    ) >/dev/null 2>&1
   }
   mk_repo "$sb/repoA" aa adapters   # superpowers-like (has adapters)
   mk_repo "$sb/repoB" bb            # karpathy-like (plain skill only)
