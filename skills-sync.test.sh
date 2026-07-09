@@ -329,9 +329,25 @@ PY
     || { echo "  FAIL: foreign cline TaskStart clobbered"; fail=1; }
 
   # case 7b: no `claude` CLI on PATH → main flow degrades to agents-only sync,
-  # exits 0 with the skip message, writes nothing without agent dirs
+  # exits 0 with the skip message, writes nothing without agent dirs.
+  # HERMETIC PATH: `/usr/bin:/bin` is NOT guaranteed agent-free — on machines
+  # that install claude/gemini/codex there (Linux `npm -g`, system pkgs) they'd
+  # leak in and the "no agent" assertions would falsely fail. Mirror the current
+  # PATH's tools into a stub dir MINUS the four agent CLIs → base tools present,
+  # zero agents detectable, identical on every machine.
   mkdir -p "$sb/h8"
-  out="$(HOME="$sb/h8" PATH="/usr/bin:/bin" bash "$SCRIPT_DIR/skills-sync.sh" 2>&1)" \
+  local ncbin="$sb/stub_nc"; mkdir -p "$ncbin"
+  local _d _f _b
+  IFS=: read -ra _pdirs <<< "$PATH"
+  for _d in "${_pdirs[@]}"; do
+    [ -d "$_d" ] || continue
+    for _f in "$_d"/*; do
+      _b="$(basename "$_f")"
+      case "$_b" in claude | gemini | codex | opencode) continue ;; esac
+      [ -e "$ncbin/$_b" ] || { [ -x "$_f" ] && ln -sf "$_f" "$ncbin/$_b"; }
+    done
+  done
+  out="$(HOME="$sb/h8" PATH="$ncbin" bash "$SCRIPT_DIR/skills-sync.sh" 2>&1)" \
     || { echo "  FAIL: no-claude flow exited non-zero"; fail=1; }
   echo "$out" | grep -q "找不到 claude CLI" || { echo "  FAIL: no-claude skip message missing"; fail=1; }
   [ -e "$sb/h8/.agents" ] && { echo "  FAIL: no-claude flow created agent dirs"; fail=1; }
