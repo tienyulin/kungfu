@@ -155,13 +155,13 @@ EOF
   export PATH="$stub:$PATH"
 
   # case 1: gemini + codex + cline homes present (constitution OFF by default).
-  # Own skills reach gemini/codex/opencode via the SINGLE ~/.agents/skills drop and
-  # cline via ~/.cline; a pre-existing kungfu extension/plugin is migrated off.
+  # Own skills reach ALL of gemini/codex/opencode/cline via the SINGLE ~/.agents/skills
+  # drop (Cline reads it natively too) — NOT a second ~/.cline/skills drop, which would
+  # double-load. A pre-existing kungfu extension/plugin is migrated off.
   mkdir -p "$sb/h1/.gemini/extensions/kungfu" "$sb/h1/.codex" "$sb/h1/.cline"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h1"; sync_agents >/dev/null )
   [ -L "$sb/h1/.agents/skills/demo-skill" ] || { echo "  FAIL: own skill not dropped into shared ~/.agents/skills"; fail=1; }
-  [ "$(readlink "$sb/h1/.cline/skills/demo-skill" 2>/dev/null)" = "$sb/src/skills/demo-skill" ] \
-    || { echo "  FAIL: cline skill-drop"; fail=1; }
+  [ -e "$sb/h1/.cline/skills/demo-skill" ] && { echo "  FAIL: skill double-dropped into ~/.cline/skills (Cline reads ~/.agents/skills)"; fail=1; }
   [ -d "$sb/h1/.gemini/extensions/kungfu" ] && { echo "  FAIL: old gemini kungfu extension not migrated off"; fail=1; }
   [ -f "$sb/.codex-removed" ] || { echo "  FAIL: old codex kungfu plugin not removed"; fail=1; }
   [ -e "$sb/h1/.codex/AGENTS.md" ] && { echo "  FAIL: constitution written without --constitution"; fail=1; }
@@ -172,21 +172,30 @@ EOF
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h2"; sync_agents >/dev/null )
   [ -e "$sb/h2/.agents" ] && { echo "  FAIL: created agent dir when none detected"; fail=1; }
 
-  # case 3: idempotent — re-run, skill-drop symlink still valid (not nested)
+  # case 3: idempotent — re-run, shared skill-drop symlink still valid (not nested)
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h1"; sync_agents >/dev/null )
-  [ "$(readlink "$sb/h1/.cline/skills/demo-skill" 2>/dev/null)" = "$sb/src/skills/demo-skill" ] \
+  [ "$(readlink "$sb/h1/.agents/skills/demo-skill" 2>/dev/null)" = "$sb/src/skills/demo-skill" ] \
     || { echo "  FAIL: not idempotent"; fail=1; }
 
-  # case 3b: stale prune (renamed skill) in the skill-drop dirs + pre-3.48 pointer
-  # card migration; a user's own symlink / rule stays.
+  # case 3b: stale prune (renamed skill) in the shared drop dir; plus MIGRATE-OFF of
+  # an old ~/.cline/skills drop (our symlinks, live or dead, removed; user's kept);
+  # plus pre-3.48 pointer-card migration in ~/.cline/rules.
+  ln -s "$sb/src/skills/renamed-away" "$sb/h1/.agents/skills/renamed-away"
+  ln -s "$sb/elsewhere/thing" "$sb/h1/.agents/skills/users-own"
+  # simulate an old ~/.cline/skills drop: our live skill + a dead one + a user symlink
+  mkdir -p "$sb/h1/.cline/skills"
+  ln -s "$sb/src/skills/demo-skill" "$sb/h1/.cline/skills/demo-skill"
   ln -s "$sb/src/skills/renamed-away" "$sb/h1/.cline/skills/renamed-away"
   ln -s "$sb/elsewhere/thing" "$sb/h1/.cline/skills/users-own"
   mkdir -p "$sb/h1/.cline/rules"
   printf '# Skill: gone\n\ngone.\n\n完整步驟在 `%s/skills/gone/SKILL.md`。（這是指向 kungfu 的指標規則）\n' "$sb/src" > "$sb/h1/.cline/rules/gone-skill.md"
   printf '# my note\n' > "$sb/h1/.cline/rules/my-note.md"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h1"; sync_agents >/dev/null )
-  [ -L "$sb/h1/.cline/skills/renamed-away" ] && { echo "  FAIL: stale cline skill symlink not pruned"; fail=1; }
-  [ -L "$sb/h1/.cline/skills/users-own" ] || { echo "  FAIL: user's own symlink pruned"; fail=1; }
+  [ -L "$sb/h1/.agents/skills/renamed-away" ] && { echo "  FAIL: stale shared skill symlink not pruned"; fail=1; }
+  [ -L "$sb/h1/.agents/skills/users-own" ] || { echo "  FAIL: user's own shared symlink pruned"; fail=1; }
+  [ -e "$sb/h1/.cline/skills/demo-skill" ] && { echo "  FAIL: old ~/.cline/skills our-drop not migrated off"; fail=1; }
+  [ -L "$sb/h1/.cline/skills/renamed-away" ] && { echo "  FAIL: old ~/.cline/skills dead our-drop not migrated off"; fail=1; }
+  [ -L "$sb/h1/.cline/skills/users-own" ] || { echo "  FAIL: user's own ~/.cline/skills symlink removed by migrate-off"; fail=1; }
   [ -f "$sb/h1/.cline/rules/gone-skill.md" ] && { echo "  FAIL: old pointer card not migrated away"; fail=1; }
   [ -f "$sb/h1/.cline/rules/my-note.md" ] || { echo "  FAIL: user's own cline rule pruned"; fail=1; }
 
@@ -196,15 +205,15 @@ EOF
   [ -L "$sb/h3/.agents/skills/demo-skill" ] || { echo "  FAIL: opencode ~/.agents symlink"; fail=1; }
 
   # case 4b: BOTH Cline layouts (~/.cline CLI state + Documents/Cline app base).
-  # Native skills land in ~/.cline/skills; a leftover pre-3.48 pointer card in
-  # ~/.cline/rules migrates away; the user's own rule there is kept; and we no
-  # longer write skill pointer cards into Documents/Cline/Rules.
+  # Skills reach Cline via the shared ~/.agents/skills drop; a leftover pre-3.48
+  # pointer card in ~/.cline/rules migrates away; the user's own rule there is kept;
+  # and we no longer write skill pointer cards into Documents/Cline/Rules.
   mkdir -p "$sb/h9/Documents/Cline" "$sb/h9/.cline/rules"
   printf '# Skill: old\n\nold.\n\n完整步驟在 `%s/demo-skill/SKILL.md`。（這是指向 kungfu 的指標規則）\n' "$sb/src" > "$sb/h9/.cline/rules/demo-skill.md"
   printf '# my own cline rule\n' > "$sb/h9/.cline/rules/keep-me.md"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h9"; sync_agents >/dev/null )
-  [ "$(readlink "$sb/h9/.cline/skills/demo-skill" 2>/dev/null)" = "$sb/src/skills/demo-skill" ] \
-    || { echo "  FAIL: both-layouts native skill symlink"; fail=1; }
+  [ "$(readlink "$sb/h9/.agents/skills/demo-skill" 2>/dev/null)" = "$sb/src/skills/demo-skill" ] \
+    || { echo "  FAIL: both-layouts skill via shared ~/.agents/skills"; fail=1; }
   [ -f "$sb/h9/.cline/rules/demo-skill.md" ] \
     && { echo "  FAIL: old pointer card not migrated out of ~/.cline/rules"; fail=1; }
   [ -f "$sb/h9/.cline/rules/keep-me.md" ] \
@@ -216,14 +225,14 @@ EOF
   # via the extension folder, skills provisioned in ONE run (the "run twice" fix).
   mkdir -p "$sb/h10/.vscode-server/extensions/${CLINE_EXT_ID}-3.99.0"
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h10"; sync_agents >/dev/null )
-  [ -L "$sb/h10/.cline/skills/demo-skill" ] || { echo "  FAIL: extension-only Cline not provisioned"; fail=1; }
+  [ -L "$sb/h10/.agents/skills/demo-skill" ] || { echo "  FAIL: extension-only Cline not provisioned (shared drop)"; fail=1; }
 
   # case 4d: devcontainer DECLARES the extension but it's not installed yet (the
   # race) — detected via the workspace config, so one postCreate sync wires it.
   mkdir -p "$sb/ws/.devcontainer" "$sb/h11"
   printf '{"customizations":{"vscode":{"extensions":["%s"]}}}\n' "$CLINE_EXT_ID" > "$sb/ws/.devcontainer/devcontainer.json"
   ( cd "$sb/ws"; SCRIPT_DIR="$sb/src"; HOME="$sb/h11"; sync_agents >/dev/null )
-  [ -L "$sb/h11/.cline/skills/demo-skill" ] || { echo "  FAIL: declared-in-devcontainer Cline not provisioned"; fail=1; }
+  [ -L "$sb/h11/.agents/skills/demo-skill" ] || { echo "  FAIL: declared-in-devcontainer Cline not provisioned (shared drop)"; fail=1; }
 
   # case 4e: no Cline signal anywhere (clean cwd) → nothing created for Cline
   mkdir -p "$sb/ws2" "$sb/h12"
@@ -385,8 +394,8 @@ PY
   ( SCRIPT_DIR="$sb/src"; HOME="$sb/h7"; CONSTITUTION=1; sync_agents >/dev/null )
   [ -x "$sb/h7/Cline/Hooks/TaskStart" ] || { echo "  FAIL: linux-layout TaskStart missing"; fail=1; }
   [ -x "$sb/h7/Cline/Hooks/PreToolUse" ] || { echo "  FAIL: linux-layout PreToolUse missing"; fail=1; }
-  [ -L "$sb/h7/.cline/skills/demo-skill" ] \
-    || { echo "  FAIL: linux-layout native skill symlink missing"; fail=1; }
+  [ -L "$sb/h7/.agents/skills/demo-skill" ] \
+    || { echo "  FAIL: linux-layout skill via shared ~/.agents/skills missing"; fail=1; }
   echo '{"toolName":"executeCommand","parameters":{"command":"sudo rm x"}}' | "$sb/h7/Cline/Hooks/PreToolUse" \
     | python3 -c 'import json,sys; assert json.load(sys.stdin)["cancel"] is True' \
     || { echo "  FAIL: linux-layout guard did not cancel"; fail=1; }
@@ -429,14 +438,15 @@ PY
 
   rm -rf "$sb"
   if [ "$fail" = 0 ]; then
-    echo "self-test OK — agents: own-skills-via-shared-drop(~/.agents/skills gemini/codex/opencode + cline) + migrate-off(old ext/plugin) + cline detect(ext/declared/forced, one-run) + pointer-card migration + skip-absent + idempotent + opencode + constitution(opt-in/sticky/hooks/migration-strip/preserve/idempotent/exec-verified/home-relative-portable/+using-kungfu-nudge)"
+    echo "self-test OK — agents: own-skills-via-shared-drop(~/.agents/skills gemini/codex/opencode + cline, no ~/.cline/skills double-drop) + migrate-off(old ext/plugin + old ~/.cline/skills drop) + cline detect(ext/declared/forced, one-run) + pointer-card migration + skip-absent + idempotent + opencode + constitution(opt-in/sticky/hooks/migration-strip/preserve/idempotent/exec-verified/home-relative-portable/+using-kungfu-nudge)"
   else
     exit 1
   fi
 }
 
 # External skills: adapter repo → native install per agent (stub CLIs record the
-# calls); plain-skill repo → skill-drop; Cline always skill-drop; --no-external skips.
+# calls); plain-skill repo → skill-drop into the shared ~/.agents/skills (read by
+# gemini/codex/opencode/cline); old ~/.cline/skills drop migrated off; --no-external skips.
 self_test_external() {
   local sb; sb="$(mktemp -d)" fail=0
   cd "$sb"  # neutral cwd — keep host workspace files out of cline_declared (see self_test_agents)
@@ -505,6 +515,10 @@ EOF
   # pre-seed a STALE native install of repoA (as an older sync would have left it) so
   # migrate-off has something to remove
   mkdir -p "$h/.gemini/extensions/repoA"
+  # pre-seed an old ~/.cline/skills drop (our symlink into the external clone) + a
+  # user's own symlink, so we verify migrate-off removes ours and keeps theirs
+  ln -s "$h/.agents/external/repoA/skills/aa" "$h/.cline/skills/aa"
+  ln -s "$sb/somewhere/mine" "$h/.cline/skills/user-own"
   ( SCRIPT_DIR="$sb/src"; HOME="$h"; PATH="$bin:$PATH"
     sync_external_skills "$h" 1 "$h/.cline/skills" ) >/dev/null 2>&1
 
@@ -519,11 +533,14 @@ EOF
   grep -q "gemini extensions uninstall repoA" "$log" || { echo "  FAIL: stale gemini extension not migrated off"; fail=1; }
   [ -d "$h/.gemini/extensions/repoA" ] && { echo "  FAIL: stale gemini extension dir not removed"; fail=1; }
   grep -q "codex plugin remove repoA@fakemkt" "$log" || { echo "  FAIL: stale codex plugin not migrated off"; fail=1; }
-  # adapter repoA + plain repoB → shared ~/.agents/skills AND cline
+  # adapter repoA + plain repoB → shared ~/.agents/skills (Cline reads it too), NOT a
+  # second ~/.cline/skills drop; the old ~/.cline/skills our-drop is migrated off,
+  # the user's own symlink there is kept.
   [ -L "$h/.agents/skills/aa" ] || { echo "  FAIL: repoA not skill-dropped to ~/.agents/skills"; fail=1; }
-  [ -L "$h/.cline/skills/aa" ] || { echo "  FAIL: repoA skill not dropped into cline"; fail=1; }
   [ -L "$h/.agents/skills/bb" ] || { echo "  FAIL: repoB not dropped into ~/.agents/skills"; fail=1; }
-  [ -L "$h/.cline/skills/bb" ]  || { echo "  FAIL: repoB not dropped into cline"; fail=1; }
+  [ -e "$h/.cline/skills/aa" ] && { echo "  FAIL: repoA double-dropped into ~/.cline/skills (migrate-off failed)"; fail=1; }
+  [ -L "$h/.cline/skills/bb" ] && { echo "  FAIL: repoB double-dropped into ~/.cline/skills"; fail=1; }
+  [ -L "$h/.cline/skills/user-own" ] || { echo "  FAIL: user's own ~/.cline/skills symlink removed by migrate-off"; fail=1; }
   # Claude: adapter repo (its own .claude-plugin/marketplace.json) → marketplace add + install
   grep -q "claude plugin marketplace add $sb/repoA" "$log" || { echo "  FAIL: claude marketplace add not called (adapter repo)"; fail=1; }
   grep -q "claude plugin install aa-plugin@aa-mkt" "$log"   || { echo "  FAIL: claude plugin install not called"; fail=1; }
@@ -537,7 +554,7 @@ EOF
   [ -e "$sb/h2/.agents/external" ] && { echo "  FAIL: --no-external still ran"; fail=1; }
 
   rm -rf "$sb"
-  [ "$fail" = 0 ] && echo "self-test OK — external: clone + shared ~/.agents/skills drop(gemini/codex/opencode, no native install) + migrate-off(stale gemini ext/codex plugin) + cline drop + claude(marketplace-or-drop) + no-external opt-out" || return 1
+  [ "$fail" = 0 ] && echo "self-test OK — external: clone + shared ~/.agents/skills drop(gemini/codex/opencode/cline, no native install, no ~/.cline/skills double-drop) + migrate-off(stale gemini ext/codex plugin + old ~/.cline/skills drop) + claude(marketplace-or-drop) + no-external opt-out" || return 1
 }
 
 self_test

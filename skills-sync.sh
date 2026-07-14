@@ -11,13 +11,13 @@
 #                   each via that agent's native mechanism (Claude/Codex: the repo's own
 #                   marketplace; Gemini: extension; OpenCode/Cline/plain: skill-drop).
 #                   They refresh on re-run (not marketplace auto-update). --no-external skips.
-#  • Gemini / Codex / OpenCode / Cline : own skills live in skills/. Gemini, Codex
-#                   and OpenCode all read ~/.agents/skills natively, so kungfu
-#                   skill-drops skills/*/ there ONCE for all three. We do NOT install
-#                   kungfu as a Gemini extension or Codex plugin: those expose the
-#                   SAME skills a second time, and Gemini/Codex then warn "skill
-#                   conflict" on every startup (double-load vs the shared drop).
-#                   Cline reads its own dir → skill-drop into ~/.cline/skills.
+#  • Gemini / Codex / OpenCode / Cline : own skills live in skills/. Gemini, Codex,
+#                   OpenCode AND Cline all read ~/.agents/skills natively (Cline scans
+#                   ~/.cline/skills + ~/.agents/skills), so kungfu skill-drops skills/*/
+#                   there ONCE for all four. We do NOT install kungfu as a Gemini
+#                   extension or Codex plugin, nor drop into ~/.cline/skills: each
+#                   exposes the SAME skills a second time, and the agents then warn
+#                   "skill conflict" on every startup (double-load vs the shared drop).
 #                   See wire_own_skills. Only a brand-new skill needs a re-run.
 #  • --constitution (OPT-IN, default off): inject agent-rules/rules/CONSTITUTION.md
 #                   into each detected agent at session start via its HOOK mechanism
@@ -571,9 +571,9 @@ sync_external_skills() {  # <home> <cline_present> <cline_skills>
     # skills, the codex plugin dir) on top of the shared ~/.agents/skills drop, so
     # Gemini/Codex warn "skill overridden/conflict" on every startup — exactly the
     # own-skill double-load #68 fixed. Single source = the shared drop.
-    if [ "$has_gemini" = 1 ] || [ "$has_codex" = 1 ] || [ "$has_opencode" = 1 ]; then
+    if [ "$has_gemini" = 1 ] || [ "$has_codex" = 1 ] || [ "$has_opencode" = 1 ] || [ "$cline_present" = 1 ]; then
       drop_skill_dirs "$clone" "$home/.agents/skills" \
-        && echo "    Gemini/Codex/OpenCode → skill-drop ~/.agents/skills（共讀單一來源）"
+        && echo "    Gemini/Codex/OpenCode/Cline → skill-drop ~/.agents/skills（共讀單一來源）"
     fi
 
     # Migrate off any earlier native install of THIS external repo — it would
@@ -591,9 +591,10 @@ sync_external_skills() {  # <home> <cline_present> <cline_skills>
       fi
     fi
 
-    # Cline — no native install → skill-drop into its Skills dir.
+    # Cline reads ~/.agents/skills natively (shared drop above feeds it); migrate off
+    # the old ~/.cline/skills drop of THIS repo to avoid double-loading.
     if [ "$cline_present" = 1 ] && [ -n "$cline_skills" ]; then
-      drop_skill_dirs "$clone" "$cline_skills" && echo "    Cline    → skill-drop $cline_skills"
+      prune_repo_symlinks "$cline_skills" >/dev/null
     fi
 
     # Claude Code — a repo that is its own marketplace (.claude-plugin/marketplace.json)
@@ -629,6 +630,22 @@ prune_own_dead() {  # <dir>
   done
 }
 
+# Migrate off a skills dir we no longer drop into: remove OUR symlinks (into this
+# repo OR an external clone), live or dead; the user's own files/symlinks stay.
+# rmdir at the end only succeeds if we emptied it. Returns 0 always (idempotent).
+prune_repo_symlinks() {  # <dir>
+  local d="$1" link
+  [ -n "$d" ] && [ -d "$d" ] || return 0
+  for link in "$d"/*; do
+    [ -L "$link" ] || continue
+    case "$(readlink "$link")" in
+      "$SCRIPT_DIR"/*|*/.agents/external/*) rm -f "$link" ;;
+    esac
+  done
+  rmdir "$d" 2>/dev/null || true
+  return 0
+}
+
 # Install THIS repo (kungfu — it ships committed per-agent adapters at its root)
 # into each detected non-Claude agent using that agent's native mechanism, so own
 # skills reach the agent the same way an external adapter repo does. Claude Code
@@ -638,15 +655,17 @@ wire_own_skills() {  # <home> <cline_present> <cline_skills>
   local home="$1" cline_present="$2" cline_skills="$3" repo="$SCRIPT_DIR" link ext
   echo "→ 自家 skill：skill-drop 進共用目錄 ~/.agents/skills（Gemini/Codex/OpenCode 都原生讀）"
 
-  # Gemini, Codex and OpenCode ALL read ~/.agents/skills natively, so ONE drop
-  # feeds all three. We deliberately do NOT install kungfu as a Gemini extension or
-  # a Codex plugin: those expose the same skills a SECOND time, double-loading
-  # against ~/.agents/skills — Gemini (≥ its skills-dir release) and Codex then warn
-  # "skill conflict" on every startup. Single source = the shared drop.
+  # Gemini, Codex, OpenCode AND Cline ALL read ~/.agents/skills natively (Cline's
+  # global skill scan = ~/.cline/skills + ~/.agents/skills, verified in its source),
+  # so ONE drop feeds all four. We deliberately do NOT install kungfu as a Gemini
+  # extension or a Codex plugin: those expose the same skills a SECOND time,
+  # double-loading against ~/.agents/skills — Gemini (≥ its skills-dir release) and
+  # Codex then warn "skill conflict" on every startup. Single source = the shared drop.
   if command -v gemini >/dev/null 2>&1 || command -v codex >/dev/null 2>&1 || [ -d "$home/.codex" ] \
-     || command -v opencode >/dev/null 2>&1 || [ -d "$home/.config/opencode" ]; then
+     || command -v opencode >/dev/null 2>&1 || [ -d "$home/.config/opencode" ] \
+     || [ "$cline_present" = 1 ]; then
     drop_skill_dirs "$repo" "$home/.agents/skills" \
-      && echo "  → skill-drop ~/.agents/skills（Gemini/Codex/OpenCode 共讀，單一來源）"
+      && echo "  → skill-drop ~/.agents/skills（Gemini/Codex/OpenCode/Cline 共讀，單一來源）"
     prune_own_dead "$home/.agents/skills"
   fi
 
@@ -675,10 +694,12 @@ wire_own_skills() {  # <home> <cline_present> <cline_skills>
     fi
   fi
 
-  # Cline — its own Skills dir (not the shared ~/.agents/skills).
-  if [ "$cline_present" = 1 ] && [ -n "$cline_skills" ]; then
-    drop_skill_dirs "$repo" "$cline_skills" && echo "  Cline    → skill-drop $cline_skills"
-    prune_own_dead "$cline_skills"
+  # Cline reads ~/.agents/skills natively (see above), so the shared drop already
+  # feeds it. Migrate off the old ~/.cline/skills drop — keeping it would double-load
+  # the same skills against ~/.agents/skills. Only announce if there was one.
+  if [ "$cline_present" = 1 ] && [ -n "$cline_skills" ] && [ -d "$cline_skills" ]; then
+    prune_repo_symlinks "$cline_skills"
+    echo "  Cline    → 走共用 ~/.agents/skills（移除舊 $cline_skills 重複 drop）"
   fi
 }
 
@@ -730,10 +751,11 @@ sync_agents() {
   if [ -n "$cline_base" ] || [ "$extfound" = 1 ] || [ -d "$home/.cline" ] \
      || [ "$declared" = 1 ] || [ "${FORCE_CLINE:-0}" = 1 ]; then
     cline_present=1; did=1
-    # Skills use Cline's native on-demand Skills (>=3.48): a SKILL.md dir under
-    # the global skills path, loaded via use_skill only when relevant — so they
-    # don't sit in the always-on context the way the old pointer rules did.
-    cline_skills="$home/.cline/skills"; mkdir -p "$cline_skills"
+    # Skills use Cline's native on-demand Skills (>=3.48). Cline scans BOTH
+    # ~/.cline/skills and ~/.agents/skills globally, so we feed it via the shared
+    # ~/.agents/skills drop (below) — no separate ~/.cline/skills drop. The path is
+    # kept only so wire_own_skills/sync_external_skills can migrate off any old one.
+    cline_skills="$home/.cline/skills"
     # Rules/Hooks (constitution + guard) need the app-layout base. Default it by
     # OS when Cline is coming (extension/declared/forced) but never opened, so
     # first-run wiring lands where the extension will read once launched.
@@ -754,8 +776,9 @@ sync_agents() {
     return 0
   fi
 
-  # Own skills → skill-drop into ~/.agents/skills (Gemini/Codex/OpenCode all read it)
-  # + ~/.cline/skills (Cline); migrate off any older extension/plugin install.
+  # Own skills → skill-drop into the shared ~/.agents/skills, which Gemini, Codex,
+  # OpenCode AND Cline all read natively; migrate off older per-agent installs
+  # (extension/plugin, and the old ~/.cline/skills drop).
   wire_own_skills "$home" "$cline_present" "$cline_skills"
 
   # migrate off the pre-3.48 approach: we used to write an always-on pointer .md
