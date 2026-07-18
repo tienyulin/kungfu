@@ -10,6 +10,7 @@ description: Convert an operations SOP (any domain — DBA runbooks, infra proce
 
 ```
 進度：
+- [ ] Step 0 SOP 合格檢查（不合格 → 停，轉介 sop-author）
 - [ ] Step 1 萃取五清單（草稿）
 - [ ] Step 2 風險分級表
 - [ ] Step 3 spec 寫完（先 Part A 後 Part B；照抄區塊逐字；逼問清單每題每端點過完）
@@ -35,8 +36,8 @@ description: Convert an operations SOP (any domain — DBA runbooks, infra proce
 
 - 輸入：SOP 檔案路徑，或 `docs/sops/<組名>/` 資料夾（＝對裡面每份 SOP 檔各產一份 spec，
   逐檔跑完整流程）。`$ARGUMENTS` 或使用者指定；路徑不存在就停下問，不要猜。
-  SOP 由不懂技術的人（PM）寫的 → 先請他照 [references/sop-authoring-guide.md](references/sop-authoring-guide.md)
-  ＋空白骨架 [references/sop-template.md](references/sop-template.md) 填，SOP 品質夠了再轉 spec
+  **本 skill 只收合格 SOP**（Step 0 檢查）；使用者只有粗略需求或不合規文件 →
+  用 `sop-author` skill 先訪談產出合規 SOP，再回來轉 spec。
 - 輸出：SOP 在 `docs/sops/<組名>/<sop-slug>.md` → spec 鏡像放
   `docs/specs/<組名>/<sop-slug>-api.spec.md`（資料夾不存在就建）；
   SOP 不在此佈局下 → 退回舊慣例 `specs/<sop-slug>-api.spec.md`（repo 根下）。
@@ -62,6 +63,16 @@ description: Convert an operations SOP (any domain — DBA runbooks, infra proce
 同組的 API 各一份檔放同資料夾）。**一份 SOP 檔 = 一隻 API = 一份 spec**，
 spec 鏡像放 `docs/specs/<組名>/<api>-api.spec.md`。本 skill 不自行拆分或合併；
 一份 SOP 檔裡混了多隻不相干的 API → 停下來建議作者按 guide 拆檔，堅持不拆就照單份做。
+
+## Step 0 — SOP 合格檢查（轉 spec 前的門檻）
+
+逐份 SOP 檢查**必要節**是否都在且非空：做什麼、誰可以用、輸入（或明寫「無」）、輸出、
+步驟（每步有「怎麼做」）、可能出什麼錯、測試例子。
+- 全齊 → 進 Step 1。
+- 缺任何一節、或內容明顯只是幾句粗略描述 → **停**，回報缺哪些節，請使用者用
+  `sop-author` skill 訪談補完（不要自己代填、也不要硬轉——缺的節會變成 spec 的
+  未定義行為，最後全是盲審 HIGH）。使用者明確堅持照現狀轉 → 照轉，缺的全部進
+  spec「未決事項」。
 
 ## 流程（六步，依序）
 
