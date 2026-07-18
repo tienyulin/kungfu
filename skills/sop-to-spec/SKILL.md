@@ -33,15 +33,20 @@ description: Convert an operations SOP (any domain — DBA runbooks, infra proce
 
 ## 輸入 / 輸出 / 語言
 
-- 輸入：SOP 檔案路徑（`$ARGUMENTS` 或使用者指定；檔案不存在就停下問，不要猜路徑）
+- 輸入：SOP 檔案路徑（`$ARGUMENTS` 或使用者指定；檔案不存在就停下問，不要猜路徑）。
+  SOP 由不懂技術的人（PM）寫的 → 先請他照 [references/sop-authoring-guide.md](references/sop-authoring-guide.md)
+  ＋空白骨架 [references/sop-template.md](references/sop-template.md) 填，SOP 品質夠了再轉 spec
 - 輸出：`specs/<sop-slug>-api.spec.md`（`specs/` = SOP 所在 repo 根下，不存在就建）；
   `<sop-slug>` = SOP 檔名去副檔名
 - 語言：spec 跟 SOP 同語言（審批者讀 SOP 的語言 = 讀得懂 Part A 的語言）；拿不準就問使用者。
   所有「照抄」素材（模板區塊、盲審/實作 spawn prompt、REVIEWS.md 表頭）**可整塊翻譯成
   spec 語言**（翻譯 ≠ 改寫；不得增刪條目、改順序、改語意）
 
-**產 spec 途中發現 SOP 缺資訊**（沒有錯誤碼表、回退步驟不明…）：能問使用者就問；
-不能問就在 spec 開頭「未決事項」節列出假設與依據 —— 但 irreversible 操作的關鍵參數
+**產 spec 途中發現 SOP 缺資訊**（沒有錯誤碼表、回退步驟不明…）：先分辨缺的是哪種——
+**業務判斷**（危險分級、失敗處理、成功判準）只有寫 SOP 的人知道 → 回
+[references/sop-authoring-guide.md](references/sop-authoring-guide.md) 的對應欄請他補；
+**系統機械面**（登入、格式驗證、冪等、並發、None 行為）→ 照 §0 自補，不必回問 PM。
+能問使用者就問；不能問就在 spec 開頭「未決事項」節列出假設與依據 —— 但 irreversible 操作的關鍵參數
 （confirm 條件、審批要求）**不得自行發明**，一律留在未決事項等人補。未決事項的
 **暫行假設一律取更嚴的方向**（審計/防護寧多勿少，例：SOP 說「變更單號必填」但範圍
 不明 → 暫行值 = 全部 mutation 必填，等人放寬）。
