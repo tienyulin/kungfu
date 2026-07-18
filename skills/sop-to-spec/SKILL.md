@@ -54,7 +54,7 @@ description: Convert an operations SOP (any domain — DBA runbooks, infra proce
 ## SOP 範圍慣例（一份 SOP = 一組 API = 一份 spec）
 
 拆分權在 **SOP 作者**，不在本 skill：同一組的 API（例如同一個東西的增刪查改）寫在
-同一份 SOP、每隻 API 各自一塊（塊內的 precheck→execute→postcheck 才是該 API 的步驟）；
+同一份 SOP、每隻 API 各自一塊（塊內自帶該 API 的依序步驟，每步可有前後確認）；
 不同組的另開一份 SOP（見
 [references/sop-authoring-guide.md](references/sop-authoring-guide.md)）。本 skill 照收：
 一份 SOP 產一份 spec，SOP 裡幾隻 API 就幾組端點，**不自行拆分**。
