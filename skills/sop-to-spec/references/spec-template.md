@@ -1,6 +1,6 @@
 # Spec 模板
 
-產出檔：`specs/<sop-slug>-api.spec.md`，結構 = Part A（審批者）＋ Part B（實作 agent）。
+產出檔：見 SKILL.md「輸入 / 輸出 / 語言」（`docs/specs/<組名>/<sop-slug>-api.spec.md`，非新佈局退回 `specs/`），結構 = Part A（審批者）＋ Part B（實作 agent）。
 **先寫 Part A** —— 寫不出白話摘要代表你還沒讀懂 SOP。
 
 **怎麼用這份模板**：標了「照抄」的區塊逐字複製進 spec；其餘各節照結構與要求填入

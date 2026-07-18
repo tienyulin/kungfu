@@ -51,9 +51,9 @@ Part A 那節答不出 = Part A 不合格，與 HIGH 同級處理。
   **重新 spawn 全新盲審員**再審一輪，通過前不准開工
 - 只有成立的 MED → 修進 spec 才開工，不強制重審
 - LOW 選修
-- 全部發現與處置記入 `specs/REVIEWS.md`
+- 全部發現與處置記入 **spec 同資料夾**的 `REVIEWS.md`（例 `docs/specs/<組名>/REVIEWS.md`）
 
-### `specs/REVIEWS.md` 格式（沒有就建檔，每輪 append 一節）
+### `REVIEWS.md` 格式（沒有就建檔，每輪 append 一節）
 
 ```markdown
 ## <spec-slug> — 盲審第 <n> 輪（<日期>）
@@ -76,4 +76,4 @@ Part A 那節答不出 = Part A 不合格，與 HIGH 同級處理。
 | spec 產出沒照模板 | 重產 spec 該節 |
 | 純 code bug | 修 code ＋ 補 AC 對應測試 |
 
-修完重跑 Step 4；重大修改重跑 Step 5。全程記 `specs/REVIEWS.md`（歸因也 append 成一節）。
+修完重跑 Step 4；重大修改重跑 Step 5。全程記 spec 同資料夾的 `REVIEWS.md`（歸因也 append 成一節）。
