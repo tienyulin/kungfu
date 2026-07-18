@@ -10,6 +10,7 @@ description: Convert an operations SOP (any domain — DBA runbooks, infra proce
 
 ```
 進度：
+- [ ] Step 0 範圍判定（單 API 或拆分；拆分提案經使用者確認一次）
 - [ ] Step 1 萃取五清單（草稿）
 - [ ] Step 2 風險分級表
 - [ ] Step 3 spec 寫完（先 Part A 後 Part B；照抄區塊逐字；逼問清單每題每端點過完）
@@ -37,7 +38,8 @@ description: Convert an operations SOP (any domain — DBA runbooks, infra proce
   SOP 由不懂技術的人（PM）寫的 → 先請他照 [references/sop-authoring-guide.md](references/sop-authoring-guide.md)
   ＋空白骨架 [references/sop-template.md](references/sop-template.md) 填，SOP 品質夠了再轉 spec
 - 輸出：`specs/<sop-slug>-api.spec.md`（`specs/` = SOP 所在 repo 根下，不存在就建）；
-  `<sop-slug>` = SOP 檔名去副檔名
+  `<sop-slug>` = SOP 檔名去副檔名。Step 0 判定拆成多個 API 時，每個各一份
+  `specs/<sop-slug>-<子名>-api.spec.md`（`<子名>` = 該 API 動的資源，如 `account`、`order`）
 - 語言：spec 跟 SOP 同語言（審批者讀 SOP 的語言 = 讀得懂 Part A 的語言）；拿不準就問使用者。
   所有「照抄」素材（模板區塊、盲審/實作 spawn prompt、REVIEWS.md 表頭）**可整塊翻譯成
   spec 語言**（翻譯 ≠ 改寫；不得增刪條目、改順序、改語意）
@@ -51,10 +53,32 @@ description: Convert an operations SOP (any domain — DBA runbooks, infra proce
 **暫行假設一律取更嚴的方向**（審計/防護寧多勿少，例：SOP 說「變更單號必填」但範圍
 不明 → 暫行值 = 全部 mutation 必填，等人放寬）。
 
-## 流程（六步，依序）
+## Step 0 — 範圍判定（拆不拆 API）
+
+SOP 可能是 project 級的大文件（好幾個主題混在一起）。**拆 API 不是 PM 的活**——他只負責
+把動作全列出來；怎麼拆由本 skill 判斷、使用者確認。
+
+1. 讀完 SOP，把動作按**操作的資源/實體**分群：動同一個實體、共用同一組狀態 = 同一群；
+   不同實體、不同生命週期、不同受眾 = 分開。
+2. 只有一群 → 單 spec，直接進 Step 1，本步不用問。
+3. 多群 → 列拆分提案表，**問使用者一次**（確認後圈內不再問）：
+
+   | 提議的 API | 涵蓋哪些步驟 | 理由 |
+   |---|---|---|
+   | account-api | 步驟 1,2,5 | 都在動「帳號」 |
+   | order-api   | 步驟 3,4   | 都在動「訂單」 |
+
+4. 灰色地帶（同一個實體但兩種受眾/風險域）→ **預設不拆**（少 service 少事），提案表附
+   一句「也可拆，你選」。
+5. 確認後每個 API **各產一份 spec、各自跑 Step 1–5（含各自盲審）**。跨 API 依賴
+   （例：刪帳號前要查訂單）→ 在各 spec 的未決事項或介面節**明寫**「呼叫另一 API」或
+   「由呼叫端保證」，不准隱式假設另一 API 的行為。
+
+## 流程（Step 0–6，依序）
 
 | Step | 做什麼 | 細節 |
 |------|--------|------|
+| 0 範圍判定 | 動作按資源分群 → 單 API 直進；多群列提案表問使用者一次 | 上節 |
 | 1 萃取 | 讀 SOP 列五張清單：查詢類→GET、變更類→POST/PUT/PATCH/DELETE（依語意）、前置條件、錯誤對照表、審計欄位。清單是工作草稿，不進 spec | — |
 | 2 風險分級 | 每個操作分 `read` / `reversible` / `irreversible`（SOP 有「警告/需審批/無法復原」→ 一律 irreversible） | [references/spec-template.md](references/spec-template.md) §風險分級 |
 | 3 產 spec | 先寫 Part A（給人），再照模板填 Part B（給 agent），逐端點過完逼問清單 | 模板：[references/spec-template.md](references/spec-template.md)；逼問清單：[references/checklists.md](references/checklists.md) |
