@@ -24,7 +24,9 @@
 - [ ] 每條 AC 可單獨驗證（確切輸入、HTTP code、欄位值）
 - [ ] 每端點 happy/edge/failure 三類 AC 都有
 - [ ] 逼問清單每題每端點都有對應 AC
-- [ ] **fresh-repo 測試**：任何「比照/見/沿用」指向 spec 外（SOP 編號除外）→ inline
+- [ ] **fresh-repo 測試**：任何「比照/見/沿用」指向 spec 外（SOP 編號除外）→ inline。
+      **同組其他 spec 也算 spec 外**——全文 grep「同 <另一份名>」「見另一份」這類字樣，
+      有就把內容 inline 進來
 - [ ] mock 初始狀態足以跑完測試計畫全部案例
 
 ## 盲審閘門（Step 5）
