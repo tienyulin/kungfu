@@ -96,6 +96,10 @@ dry_run 的走法（照抄進 spec）：
 {"success": bool, "detail"?: str, "error_code"?: str, "dry_run": bool, ...端點專屬欄位}
 ```
 
+「端點專屬欄位」＝該端點自己要回的業務資料（查詢類的清單、變更類的結果欄位），
+由各 spec §1/§3 定義，**與信封欄位平鋪同一層**，不另包一層。例：
+`{"success": true, "items": [...], "query_timestamp": "..."}`。
+
 - `success` 永遠出現。
 - `dry_run` 欄位**只在試算回應（dry_run=true）出現**；真執行的回應不回傳這個欄位。
 - 失敗（試算沒過、被擋、錯誤——含統一 exception handler）→ `success:false`＋`detail`＋
