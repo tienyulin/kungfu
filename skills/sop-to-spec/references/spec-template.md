@@ -86,41 +86,41 @@ SOP 全是 reversible 就用 reversible 示範，不要硬升級成不可逆）
 
 dry_run 的走法（照抄進 spec）：
 - `dry_run=true`：跑 1–3（404 照常擲出）→ 閘門 5 檢查**依序評估**，第一個沒過的 →
-  對應 HTTP 碼＋error 信封（`error.code`=該檢查的碼）；全過 → 2xx 成功信封，
-  `data.dry_run=true`。不進閘門 4、不執行。
+  對應 HTTP 碼＋error 物件（`error.status`=該檢查的碼）；全過 → 2xx 裸資源回應，
+  含 `"dry_run": true`。不進閘門 4、不執行。
 - `dry_run=false`：reversible 過 1–3、5 後直接執行（閘門 4 只管 irreversible）；
   irreversible 過 1–3 後先過閘門 4 再 5、6。
 
-**統一 response 形狀**（照抄進 spec；兩種信封，禁止其他頂層鍵、禁止巢狀 checks）：
+**統一 response 形狀**（照抄進 spec；Google API 風格——成功裸資源、失敗單一 error 鍵）：
 
-HTTP 2xx（成功，含 dry_run 通過）：
-
-```json
-{
-  "status": "success",
-  "code": "<動作完成碼，SCREAMING_SNAKE，例 RESTORE_COMPLETED>",
-  "message": "<白話一句>",
-  "data": { ...端點業務資料（查詢類的清單、變更類的結果欄位，由各 spec §1/§3 定義） }
-}
-```
+HTTP 2xx（成功，含 dry_run 通過）：**沒有信封**，直接回資源內容。
+- 單一資源／操作結果 → 平鋪該端點的業務欄位（由各 spec §1/§3 定義）。
+- 清單 → 複數名詞當 key 裝陣列，需要分頁時搭 `nextPageToken`：
+  `{"<複數名詞>": [ {...}, ... ], "nextPageToken"?: str}`。
+- 試算回應含 `"dry_run": true` 欄位；真執行的回應**不帶**這個欄位。
 
 HTTP 4xx/5xx（被擋、驗證失敗、錯誤——統一 exception handler 產出）：
+根目錄**只有一個 `error` 鍵**，內部固定四欄位：
 
 ```json
 {
   "error": {
-    "code": "<錯誤碼，SCREAMING_SNAKE，例 NAME_CONFLICT>",
-    "message": "<白話一句>",
-    "detail": "<字串原因；422 驗證失敗改用逐欄位物件 {欄位: 原因}>"
+    "code": <HTTP 狀態碼數字，例 409>,
+    "message": "<白話簡述>",
+    "status": "<大寫錯誤狀態字，例 NAME_CONFLICT / PERMISSION_DENIED / INVALID_ARGUMENT>",
+    "details": [ <更具體的細節物件，可為空陣列> ]
   }
 }
 ```
 
-- 試算回應在 `data` 內含 `"dry_run": true`；真執行的 `data` 不帶這個鍵。
+`details` 的兩種標準形（照情況選用）：
+- 參數驗證失敗（400/422）→ `[{"fieldViolations": [{"field": "<欄位>", "description": "<原因>"}]}]`
+- 其他 → `[{"reason": "<機器可讀原因>", "metadata": {<補充鍵值>}}]`，沒有可補充的就給 `[]`
+
 - 前置條件仍編號 `PC-<n>`（供 §6 錯誤表與 AC 引用），response 不回逐條結果——
-  dry_run 失敗回**第一個沒過的** PC 對應的 `error.code`。
-- `code` 值域＝§6 錯誤表的 error_code 欄（成功碼另於各端點 AC 宣告）；SOP 沒給碼的
-  自編並在 §6 宣告，spec 內一致。
+  dry_run 失敗回**第一個沒過的** PC 對應的 `error.status`。
+- `error.status` 值域＝§6 錯誤表的 error_code 欄；SOP 沒給碼的自編（SCREAMING_SNAKE）
+  並在 §6 宣告，spec 內一致。`error.code` 一律等於 HTTP 狀態碼。
 
 **全域型別約定**：時間欄位一律 ISO8601 秒精度 naive UTC；bool 欄位永遠出現；
 比較性詞彙（最新、之內）給可計算定義含平手規則。
