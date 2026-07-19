@@ -90,9 +90,16 @@ dry_run 的走法（照抄進 spec）：
 - `dry_run=false`：reversible 過 1–3、5 後直接執行（閘門 4 只管 irreversible）；
   irreversible 過 1–3 後先過閘門 4 再 5、6。
 
-#### 統一 response 形狀（照抄進 spec）
+#### 統一 response 形狀
 
-HTTP 2xx（成功，含 dry_run 通過）：**沒有信封**，直接回資源內容。
+**先選版**（寫 spec 前判定一次）：
+- **既有專案**（目標 repo 已有 API 回傳慣例——看現有 endpoints、openapi、README）→
+  **照舊格式**，把該格式完整定義進本節取代預設（例：既有慣例是
+  `{"success": bool, "detail": <內容>}` 就照它寫死）。跟著舊格式是為了同一專案
+  內一致；spec 仍要把形狀逐欄位寫死，維持零猜測。
+- **全新專案／repo 無既有慣例** → 用下面的預設（照抄進 spec）。
+
+預設——HTTP 2xx（成功，含 dry_run 通過）：**沒有信封**，直接回資源內容。
 - 單一資源／操作結果 → 平鋪該端點的業務欄位（欄位由 §1/§3 定義）。
 - 清單 → 複數名詞當 key 裝陣列，需要分頁時搭 `nextPageToken`：
   `{"<複數名詞>": [ {...}, ... ], "nextPageToken"?: str}`。
