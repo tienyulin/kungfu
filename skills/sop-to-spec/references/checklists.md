@@ -24,8 +24,15 @@
 - [ ] 每條 AC 可單獨驗證（確切輸入、HTTP code、欄位值）
 - [ ] 每端點 happy/edge/failure 三類 AC 都有
 - [ ] 逼問清單每題每端點都有對應 AC
-- [ ] **fresh-repo 測試**：任何「比照/見/沿用」指向 spec 外（SOP 編號除外）→ inline
-- [ ] mock 初始狀態足以跑完測試計畫全部案例
+- [ ] **fresh-repo 測試**：任何「比照/見/沿用」指向 spec 外（SOP 編號除外）→ inline。
+      **同組其他 spec 也算 spec 外**——全文 grep「同 <另一份名>」「見另一份」這類字樣，
+      有就把內容 inline 進來
+- [ ] **mock↔AC 推演**：逐條 AC 拿 §4 mock 初始狀態手動推演 response，與 AC 期望輸出
+      逐欄比對（筆數、排序、欄位值）。推演不合＝spec bug——改 mock、改 AC，或在 AC
+      明寫 fixture 注入。不推演就打勾＝假勾（實測最常見的假勾就是這格）
+- [ ] **矛盾掃描**（grep 全文）：「dev 模式」每一處語意與閘門區塊一致（只免閘門 1）；
+      §7 寫入時機不得出現「包括 401」「401 要留」類矛盾句；不得殘留未定案語
+      （「或另外」「待補」「下面補到」「TBD」）
 
 ## 盲審閘門（Step 5）
 
@@ -51,9 +58,9 @@ Part A 那節答不出 = Part A 不合格，與 HIGH 同級處理。
   **重新 spawn 全新盲審員**再審一輪，通過前不准開工
 - 只有成立的 MED → 修進 spec 才開工，不強制重審
 - LOW 選修
-- 全部發現與處置記入 `specs/REVIEWS.md`
+- 全部發現與處置記入 **spec 同資料夾**的 `REVIEWS.md`（例 `docs/specs/<組名>/REVIEWS.md`）
 
-### `specs/REVIEWS.md` 格式（沒有就建檔，每輪 append 一節）
+### `REVIEWS.md` 格式（沒有就建檔，每輪 append 一節）
 
 ```markdown
 ## <spec-slug> — 盲審第 <n> 輪（<日期>）
@@ -76,4 +83,4 @@ Part A 那節答不出 = Part A 不合格，與 HIGH 同級處理。
 | spec 產出沒照模板 | 重產 spec 該節 |
 | 純 code bug | 修 code ＋ 補 AC 對應測試 |
 
-修完重跑 Step 4；重大修改重跑 Step 5。全程記 `specs/REVIEWS.md`（歸因也 append 成一節）。
+修完重跑 Step 4；重大修改重跑 Step 5。全程記 spec 同資料夾的 `REVIEWS.md`（歸因也 append 成一節）。

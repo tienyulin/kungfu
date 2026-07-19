@@ -10,6 +10,7 @@ description: Convert an operations SOP (any domain — DBA runbooks, infra proce
 
 ```
 進度：
+- [ ] Step 0 SOP 合格檢查（不合格 → 停，轉介 sop-author）
 - [ ] Step 1 萃取五清單（草稿）
 - [ ] Step 2 風險分級表
 - [ ] Step 3 spec 寫完（先 Part A 後 Part B；照抄區塊逐字；逼問清單每題每端點過完）
@@ -33,28 +34,55 @@ description: Convert an operations SOP (any domain — DBA runbooks, infra proce
 
 ## 輸入 / 輸出 / 語言
 
-- 輸入：SOP 檔案路徑（`$ARGUMENTS` 或使用者指定；檔案不存在就停下問，不要猜路徑）
-- 輸出：`specs/<sop-slug>-api.spec.md`（`specs/` = SOP 所在 repo 根下，不存在就建）；
-  `<sop-slug>` = SOP 檔名去副檔名
+- 輸入：SOP 檔案路徑，或 `docs/sops/<組名>/` 資料夾（＝對裡面每份 SOP 檔各產一份 spec，
+  逐檔跑完整流程）。`$ARGUMENTS` 或使用者指定；路徑不存在就停下問，不要猜。
+  **本 skill 只收合格 SOP**（Step 0 檢查）；使用者只有粗略需求或不合規文件 →
+  用 `sop-author` skill 先訪談產出合規 SOP，再回來轉 spec。
+- 輸出：SOP 在 `docs/sops/<組名>/<sop-slug>.md` → spec 鏡像放
+  `docs/specs/<組名>/<sop-slug>-api.spec.md`（資料夾不存在就建）；
+  SOP 不在此佈局下 → 退回舊慣例 `specs/<sop-slug>-api.spec.md`（repo 根下）。
+  `<sop-slug>` = SOP 檔名去副檔名。**一份 SOP 檔 = 一份 spec**
 - 語言：spec 跟 SOP 同語言（審批者讀 SOP 的語言 = 讀得懂 Part A 的語言）；拿不準就問使用者。
   所有「照抄」素材（模板區塊、盲審/實作 spawn prompt、REVIEWS.md 表頭）**可整塊翻譯成
   spec 語言**（翻譯 ≠ 改寫；不得增刪條目、改順序、改語意）
 
-**產 spec 途中發現 SOP 缺資訊**（沒有錯誤碼表、回退步驟不明…）：能問使用者就問；
-不能問就在 spec 開頭「未決事項」節列出假設與依據 —— 但 irreversible 操作的關鍵參數
+**產 spec 途中發現 SOP 缺資訊**（沒有錯誤碼表、回退步驟不明…）：先分辨缺的是哪種——
+**業務判斷**（危險分級、失敗處理、成功判準）只有寫 SOP 的人知道 → 回
+[references/sop-authoring-guide.md](references/sop-authoring-guide.md) 的對應欄請他補；
+**系統機械面**（登入、格式驗證、冪等、並發、None 行為）→ 照 §0 自補，不必回問 PM。
+能問使用者就問；不能問就在 spec 開頭「未決事項」節列出假設與依據 —— 但 irreversible 操作的關鍵參數
 （confirm 條件、審批要求）**不得自行發明**，一律留在未決事項等人補。未決事項的
 **暫行假設一律取更嚴的方向**（審計/防護寧多勿少，例：SOP 說「變更單號必填」但範圍
 不明 → 暫行值 = 全部 mutation 必填，等人放寬）。
+
+## 檔案佈局慣例（一檔一 API，資料夾分組）
+
+拆分權在 **SOP 作者**，不在本 skill。作者按
+[references/sop-authoring-guide.md](references/sop-authoring-guide.md) 佈局：
+`<專案>/docs/sops/<組名>/<api>.md`（組名作者自取，如 `account`、`inventory`；
+同組的 API 各一份檔放同資料夾）。**一份 SOP 檔 = 一隻 API = 一份 spec**，
+spec 鏡像放 `docs/specs/<組名>/<api>-api.spec.md`。本 skill 不自行拆分或合併；
+一份 SOP 檔裡混了多隻不相干的 API → 停下來建議作者按 guide 拆檔，堅持不拆就照單份做。
+
+## Step 0 — SOP 合格檢查（轉 spec 前的門檻）
+
+逐份 SOP 檢查**必要節**是否都在且非空：做什麼、誰可以用、輸入（或明寫「無」）、輸出、
+步驟（每步有「怎麼做」）、可能出什麼錯、測試例子。
+- 全齊 → 進 Step 1。
+- 缺任何一節、或內容明顯只是幾句粗略描述 → **停**，回報缺哪些節，請使用者用
+  `sop-author` skill 訪談補完（不要自己代填、也不要硬轉——缺的節會變成 spec 的
+  未定義行為，最後全是盲審 HIGH）。使用者明確堅持照現狀轉 → 照轉，缺的全部進
+  spec「未決事項」。
 
 ## 流程（六步，依序）
 
 | Step | 做什麼 | 細節 |
 |------|--------|------|
-| 1 萃取 | 讀 SOP 列五張清單：查詢類→GET、變更類→POST/PUT/PATCH/DELETE（依語意）、前置條件、錯誤對照表、審計欄位。清單是工作草稿，不進 spec | — |
-| 2 風險分級 | 每個操作分 `read` / `reversible` / `irreversible`（SOP 有「警告/需審批/無法復原」→ 一律 irreversible） | [references/spec-template.md](references/spec-template.md) §風險分級 |
+| 1 萃取 | 讀 SOP 列五張清單：查詢類→GET、變更類→POST/PUT/PATCH/DELETE（依語意）、前置條件、錯誤對照表、審計欄位（SOP 通常不寫紀錄需求——沒寫就用 spec 模板 §7 的預設欄位；SOP 有特殊要求才照抄）。清單是工作草稿，不進 spec。順手檢查 SOP **前後矛盾**（例：輸入限制「必須正整數」vs 步驟「可用負數」）→ 有就回報請作者修，不要自行擇一 | — |
+| 2 風險分級 | **機械判定，不准推理**：先讀 SOP「做了之後能復原嗎」節——寫「能」→ `reversible`，寫「不能/回不去」→ `irreversible`，**照抄該節結論，禁止以任何「從嚴」理由升級**（升級=發明 SOP 沒要的 confirm/審批流程，兩頭皆錯）。SOP 無此節才用模板判定規則（「警告/需審批/無法復原」字樣 → irreversible）。純查詢 → `read` | [references/spec-template.md](references/spec-template.md) §風險分級 |
 | 3 產 spec | 先寫 Part A（給人），再照模板填 Part B（給 agent），逐端點過完逼問清單 | 模板：[references/spec-template.md](references/spec-template.md)；逼問清單：[references/checklists.md](references/checklists.md) |
 | 4 自檢 | 跑完自檢清單（含 fresh-repo 測試、Part A 白話測試） | [references/checklists.md](references/checklists.md) |
-| 5 盲審閘門 | 用 subagent 機制 spawn 一個乾淨 context 的 subagent 盲審 spec（完整 prompt 與隔離規則見 checklists）；**HIGH > 0 不准寫 code**；發現與處置記入 `specs/REVIEWS.md`（格式見 checklists） | [references/checklists.md](references/checklists.md) |
+| 5 盲審閘門 | 用 subagent 機制 spawn 一個乾淨 context 的 subagent 盲審 spec（完整 prompt 與隔離規則見 checklists）；**HIGH > 0 不准寫 code**；發現與處置記入 spec 同資料夾的 `REVIEWS.md`（格式見 checklists） | [references/checklists.md](references/checklists.md) |
 | 6 實作回饋 | 實作階段發現缺陷 → 歸因（SOP/skill/spec/code）修對應層，不是只修 code | [references/checklists.md](references/checklists.md) §歸因表 |
 
 ## 本 skill 的邊界

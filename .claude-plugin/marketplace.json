@@ -47,6 +47,25 @@
       ]
     },
     {
+      "name": "sop-author",
+      "source": "./",
+      "strict": false,
+      "description": "Interview a PM to turn a rough feature request or non-conforming document into a template-conforming SOP (one file per API under docs/sops/<group>/), ready for sop-to-spec. Never invents business rules — unanswered questions are marked as assumptions.",
+      "author": {
+        "name": "tienyulin"
+      },
+      "keywords": [
+        "sop",
+        "interview",
+        "requirements",
+        "pm"
+      ],
+      "category": "workflow",
+      "skills": [
+        "./skills/sop-author"
+      ]
+    },
+    {
       "name": "skill-author",
       "source": "./",
       "strict": false,
@@ -282,6 +301,7 @@
       "skills": [
         "./skills/wiki-doc-author",
         "./skills/sop-to-spec",
+        "./skills/sop-author",
         "./skills/skill-author",
         "./skills/dev-api-template",
         "./skills/dev-bugfix",
