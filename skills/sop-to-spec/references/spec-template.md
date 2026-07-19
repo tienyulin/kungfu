@@ -90,20 +90,19 @@ dry_run 的走法（照抄進 spec）：
 - `dry_run=false`：reversible 過 1–3、5 後直接執行（閘門 4 只管 irreversible）；
   irreversible 過 1–3 後先過閘門 4 再 5、6。
 
-**統一 response 形狀**（照抄進 spec；扁平單層，禁止巢狀 checks 物件）：
+**統一 response 形狀**（照抄進 spec；信封固定四鍵，禁止巢狀 checks、禁止平鋪額外頂層鍵）：
 
 ```json
-{"success": bool, "detail"?: str, "error_code"?: str, "dry_run": bool, ...端點專屬欄位}
+{"success": bool, "detail"?: <物件或字串>, "error_code"?: str, "dry_run": bool}
 ```
 
-「端點專屬欄位」＝該端點自己要回的業務資料（查詢類的清單、變更類的結果欄位），
-由各 spec §1/§3 定義，**與信封欄位平鋪同一層**，不另包一層。例：
-`{"success": true, "items": [...], "query_timestamp": "..."}`。
-
 - `success` 永遠出現。
+- `detail` 裝內容：**成功 → 端點的業務資料（物件**，查詢類的清單、變更類的結果欄位，
+  由各 spec §1/§3 定義其內部欄位）；**失敗 → 人類可讀原因（字串）**。
+  例：成功 `{"success": true, "detail": {"items": [...], "query_timestamp": "..."}}`；
+  失敗 `{"success": false, "detail": "撞名，請指定新名字", "error_code": "NAME_CONFLICT"}`。
+- `error_code` 只在失敗時出現（SOP 沒給碼則 null）。
 - `dry_run` 欄位**只在試算回應（dry_run=true）出現**；真執行的回應不回傳這個欄位。
-- 失敗（試算沒過、被擋、錯誤——含統一 exception handler）→ `success:false`＋`detail`＋
-  `error_code`（SOP 沒給碼則 null）；成功時兩者省略（exclude_none）。
 - 前置條件仍編號 `PC-<n>`（供 §6 錯誤表與 AC 引用），但 response 不回逐條結果——
   dry_run 失敗回**第一個沒過的** PC 的 error_code。
 
