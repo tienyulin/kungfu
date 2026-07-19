@@ -127,7 +127,14 @@ spec 裡直接寫展開後的字面值。
 **權限（SOP 有「誰可以用＋強制擋」時必寫，不得蒸發成未決）**：SOP 明定角色清單且要求
 強制擋 → spec 必須定義 **403 行為**（error_code、AC、audit 記 rejected），列在閘門 1 之後
 （1b）；dev 模式只免 API key，**403 角色檢查照常**。角色**怎麼取得/驗證**的正式機制可列
-未決事項（暫行：header 比對），但「非授權 → 403」這個行為本身是 SOP 需求，必須進 AC。
+未決事項，但「非授權 → 403」這個行為本身是 SOP 需求，必須進 AC。
+
+**暫行身分/角色約定（照抄進 spec，別每份重新發明）**：
+- 操作者身分（審計 actor 唯一來源）＝header `X-Operator`：字串、`str.strip()` 後 1–128 字元，
+  缺席或 strip 後為空 → 記字面值 `"unknown"`
+- 角色檢查用**獨立** header（例 `X-Operator-Role`），比對規則**逐字、區分大小寫**，
+  缺席＝未授權 → 403。身分與角色是兩個 header，不得混用
+- 兩者的正式機制（SSO/LDAP/gateway）一律列未決事項
 
 **同步模型與並發**：明寫 sync/202 與理由、並發防護（狀態機擋 or 「未防護＋風險說明」）、
 冪等行為、**執行中途失敗語意**（外部系統在執行/輪詢途中斷線或逾時：回什麼 HTTP、
@@ -190,6 +197,9 @@ delay/retry 類環境變數的 0 值（setdefault 不覆蓋外部指定；驗證
 時間格式至少一條斷言（回應時間戳無微秒、無時區後綴，對齊 §0 秒精度）。
 **失敗案例（503/504）的測法**：測試以 monkeypatch 把 repository/provider 換成擲
 `InfraError(...)` 的假物件——「mock 模式測不到連線失敗/逾時」是誤解，不得留空殼測試。
+**測試也不依賴 cwd**：conftest 把服務根目錄插進 `sys.path`（`Path(__file__).parent.parent`），
+從 repo 根或服務目錄跑都要綠；同 repo 多個服務時 pytest 用 `--import-mode=importlib`
+並在 conftest 處理同名頂層模組（main/models/service/repository）的 sys.modules 衝突。
 
 ### §9 Out of Scope
 SOP 不自動化步驟 ＋ 原因 ＋ API 替代支援（與 Part A5 一致，這裡可帶技術細節）。
