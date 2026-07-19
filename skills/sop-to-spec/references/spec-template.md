@@ -86,25 +86,41 @@ SOP 全是 reversible 就用 reversible 示範，不要硬升級成不可逆）
 
 dry_run 的走法（照抄進 spec）：
 - `dry_run=true`：跑 1–3（404 照常擲出）→ 閘門 5 檢查**依序評估**，第一個沒過的 →
-  `success:false`＋該檢查的 error_code；全過 → `success:true`。不進閘門 4、不執行。
+  對應 HTTP 碼＋error 信封（`error.code`=該檢查的碼）；全過 → 2xx 成功信封，
+  `data.dry_run=true`。不進閘門 4、不執行。
 - `dry_run=false`：reversible 過 1–3、5 後直接執行（閘門 4 只管 irreversible）；
   irreversible 過 1–3 後先過閘門 4 再 5、6。
 
-**統一 response 形狀**（照抄進 spec；信封固定四鍵，禁止巢狀 checks、禁止平鋪額外頂層鍵）：
+**統一 response 形狀**（照抄進 spec；兩種信封，禁止其他頂層鍵、禁止巢狀 checks）：
+
+HTTP 2xx（成功，含 dry_run 通過）：
 
 ```json
-{"success": bool, "detail"?: <物件或字串>, "error_code"?: str, "dry_run": bool}
+{
+  "status": "success",
+  "code": "<動作完成碼，SCREAMING_SNAKE，例 RESTORE_COMPLETED>",
+  "message": "<白話一句>",
+  "data": { ...端點業務資料（查詢類的清單、變更類的結果欄位，由各 spec §1/§3 定義） }
+}
 ```
 
-- `success` 永遠出現。
-- `detail` 裝內容：**成功 → 端點的業務資料（物件**，查詢類的清單、變更類的結果欄位，
-  由各 spec §1/§3 定義其內部欄位）；**失敗 → 人類可讀原因（字串）**。
-  例：成功 `{"success": true, "detail": {"items": [...], "query_timestamp": "..."}}`；
-  失敗 `{"success": false, "detail": "撞名，請指定新名字", "error_code": "NAME_CONFLICT"}`。
-- `error_code` 只在失敗時出現（SOP 沒給碼則 null）。
-- `dry_run` 欄位**只在試算回應（dry_run=true）出現**；真執行的回應不回傳這個欄位。
-- 前置條件仍編號 `PC-<n>`（供 §6 錯誤表與 AC 引用），但 response 不回逐條結果——
-  dry_run 失敗回**第一個沒過的** PC 的 error_code。
+HTTP 4xx/5xx（被擋、驗證失敗、錯誤——統一 exception handler 產出）：
+
+```json
+{
+  "error": {
+    "code": "<錯誤碼，SCREAMING_SNAKE，例 NAME_CONFLICT>",
+    "message": "<白話一句>",
+    "detail": "<字串原因；422 驗證失敗改用逐欄位物件 {欄位: 原因}>"
+  }
+}
+```
+
+- 試算回應在 `data` 內含 `"dry_run": true`；真執行的 `data` 不帶這個鍵。
+- 前置條件仍編號 `PC-<n>`（供 §6 錯誤表與 AC 引用），response 不回逐條結果——
+  dry_run 失敗回**第一個沒過的** PC 對應的 `error.code`。
+- `code` 值域＝§6 錯誤表的 error_code 欄（成功碼另於各端點 AC 宣告）；SOP 沒給碼的
+  自編並在 §6 宣告，spec 內一致。
 
 **全域型別約定**：時間欄位一律 ISO8601 秒精度 naive UTC；bool 欄位永遠出現；
 比較性詞彙（最新、之內）給可計算定義含平手規則。
