@@ -85,24 +85,23 @@ SOP 全是 reversible 就用 reversible 示範，不要硬升級成不可逆）
 ```
 
 dry_run 的走法（照抄進 spec）：
-- `dry_run=true`：跑 1–3（404 照常擲出）→ 閘門 5 全部檢查改「收集不擲出」填進
-  `checks` → 不進閘門 4、不執行。
+- `dry_run=true`：跑 1–3（404 照常擲出）→ 閘門 5 檢查**依序評估**，第一個沒過的 →
+  `success:false`＋該檢查的 error_code；全過 → `success:true`。不進閘門 4、不執行。
 - `dry_run=false`：reversible 過 1–3、5 後直接執行（閘門 4 只管 irreversible）；
   irreversible 過 1–3 後先過閘門 4 再 5、6。
 
-**統一 response 形狀**（照抄進 spec）：
+**統一 response 形狀**（照抄進 spec；扁平單層，禁止巢狀 checks 物件）：
 
 ```json
-// dry_run=true：
-{"dry_run": true,
- "checks": {"<條件名>": {"ok": bool, "detail"?: str, "error_code"?: str}},
- ...端點唯讀附加欄位}
-// dry_run=false 成功：{"dry_run": false, ...端點專屬欄位}
-// 錯誤（統一 exception handler）：{"detail": str, "error_code": str|null}
+{"success": bool, "detail"?: str, "error_code"?: str, "dry_run": bool, ...端點專屬欄位}
 ```
 
-`checks` 鍵名慣例：`PC-<n>_<snake_case 短名>`（例 `PC-1_quorum`），每端點在其
-response 範例中窮舉自己的鍵 —— 鍵名即測試斷言的字面值。
+- `success` 永遠出現。
+- `dry_run` 欄位**只在試算回應（dry_run=true）出現**；真執行的回應不回傳這個欄位。
+- 失敗（試算沒過、被擋、錯誤——含統一 exception handler）→ `success:false`＋`detail`＋
+  `error_code`（SOP 沒給碼則 null）；成功時兩者省略（exclude_none）。
+- 前置條件仍編號 `PC-<n>`（供 §6 錯誤表與 AC 引用），但 response 不回逐條結果——
+  dry_run 失敗回**第一個沒過的** PC 的 error_code。
 
 **全域型別約定**：時間欄位一律 ISO8601 秒精度 naive UTC；bool 欄位永遠出現；
 比較性詞彙（最新、之內）給可計算定義含平手規則。
