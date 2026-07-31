@@ -1,6 +1,6 @@
 ---
 name: doc-author
-description: 幫一個 repo 寫出「人與 AI 都讀得懂」的兩份文件 —— README.md（repo 本體：AI 讀完不用重掃 repo 就能動工的系統地圖）＋ docs/usage.md（對外使用者文件，單檔自足、可上傳文件平台）。API repo 另附 openapi.json（從 code 匯出，不手抄）。新舊專案通用。Triggers - "寫 repo 文件"、"補 README"、"寫使用文件"、"寫給 AI 看的 README"、"author docs"、"fix my openapi"、"/doc-author"。
+description: 幫一個 repo 寫出「人與 AI 都讀得懂」的兩份文件 —— README.md（門面：API/工具怎麼用，單檔自足、可上傳文件平台）＋ docs/ARCHITECTURE.md（架構文件：AI 讀完不用重掃 repo 就能動工的系統地圖）。API repo 另附 openapi.json（從 code 匯出，不手抄）。新舊專案通用。Triggers - "寫 repo 文件"、"補 README"、"寫使用文件"、"寫 architecture 文件"、"author docs"、"fix my openapi"、"/doc-author"。
 ---
 
 # doc-author
@@ -11,9 +11,9 @@ description: 幫一個 repo 寫出「人與 AI 都讀得懂」的兩份文件 �
 ```
 進度：
 - [ ] Step 1 認種類（偵察 repo，判定要產哪幾份）
-- [ ] Step 2 README.md 寫完（四卡點範本）＋ lint_anchors pass
+- [ ] Step 2 docs/ARCHITECTURE.md 寫完＋ lint_anchors pass
 - [ ] Step 3（僅 API）openapi 匯出 + completeness 乾淨
-- [ ] Step 4（僅對外元件）docs/usage.md 寫完＋自足檢查
+- [ ] Step 4（僅對外元件）README.md（使用文件）寫完＋自足檢查
 - [ ] Step 5 事實溯源自查＋回報（含待補清單）
 ```
 
@@ -29,8 +29,8 @@ description: 幫一個 repo 寫出「人與 AI 都讀得懂」的兩份文件 �
 
 | 文件 | 讀者 | 目的 | 什麼時候要 |
 |------|------|------|-----------|
-| `README.md`（repo 根） | 維護者＋**AI agent** | 讀完建立心智模型直接動工，**不用重掃 repo** | 每個 repo 都要 |
-| `docs/usage.md` | 對外使用者（call API / 用工具的人） | 單檔自足的「怎麼用」，可整份上傳文件平台 | 有對外介面才要（API / 對外 CLI）；純內部 library、純知識 repo 不用 |
+| `docs/ARCHITECTURE.md` | 維護者＋**AI agent** | 讀完建立心智模型直接動工，**不用重掃 repo** | 每個 repo 都要 |
+| `README.md`（repo 根，門面） | 對外使用者（call API / 用工具的人） | 單檔自足的「怎麼用」，可整份上傳文件平台 | 有對外介面就是主角；純內部 library／純知識 repo → README 寫簡介＋指向 ARCHITECTURE.md 即可 |
 | `openapi.json` | 使用者＋工具 | endpoint 權威細節 | 是 HTTP API 且框架能匯出才附（Step 3） |
 
 ## Step 1 — 認種類（先偵察，再決定產哪幾份）
@@ -41,17 +41,17 @@ crontab / k8s CronJob / Celery beat / CLI entrypoint → **會跑的非 API 元�
 
 | 種類 | 產出 |
 |------|------|
-| HTTP API | README ＋ usage.md ＋ openapi.json（可匯出時） |
-| cronjob / worker / CLI | README（觸發、輸入輸出、副作用寫進對應節）；CLI 有外部使用者 → 加 usage.md |
-| library / 純內部 | README 就好 |
-| 純知識 repo | README（架構節換成內容地圖：哪類知識放哪個檔） |
+| HTTP API | README（使用文件）＋ docs/ARCHITECTURE.md ＋ openapi.json（可匯出時） |
+| cronjob / worker / CLI | ARCHITECTURE.md（觸發、輸入輸出、副作用寫進對應節）；CLI 有外部使用者 → README 寫使用文件，否則 README 簡介＋指路 |
+| library / 純內部 | ARCHITECTURE.md ＋ README 簡介＋指路 |
+| 純知識 repo | ARCHITECTURE.md（架構節換成內容地圖）＋ README 簡介＋指路 |
 
-monorepo（多服務同 repo）→ 各服務目錄各自一份 README＋usage.md，root README 只做
+monorepo（多服務同 repo）→ 各服務目錄各自一份 README＋docs/ARCHITECTURE.md，root README 只做
 索引（一表：服務 → 一句話 → 路徑）。
 
-## Step 2 — README.md（repo 本體：架構為主、人與 AI 共讀）
+## Step 2 — docs/ARCHITECTURE.md（架構文件：人與 AI 共讀）
 
-**這是一份正常的工程 README**：核心是**這份 code 的架構**——分層、目錄、一個請求怎麼流過
+**這是一份正常的工程架構文件**：核心是**這份 code 的架構**——分層、目錄、一個請求怎麼流過
 系統、為什麼這樣設計。用工程師的日常用語寫（「專案結構」「設計說明」），不發明新框架、
 不用自創術語當節名。人類工程師掃著讀要能懂；AI 讀完要能不重掃 repo 就動工。
 
@@ -69,7 +69,7 @@ monorepo（多服務同 repo）→ 各服務目錄各自一份 README＋usage.md
 範本（節依序；不適用的節略去，略去要在 Step 5 回報說明）：
 
 ```markdown
-# <repo 名>
+# <repo 名> — 架構
 
 <開頭一段：這是什麼、解決什麼問題、給誰用、目前狀態。>
 
@@ -82,7 +82,7 @@ monorepo（多服務同 repo）→ 各服務目錄各自一份 README＋usage.md
 <分層與呼叫方向（例：`api/` → `service/` → `repository/`，每層一句職責）。
 一個典型請求的生命週期：進來 → 經過哪些檔案/函式 → 出去（用真實符號名）——
 **只挑一條最有代表性的走，不要每個 endpoint 各走一遍**（流程 pattern 都一樣，
-一條就夠；endpoint 清單歸 usage.md／openapi，不歸這裡）。某 endpoint 流程
+一條就夠；endpoint 清單歸 README／openapi，不歸這裡）。某 endpoint 流程
 真的不同（例：兩段式操作）→ 在設計說明用一兩句講差異，不另走全程。
 外部系統（資料庫/佇列/第三方）：用來做什麼、mock 實作在哪。>
 
@@ -101,21 +101,19 @@ monorepo（多服務同 repo）→ 各服務目錄各自一份 README＋usage.md
 操作紀錄（audit）記什麼、重要的預設值。
 「看起來奇怪但是故意的」的地方：現象＋為什麼，防後人改壞。>
 
----
-對外使用文件：`docs/usage.md`（上傳至 <平台名>）。
 <!-- 更新規則：動到目錄結構、資料流、行為規則的 PR 必須同步改本檔；scripts/lint_anchors.py 會擋失效地標 -->
 ```
 
 寫完把本 skill `scripts/lint_anchors.py` 複製到目標 repo 的 `scripts/`，跑：
 
 ```bash
-python3 scripts/lint_anchors.py README.md
+python3 scripts/lint_anchors.py docs/ARCHITECTURE.md
 ```
 
-它抽出 README 裡 backtick 的路徑與 `ENV_NAME` 字面值，逐一驗證存在於 repo——
+它抽出文件裡 backtick 的路徑與 `ENV_NAME` 字面值，逐一驗證存在於 repo——
 不存在＝地標失效＝文件過期，修到綠。**stale 地圖比沒地圖毒，freshness 靠機器擋不靠自律。**
 
-**Retrofit 既有 README**：保留既有正確內容重組進範本節，不另開新檔；
+**Retrofit**：既有 README/架構文件裡正確的內容重組進範本節（架構內容歸 ARCHITECTURE.md、使用內容留給 Step 4 的 README）；
 與 code 對不上的內容當 stale 處理（改正或刪）。
 
 ## Step 3 —（僅 HTTP API）openapi.json
@@ -130,14 +128,14 @@ python3 scripts/openapi_completeness.py openapi.json --fail
 
 紅的照 frameworks.md 的「缺口 → 回 code 修哪」表**回 code 補 summary/description/
 錯誤碼/example 再重匯**——**絕不手改 openapi.json**。匯不出來（框架不支援、要加依賴）→
-先問使用者；不匯就在 usage.md 手寫 endpoints 表（Step 4），README 契約節註明無 openapi。
+先問使用者；不匯就在 README 手寫 endpoints 表（Step 4），ARCHITECTURE.md 設計說明註明無 openapi。
 
 選配：pre-commit 接 `gen_openapi` ＋ `lint_anchors`（openapi 跟著 code 自動更新、
 地標失效擋 commit）。
 
-## Step 4 —（僅對外元件）docs/usage.md
+## Step 4 —（僅對外元件）README.md（使用文件＝repo 門面）
 
-**單檔自足**：上傳平台後使用者只看得到這一份——禁止「見 repo 某檔」「參考 README」
+**單檔自足**：這份會整份上傳文件平台，使用者只看得到這一份——禁止「見 repo 某檔」
 式引用；需要的內容直接寫進來。用字白話、用使用者會搜尋的詞、不用內部代號。三條
 容易漏的（實測 user 卡住的點）：
 - **每種輸入形式都要有範例**：參數支援兩種指定方式（例：時間戳或 SCN）就給兩個
@@ -149,7 +147,7 @@ python3 scripts/openapi_completeness.py openapi.json --fail
 範本：
 
 ```markdown
-# <服務名> 使用說明
+# <服務名>
 
 <白話 2–3 句：這能幫你做什麼、什麼情況用得到。>
 
@@ -170,9 +168,15 @@ python3 scripts/openapi_completeness.py openapi.json --fail
 
 ## 限制與注意
 <rate limit、已知怪現象、不支援的情況；沒有就「無」。>
+
+---
+架構與開發文件（repo 內）：`docs/ARCHITECTURE.md`
 ```
 
-自足檢查（機器）：`grep -nE '(\.\./|見 |參考 |README|see )' docs/usage.md` ——
+（末尾這行指路是給 repo 訪客的，上傳平台後多一行無害；格式照抄，不要用「見/參考」字眼——
+自足檢查會擋。）
+
+自足檢查（機器）：`grep -nE '(\.\./|見 |參考 |see )' README.md` ——
 命中內部引用就把被引用的內容直接寫進來。
 
 ## Step 5 — 事實溯源自查＋回報
@@ -187,10 +191,10 @@ HTTP 動詞這類容易寫反的），每條把出處程式碼**逐字引一行*
 
 ```
 DOCS READY: <產出檔案清單>
-指令驗證: <README 每個指令區塊一行：<指令> → <實跑輸出末行逐字>；沒跑的標（待補：未驗證—原因）>
-ANCHOR LINT: <逐字貼：python3 scripts/lint_anchors.py README.md docs/usage.md 的輸出>
+指令驗證: <兩份文件每個指令區塊一行：<指令> → <實跑輸出末行逐字>；沒跑的標（待補：未驗證—原因）>
+ANCHOR LINT: <逐字貼：python3 scripts/lint_anchors.py README.md docs/ARCHITECTURE.md 的輸出>
 OPENAPI: <逐字貼 completeness 輸出末行 / 不適用＋原因>
-USAGE 自足: <逐字貼 grep 指令與其輸出（無輸出寫「grep 無命中」）/ 不適用>
+README 自足: <逐字貼 grep 指令與其輸出（無輸出寫「grep 無命中」）/ 不適用>
 待補清單: <要問使用者的問題，逐條；沒有寫「無」>
 略去的節: <哪些節不適用＋一句原因；沒有寫「無」>
 ```
