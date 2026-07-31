@@ -25,6 +25,12 @@ description: 幫一個 repo 寫出「人與 AI 都讀得懂」的兩份文件 �
 **範圍鐵律：本 skill 只建/改文件**（README、`docs/`、`scripts/` 文件工具、pre-commit
 設定）。**絕不刪除、移動或修改 repo 的程式碼與其他檔案。**
 
+**名詞一致性**：動筆前先讀
+[references/glossary.md](references/glossary.md)（存在 `references/glossary/` 資料夾
+就整個資料夾都讀）——文件裡用到表列名詞照它的定義與寫法；跟 repo 慣用講法衝突時
+glossary 優先，並在文件裡註明 code 內的實際識別字。glossary 沒有的名詞才照
+「領域詞在敘述裡順帶對應 code 識別字」規則自己處理。
+
 ## 心智模型：兩個讀者、兩份文件
 
 | 文件 | 讀者 | 目的 | 什麼時候要 |
