@@ -19,14 +19,14 @@
 | 其他能產 OpenAPI 的 | 跑該框架的匯出器產出 spec 檔 |
 
 判準補充：框架**現狀**就能匯出 → Mode A。要新增依賴或改 code 才能匯出（例
-Express + swagger-jsdoc 從零接）→ 先問使用者要不要接；不接就走 Mode B（手寫
-Endpoints 區，五分鐘完事）。
+Express + swagger-jsdoc 從零接）→ 先問使用者要不要接；不接就走 Mode B（在
+`docs/usage.md` 手寫功能一覽表，五分鐘完事）。
 
 ## pre-commit hook 的 entry 替換
 
 SKILL.md Step 3 的 `gen-openapi` hook，非 FastAPI 把 `entry` 換成上表指令
 （例 NestJS：`entry: npm run gen:openapi`）。`openapi-completeness` 與
-`frontmatter-lint` 兩個 hook 不變 —— 它們吃的是產出的 spec 檔與 README，跟框架無關。
+`lint-anchors` 兩個 hook 不變 —— 它們吃的是產出的 spec 檔與 README，跟框架無關。
 
 ## 補漏對照：completeness gate 紅了改哪裡
 

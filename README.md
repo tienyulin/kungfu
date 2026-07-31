@@ -112,7 +112,7 @@ host 裝一次、每個容器共用、跟電腦一致：
 
 | skill | 做什麼 |
 |---|---|
-| [`wiki-doc-author`](skills/wiki-doc-author/SKILL.md) | 產出餵進 wiki processor 的源頭文件 —— API（README + openapi.json）、cronjob/worker/CLI、純知識，都一份 README 搞定。附純 stdlib 工具。 |
+| [`doc-author`](skills/doc-author/SKILL.md) | 寫「人與 AI 都讀得懂」的 repo 文件 —— AI-first `README.md`（名詞對照、任務路由、指令、契約；讀完不用重掃 repo）＋單檔自足的 `docs/usage.md` 給外部使用者；API repo 另附 openapi.json。附純 stdlib 工具（含 anchor lint）。 |
 | [`sop-author`](skills/sop-author/SKILL.md) | **訪談產 SOP**：PM 只有粗略需求或不合規文件 → 逐節白話訪談、不發明業務規則，產出合規 SOP（`docs/sops/<組>/` 一檔一 API），接 `sop-to-spec`。 |
 | [`sop-to-spec`](skills/sop-to-spec/SKILL.md) | 把合規 SOP 轉成「人能審、AI 能照著實作三層 FastAPI 服務」的 spec（開工前先驗 SOP 合格，不合格轉介 `sop-author`）。 |
 | [`dev-api-template`](skills/dev-api-template/SKILL.md) | 組織 API template 的**功能與架構參考**：查它有哪些內建工具、架構怎麼分層，開發時當默認藍圖（可偏離、非強制）。facts 可 rescan 改成公司內部版。 |
@@ -284,7 +284,7 @@ Constitution/guard 一律另走 hook（見〈支援矩陣〉），跟這層無�
 
 ### 進階：只裝某幾個 / 離線
 
-- 精挑單裝：`/plugin install wiki-doc-author@kungfu`。**bundle 或 granular
+- 精挑單裝：`/plugin install doc-author@kungfu`。**bundle 或 granular
   擇一**——裝了 bundle 別再單裝成員 skill（會重複載入）；單裝更新照樣自動，但新 skill
   不會自己出現（bundle 特權）。
 - 完全離線：把 skill 資料夾（含 `scripts/`）複製進專案 `.claude/skills/<name>/`，

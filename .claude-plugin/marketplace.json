@@ -8,23 +8,24 @@
   },
   "plugins": [
     {
-      "name": "wiki-doc-author",
+      "name": "doc-author",
       "source": "./",
       "strict": false,
-      "description": "Produce the source docs an app feeds into the LLM Wiki (processor) — a compliant README for any kind (API / cronjob / worker / knowledge), plus a fresh openapi.json for OpenAPI-capable apps. Self-contained, bundled stdlib tools.",
+      "description": "Write the two docs every repo needs for humans AND AI — an AI-first README.md (glossary, task routing, commands, contracts; agents can start work without rescanning the repo) and a self-contained docs/usage.md for external users, plus a generated openapi.json for API repos. Bundled stdlib tools incl. anchor lint.",
       "author": {
         "name": "tienyulin"
       },
       "keywords": [
-        "wiki",
         "docs",
-        "openapi",
         "readme",
+        "architecture",
+        "openapi",
+        "usage",
         "authoring"
       ],
       "category": "workflow",
       "skills": [
-        "./skills/wiki-doc-author"
+        "./skills/doc-author"
       ]
     },
     {
@@ -299,7 +300,7 @@
       ],
       "category": "workflow",
       "skills": [
-        "./skills/wiki-doc-author",
+        "./skills/doc-author",
         "./skills/sop-to-spec",
         "./skills/sop-author",
         "./skills/skill-author",
