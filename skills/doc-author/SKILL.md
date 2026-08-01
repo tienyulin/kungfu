@@ -240,6 +240,19 @@ grep -cE '^\`(GET|POST|PUT|DELETE|PATCH) ' README.md
 「略去的節：無」）。真要略去某個 endpoint（例：純維運端點）→ 數字對不上時必須在
 Step 5「略去的節」點名它＋原因。
 
+**錯誤碼覆蓋檢查（機器，雙向）**：code 裡回傳/raise 的錯誤碼字面值，README 必須
+逐一寫到；README 寫的錯誤碼也必須在 code 裡 grep 得到（編造＝事實鐵律退件）。例
+（pattern 換成該 repo 的錯誤碼形式，如 `ORA-[0-9]+` 或 SCREAMING_SNAKE 常數）：
+
+```bash
+grep -rhoE 'ORA-[0-9]+' services/ repository/ models/ | sort -u   # code 有的
+grep -oE 'ORA-[0-9]+' README.md | sort -u                          # 文件寫的
+```
+
+兩份清單必須相等——code 有文件沒有＝漏列（實測三個 agent 全漏，最慘 0/7）；
+文件有 code 沒有＝編造（實測有 agent 發明了 5 個不存在的錯誤碼）。
+文件裡錯誤碼一律放 backtick（lint_anchors 會驗它在 repo 存在，雙保險）。
+
 ## Step 5 — 事實溯源自查＋回報
 
 逐檔檢查：每個 env 名、數字、URL、行為描述都能指出出處（repo 檔案或使用者哪句話）；

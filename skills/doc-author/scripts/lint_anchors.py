@@ -17,7 +17,8 @@ import sys
 from pathlib import Path
 
 BACKTICK = re.compile(r"`([^`\n]+)`")
-ENV_NAME = re.compile(r"^[A-Z][A-Z0-9_]{2,}$")
+# 大寫識別字：env 名、錯誤碼（含連字號，例 ORA-38780）、常數——都要能在 repo grep 到
+ENV_NAME = re.compile(r"^[A-Z][A-Z0-9_-]{2,}$")
 # 長得像路徑：含 / 且只有路徑常見字元；或單一檔名帶副檔名
 PATHISH = re.compile(r"^[\w.\-/]+$")
 # 行號引用（「行 149–158」「line 42」「lines 10-20」）——會爛，禁用
