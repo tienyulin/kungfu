@@ -228,6 +228,18 @@ JSON body 範例照給（那是介面的一部分），只是不包在 curl 裡�
 不寫 base URL），改成 `METHOD /path`＋body 範例。唯一豁免：末尾指路行的
 `docs/ARCHITECTURE.md`（它不含上述 pattern，本來就不會命中）。
 
+**盤點完整性檢查（機器，有 openapi.json 才適用）**：README 的功能節數必須等於
+openapi 的 operation 總數——
+
+```bash
+python3 -c "import json; print(sum(1 for p in json.load(open('openapi.json'))['paths'].values() for m in p if m in ('get','post','put','delete','patch')))"
+grep -cE '^\`(GET|POST|PUT|DELETE|PATCH) ' README.md
+```
+
+兩個數字不相等＝漏寫或多寫了 endpoint（實測有 agent 漏掉 `GET /health` 還回報
+「略去的節：無」）。真要略去某個 endpoint（例：純維運端點）→ 數字對不上時必須在
+Step 5「略去的節」點名它＋原因。
+
 ## Step 5 — 事實溯源自查＋回報
 
 逐檔檢查：每個 env 名、數字、URL、行為描述都能指出出處（repo 檔案或使用者哪句話）；
