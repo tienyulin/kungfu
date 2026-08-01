@@ -225,8 +225,10 @@ JSON body 範例照給（那是介面的一部分），只是不包在 curl 裡�
 自足＋風格檢查（機器）：
 `grep -nE '(\.\./|見 |參考 |see |curl |https?://)' README.md` ——
 命中內部引用就把內容直接寫進來；命中 curl 或 URL＝違反規格表規則（不寫 curl、
-不寫 base URL），改成 `METHOD /path`＋body 範例。唯一豁免：末尾指路行的
-`docs/ARCHITECTURE.md`（它不含上述 pattern，本來就不會命中）。
+不寫 base URL），改成 `METHOD /path`＋body 範例。**命中數必須改到 0——沒有任何
+豁免條款，不准自行認定「這條可以留」**（啟動指令、Swagger 位址這類屬 ARCHITECTURE.md
+開發節，不屬 README）。末尾指路行 `docs/ARCHITECTURE.md` 不含上述 pattern，
+本來就不會命中。
 
 **盤點完整性檢查（機器，有 openapi.json 才適用）**：README 的功能節數必須等於
 openapi 的 operation 總數——
@@ -270,6 +272,7 @@ HTTP 動詞這類容易寫反的），每條把出處程式碼**逐字引一行*
 DOCS READY: <產出檔案清單>
 指令驗證: <兩份文件每個指令區塊一行：<指令> → <實跑輸出末行逐字>；沒跑的標（待補：未驗證—原因）>
 ANCHOR LINT: <逐字貼：python3 scripts/lint_anchors.py README.md docs/ARCHITECTURE.md 的輸出>
+GLOSSARY 掃描: <逐字貼禁用寫法 grep 指令與輸出（無輸出寫「grep 無命中」）>
 OPENAPI: <逐字貼 completeness 輸出末行 / 不適用＋原因>
 README 自足: <逐字貼 grep 指令與其輸出（無輸出寫「grep 無命中」）/ 不適用>
 待補清單: <要問使用者的問題，逐條；沒有寫「無」>
