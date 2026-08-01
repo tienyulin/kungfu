@@ -20,6 +20,8 @@ BACKTICK = re.compile(r"`([^`\n]+)`")
 ENV_NAME = re.compile(r"^[A-Z][A-Z0-9_]{2,}$")
 # 長得像路徑：含 / 且只有路徑常見字元；或單一檔名帶副檔名
 PATHISH = re.compile(r"^[\w.\-/]+$")
+# 行號引用（「行 149–158」「line 42」「lines 10-20」）——會爛，禁用
+LINE_REF = re.compile(r"(第?\s?行\s?\d+|\d+\s?行|lines?\s+\d+)", re.IGNORECASE)
 SKIP_MARK = "anchors-skip"
 
 # 不當地標驗的 token：佔位符、URL、指令、glob
@@ -74,6 +76,13 @@ def main() -> int:
     for f in args.files:
         md = Path(f)
         text = md.read_text(encoding="utf-8")
+        in_fence = False
+        for i, line in enumerate(text.splitlines(), 1):
+            if line.lstrip().startswith("```"):
+                in_fence = not in_fence
+                continue
+            if not in_fence and SKIP_MARK not in line and LINE_REF.search(line):
+                failures.append(f"{md}:{i}: 行號引用（會爛，改用符號名）→ {line.strip()[:60]}")
         seen = set()
         for tok in iter_tokens(text):
             if tok in seen or is_placeholder(tok):
