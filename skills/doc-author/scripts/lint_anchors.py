@@ -21,8 +21,10 @@ BACKTICK = re.compile(r"`([^`\n]+)`")
 ENV_NAME = re.compile(r"^[A-Z][A-Z0-9_-]{2,}$")
 # 長得像路徑：含 / 且只有路徑常見字元；或單一檔名帶副檔名
 PATHISH = re.compile(r"^[\w.\-/]+$")
-# 行號引用（「行 149–158」「line 42」「lines 10-20」）——會爛，禁用
+# 行號引用——會爛，禁用。兩種形式都擋：
+#   文字式「行 149–158」「line 42」；冒號式「main.py:44」「service.py:79-114」
 LINE_REF = re.compile(r"(第?\s?行\s?\d+|\d+\s?行|lines?\s+\d+)", re.IGNORECASE)
+PATH_LINE_REF = re.compile(r"^[\w.\-/]+\.\w+:\d+([-–+]\d*)?$")
 SKIP_MARK = "anchors-skip"
 
 # 不當地標驗的 token：佔位符、URL、指令、glob
@@ -89,6 +91,9 @@ def main() -> int:
             if tok in seen or is_placeholder(tok):
                 continue
             seen.add(tok)
+            if PATH_LINE_REF.match(tok):
+                failures.append(f"{md}: 行號引用（會爛，改用符號名）→ `{tok}`")
+                continue
             if "/" in tok and PATHISH.match(tok):
                 if not (root / tok).exists():
                     failures.append(f"{md}: 路徑不存在 → `{tok}`")
