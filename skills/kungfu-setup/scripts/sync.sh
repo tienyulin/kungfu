@@ -57,11 +57,18 @@ while read -r name detect rtgt rmeth htgt hmeth; do
     import)
       if grep -qsF "@$RULES" "$rtgt"; then echo "rules $name: ok"
       else printf '\n@%s\n' "$RULES" >> "$rtgt"; echo "rules $name: linked"; fi ;;
-    symlink) # 偵測目錄已證明 agent 裝了，目標的子目錄（如 Cline 的 Rules/）可建
+    symlink) # 偵測目錄已證明 agent 裝了，目標的子目錄可建
       mkdir -p "$(dirname "$rtgt")"
       if [ -L "$rtgt" ]; then ln -sfn "$RULES" "$rtgt"; echo "rules $name: ok"
       elif [ -e "$rtgt" ]; then echo "CONFLICT rules $name: $rtgt 已是一般檔案，未動"
       else ln -s "$RULES" "$rtgt"; echo "rules $name: linked"; fi ;;
+    copy) # UI 不列 symlink 的 agent（如 Cline）：複製一份，每日 sync 保持同步。
+      # 來源用本 script 旁的正本（store 首次安裝前還不存在）；
+      # 目標檔名是本 skill 專屬的，無條件覆蓋。
+      mkdir -p "$(dirname "$rtgt")"
+      if [ -f "$rtgt" ] && cmp -s "$here/../assets/AGENTS.md" "$rtgt"; then echo "rules $name: ok"
+      elif cp "$here/../assets/AGENTS.md" "$rtgt"; then echo "rules $name: linked"
+      else echo "FAILED rules $name: 複製失敗"; fi ;;
   esac
 
   case "$hmeth" in
