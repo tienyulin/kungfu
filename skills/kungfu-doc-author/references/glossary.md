@@ -16,8 +16,8 @@
 | README.md | repo 門面，即使用文件：API 或工具怎麼用，規格表風格，單檔自足、可整份上傳文件平台 | 「README」或「使用文件」 |
 | ARCHITECTURE.md | `docs/ARCHITECTURE.md`，架構文件：給維護者與 AI 的系統地圖（專案結構、分層、內建工具、設計說明） | 「架構文件」，路徑寫 `docs/ARCHITECTURE.md` |
 | openapi.json | 從 code 匯出的 API 權威規格，不手改，改 code 重新匯出 | 「openapi.json」 |
-| SOP | 業務操作程序文件，放 `docs/sops/<組名>/`，一檔一 API；由 PM 撰寫（sop-author 訪談產出） | 「SOP」 |
-| spec | 由 SOP 轉出的實作規格，放 `docs/specs/<組名>/`（sop-to-spec 產出）；實作的唯一規格來源 | 「spec」或「規格」 |
+| SOP | 業務操作程序文件，放 `docs/sops/<組名>/`，一檔一 API；由 PM 撰寫（kungfu-sop-author 訪談產出） | 「SOP」 |
+| spec | 由 SOP 轉出的實作規格，放 `docs/specs/<組名>/`（kungfu-sop-to-spec 產出）；實作的唯一規格來源 | 「spec」或「規格」 |
 
 ## 通用技術名詞
 

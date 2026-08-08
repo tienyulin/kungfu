@@ -1,5 +1,5 @@
 ---
-name: sop-to-spec
+name: kungfu-sop-to-spec
 description: 把人工操作的 SOP 轉成正式的 API 規格書（spec），含風險判定、自檢與盲審；不懂技術的人讀前三節能了解用途與風險，工程師或 AI 讀全文能直接實作三層式 FastAPI 服務。使用者要把 SOP 轉 spec、把程序文件轉成 API 規格時使用，任何領域的 SOP 都適用。
 ---
 
@@ -31,7 +31,7 @@ description: 把人工操作的 SOP 轉成正式的 API 規格書（spec），�
 
 - 輸入：SOP 檔案路徑，或 `docs/sops/<組名>/` 資料夾（逐檔各產一份 spec）。
   路徑不存在就停下來問。只收合格 SOP（Step 0）；使用者手上只有粗略需求或
-  不合規文件時，先用 `sop-author` 訪談產出合規 SOP。
+  不合規文件時，先用 `kungfu-sop-author` 訪談產出合規 SOP。
 - 輸出：`docs/specs/<組名>/<sop-slug>-api.spec.md`（SOP 不在此佈局下退回
   `specs/`）。一份 SOP 對應一份 spec；拆分或合併是 SOP 作者的事，本 skill 不代勞。
 - 語言：spec 與 SOP 同語言，技術名詞用英文；模板裡標「照抄」的段落可整段翻譯成
@@ -47,7 +47,7 @@ description: 把人工操作的 SOP 轉成正式的 API 規格書（spec），�
 
 | Step | 內容 | 參考 |
 |------|------|------|
-| 0 合格檢查 | 逐份確認必要節齊全且非空：做什麼、誰可以用、輸入（或明寫「無」）、輸出、步驟（每步有「怎麼做」）、做了之後能復原嗎、同一個對象能重複做嗎、可能出什麼錯、測試例子。缺節就停下回報，請使用者用 `sop-author` 補完；使用者堅持照轉，缺的部分全部進未決事項 | — |
+| 0 合格檢查 | 逐份確認必要節齊全且非空：做什麼、誰可以用、輸入（或明寫「無」）、輸出、步驟（每步有「怎麼做」）、做了之後能復原嗎、同一個對象能重複做嗎、可能出什麼錯、測試例子。缺節就停下回報，請使用者用 `kungfu-sop-author` 補完；使用者堅持照轉，缺的部分全部進未決事項 | — |
 | 1 整理 | 讀 SOP 列出查詢類與變更類操作、前置條件、錯誤情況。這是工作草稿，不進 spec。順手檢查 SOP 前後矛盾，有就回報請作者修 | — |
 | 2 風險判定 | 依 SOP「做了之後能復原嗎」判定查詢／可逆／不可逆，照原文結論，不自行升級 | [references/spec-template.md](references/spec-template.md) |
 | 3 寫 spec | 照模板的文件結構依序寫；寫各 endpoint 規格時，每個 endpoint 過一遍追問清單 | [references/spec-template.md](references/spec-template.md)、[references/checklists.md](references/checklists.md) |
