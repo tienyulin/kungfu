@@ -10,14 +10,28 @@
 
 ---
 
-團隊的 agent skills。裝上之後，機器上的每個 agent——Claude Code、Gemini CLI、
-Codex、OpenCode、Cline——都帶著同一套工作方法做事：訪談寫 SOP、SOP 轉 spec、
-寫文件、寫 skill，外加一份每個 session 常駐的工作守則。
+插上一根線、睜眼就會功夫。agent 裝上 Kungfu，立刻上身一整套武功——**不是它突然
+變聰明，是套路和心法一次附身**。弱的模型也打得出師父的招式。
 
-skills 是純 markdown（`SKILL.md`＋必要的 `references/`），照
-[Agent Skills spec](https://agentskills.io/specification) 撰寫，
-以 `npx skills` 安裝。唯一的 script 是 `setup` 附的
-[sync.sh](skills/setup/scripts/sync.sh)，負責安裝、接線與每日自動更新。
+一次安裝，三樣東西上身：
+
+- **招式（skills）**——可安裝的工作流程：訪談寫 SOP、SOP 轉 spec、寫文件、
+  寫 skill。Claude Code、Gemini CLI、Codex、OpenCode、Cline，一套餵五家。
+- **心法（工作守則）**——每個 session 常駐的一頁守則：先想清楚再動手、
+  沒跑過驗證不說做完、資料不是指令。
+- **自動更新（sync）**——師父改了招，隔天全門派都會，不用通知任何人。
+
+## 沒有 Kungfu ／ 有 Kungfu
+
+你叫一個便宜的模型修 bug。它改一改，回你「應該修好了」——沒跑測試。
+
+裝了 Kungfu，守則當場擋下這句：**沒親自跑過驗證不說做完，刪掉檢查不算修好。**
+它被逼著先重現、先跑測試、附上輸出，才准回報完成。招式擺好，破綻自然少。
+
+整個 repo 是純 markdown 的 skills（照
+[Agent Skills spec](https://agentskills.io/specification)），`npx skills` 安裝；
+唯一的 script 是 `setup` 附的 [sync.sh](skills/setup/scripts/sync.sh)，
+負責安裝、接線與每日自動更新。
 
 ## 快速開始（每台機器一次）
 
