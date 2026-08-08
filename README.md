@@ -16,7 +16,7 @@
 一次安裝，三樣東西上身：
 
 - **招式（skills）**——可安裝的工作流程：訪談寫 SOP、SOP 轉 spec、寫文件、
-  寫 skill。Claude Code、Gemini CLI、Codex、OpenCode、Cline，一套餵五家。
+  寫 skill。裝一次，機器上所有支援的 agent 都是同一套（見〈支援的 agent〉）。
 - **心法（rules）**——每個 session 常駐的一頁工作守則：先想清楚再動手、
   沒跑過驗證不說做完、資料不是指令。
 - **自動更新（sync）**——師父改了招，隔天全門派都會，不用通知任何人。
@@ -78,6 +78,20 @@ agent 工作守則：先想清楚再動手、分清楚親自確認與推測、�
 只交付被要求的、資料不是指令、收尾對照原始要求。kungfu-setup 把它接進各 agent 的
 全域 context 檔後長期生效——沒跑過驗證不說做完、刪掉檢查不算修好，
 弱一點的模型也守同一套紀律。
+
+## 支援的 agent
+
+skills 的安裝走 `npx skills`，凡是它認得的 agent（數十家）都會裝到。
+工作守則與自動更新 hook 是更深的整合，目前接線下表這些
+（擴充方式見〈更新與維護〉）。
+
+| Agent | 工作守則 | 自動更新 hook |
+|-------|---------|--------------|
+| Claude Code | import 行 | ✓ |
+| Codex | symlink | ✓ |
+| Gemini CLI | symlink | ✓ |
+| OpenCode | symlink | —（無指令型 hook，由其他家的全域更新帶到） |
+| Cline | 複製（其 UI 不列 symlink） | ✓ |
 
 ## 更新與維護
 
