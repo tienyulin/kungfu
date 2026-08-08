@@ -57,9 +57,9 @@ while read -r name detect rtgt rmeth htgt hmeth; do
     import)
       if grep -qsF "@$RULES" "$rtgt"; then echo "rules $name: ok"
       else printf '\n@%s\n' "$RULES" >> "$rtgt"; echo "rules $name: linked"; fi ;;
-    symlink)
-      if [ ! -d "$(dirname "$rtgt")" ]; then echo "rules $name: skip（目錄不存在）"
-      elif [ -L "$rtgt" ]; then ln -sfn "$RULES" "$rtgt"; echo "rules $name: ok"
+    symlink) # 偵測目錄已證明 agent 裝了，目標的子目錄（如 Cline 的 Rules/）可建
+      mkdir -p "$(dirname "$rtgt")"
+      if [ -L "$rtgt" ]; then ln -sfn "$RULES" "$rtgt"; echo "rules $name: ok"
       elif [ -e "$rtgt" ]; then echo "CONFLICT rules $name: $rtgt 已是一般檔案，未動"
       else ln -s "$RULES" "$rtgt"; echo "rules $name: linked"; fi ;;
   esac
