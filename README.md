@@ -29,10 +29,9 @@
 刪掉檢查不算修好。** 它得先重現、先跑測試、附上輸出，才能回報完成。
 招式擺好，破綻自然少。
 
-整個 repo 是純 markdown 的 skills（照
-[Agent Skills spec](https://agentskills.io/specification)），`npx skills` 安裝；
-唯一的 script 是 `kungfu-setup` 附的 [sync.sh](skills/kungfu-setup/scripts/sync.sh)，
-負責安裝、接線與每日自動更新。
+skills 全部照 [Agent Skills spec](https://agentskills.io/specification) 用
+markdown 撰寫，`npx skills` 安裝；唯一的 script 是 `kungfu-setup` 附的
+[sync.sh](skills/kungfu-setup/scripts/sync.sh)，負責安裝、接線與每日自動更新。
 
 ## 快速開始（每台機器一次）
 
@@ -82,7 +81,7 @@ agent 工作守則：先想清楚再動手、分清楚親自確認與推測、�
 ## 支援的 agent
 
 skills 的安裝走 `npx skills`，凡是它認得的 agent（數十家）都會裝到。
-工作守則與自動更新 hook 是更深的整合，目前接線下表這些
+工作守則與自動更新 hook 是更深的整合，目前支援下表這些 agent
 （擴充方式見〈更新與維護〉）。
 
 | Agent | 工作守則 | 自動更新 hook |
@@ -91,7 +90,7 @@ skills 的安裝走 `npx skills`，凡是它認得的 agent（數十家）都會
 | Codex | symlink | ✓ |
 | Gemini CLI | symlink | ✓ |
 | OpenCode | symlink | —（無指令型 hook，由其他家的全域更新帶到） |
-| Cline | 複製（其 UI 不列 symlink） | ✓ |
+| Cline | 複製（它的 UI 不列 symlink） | ✓ |
 
 ## 更新與維護
 
@@ -102,8 +101,8 @@ skills 的安裝走 `npx skills`，凡是它認得的 agent（數十家）都會
   需本機有 key）。
 - **支援新 agent**：[agents.json](skills/kungfu-setup/assets/agents.json) 加一項
   （偵測目錄、工作守則接法、hook 接法）；接法不在既有值域才需要動 sync.sh。
-- **改工作守則**：直接改 [AGENTS.md](skills/kungfu-setup/assets/AGENTS.md)——
-  各 agent 的全域檔是 symlink 或 import 的即時生效，走複製的（如 Cline）
+- **改工作守則**：直接改 [AGENTS.md](skills/kungfu-setup/assets/AGENTS.md)。
+  走 symlink 或 import 的 agent 即時生效；走複製的（如 Cline）
   由每日 sync 帶到。
 
 要寫新的 skill，對 agent 說「用 kungfu-skill-author 幫我寫一個⋯」；
