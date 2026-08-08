@@ -87,8 +87,8 @@ agent 工作守則：先想清楚再動手、分清楚親自確認與推測、�
   加一行。接受 `owner/repo`、https、ssh URL（private repo 用 ssh，
   需本機有 key）。
 - **支援新 agent**：[agents.json](skills/setup/assets/agents.json) 加一項
-  （偵測目錄、守則接法、hook 接法）；接法不在既有值域才需要動 sync.sh。
-- **改守則**：直接改 [AGENTS.md](skills/setup/assets/AGENTS.md)——
+  （偵測目錄、工作守則接法、hook 接法）；接法不在既有值域才需要動 sync.sh。
+- **改工作守則**：直接改 [AGENTS.md](skills/setup/assets/AGENTS.md)——
   各 agent 的全域檔是 symlink 或 import，更新即全機生效。
 
 要寫新的 skill，對 agent 說「用 skill-author 幫我寫一個⋯」；
