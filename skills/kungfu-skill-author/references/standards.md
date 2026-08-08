@@ -9,7 +9,9 @@ best practices。skill 可能在任何 agent 執行環境被載入，內容與�
 
 - 一個 skill 一個資料夾：`skills/<name>/SKILL.md`，子目錄照 spec 三分——
   `references/`（給執行者讀的延伸文件）、`scripts/`（可執行碼）、
-  `assets/`（模板與資料檔）。預設只用 markdown，不放 script、不設 hook；
+  `assets/`（靜態資源）。範本的歸屬看用法：執行者讀了照著寫的
+  （文件範本、表單格式）放 `references/`；原樣部署或複製進產出的
+  （設定檔、資料檔、圖片）放 `assets/`。預設只用 markdown，不放 script、不設 hook；
   只有無人值守的自動化（沒有 agent 在場、純靠排程或 hook 執行）
   才允許附一支小 script，且 SKILL.md 的步驟要能完整驗證它。
 - frontmatter 只有 `name`（小寫、連字號）與 `description` 兩欄。
