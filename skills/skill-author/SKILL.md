@@ -1,146 +1,73 @@
 ---
 name: skill-author
-description: 在這個 kungfu repo 裡新增或修改一個 skill（跨 agent：Claude Code／Gemini／Codex／OpenCode／Cline 都吃同一份），並讓它可被安裝。照官方 Agent Skills spec + 本 repo 慣例產出合規 SKILL.md、scripts/references，並註冊進 .claude-plugin/marketplace.json。開發者想加/改 skill 時用。Triggers - "寫一個 skill"、"新增 skill"、"author a skill"、"add a skill to kungfu"、"/skill-author"。
+description: 依團隊標準撰寫或改寫 agent skill：SKILL.md 加必要的 references，文字自然、描述欄位通過觸發測試、自檢機器化、試跑通過才交付。使用者要寫新的 skill、建 skill、改 skill、review skill 品質時使用。
 ---
 
-# skill-author
+# Skill 撰寫
 
-**開工前：把下面的進度清單照抄進你的回覆，每完成一步打勾再做下一步。**
-遇到本 skill 與 references 都沒定義的情況：停下來問使用者，不要自行發明。
+幫使用者寫新的 skill 或改寫既有 skill。開工前把進度清單抄進回覆，完成一步勾一步；
+遇到本 skill 與 references 都沒定義的情況，停下來問使用者。
 
 ```
 進度：
-- [ ] 確認 cwd = repo root（.claude-plugin/marketplace.json 存在）
-- [ ] Step 1 命名 + 建目錄
-- [ ] Step 2 SKILL.md（frontmatter + body；弱模型五規則套過）
-- [ ] Step 3 marketplace.json 兩處
-- [ ] Step 4 validator 全綠（+ 乾淨環境才 install 實測）
+- [ ] Step 1 釐清需求
+- [ ] Step 2 寫 SKILL.md 與 references
+- [ ] Step 3 觸發測試
+- [ ] Step 4 自檢
+- [ ] Step 5 試跑與驗收
 ```
 
-在本 repo 新增一個**可安裝**的 skill。心智模型：一個 skill = 一個資料夾
-（`skills/<name>/SKILL.md` ＋ 選填 `scripts/`、`references/`）放在 `skills/` 子目錄下
-（superpowers-style 佈局），再在 `.claude-plugin/marketplace.json` 註冊。
+標準只有一份：[references/standards.md](references/standards.md)，動筆前先讀完。
+兩個原則貫穿全部步驟：skill 本身與它的產出都要像資深工程師親手寫的；
+能機器檢查的規則就寫成可執行的檢查。
 
-**先確認位置**：所有指令都要在 kungfu repo root 下執行 —— 判別法：cwd 有
-`.claude-plugin/marketplace.json`。（這個 repo 常是別的專案的 submodule，路徑通常是
-`<專案>/.claude/skills/`；每條指令前 `cd` 過去或用 `cd … &&` 前綴。）
+## Step 1 — 釐清需求
 
-**修改既有 skill**：跳過 Step 1、3（已註冊），直接改內容 → Step 4 驗證（已裝過的機器
-install 實測也跳過，見 Step 4）。用途/description 有變 → 同步改 marketplace 條目的英譯
-description。改名 = 當新增走全流程 ＋ 刪舊目錄與 marketplace 舊條目。
+問使用者，一次問完：
 
-**git 收尾不在本 skill 範圍**：照 repo 慣例 branch → PR；merge 進 main 後全隊才會自動拿到
-（marketplace auto-update）。本 repo 若是別的專案的 submodule，提醒使用者該專案照慣例
-bump submodule pointer，否則該 checkout 內載入的仍是舊版。
+- 這個 skill 做什麼、產出什麼？產出有固定格式嗎？
+- 誰用、什麼情境？使用者實際會怎麼開口？（收集三到五句真實講法，Step 3 要用）
+- 執行時需要跟使用者互動（訪談、確認）嗎？
+- 有沒有既有範本或慣例要沿用？會不會跟其他 skill 串接？
 
-## Step 1 — 命名 + 建目錄
+改寫既有 skill 時，先完整讀原檔，列出必須保留的功能內容（檢查項、範本、規則）；
+改寫只動結構與文字，功能內容不得流失。
 
-- `name`：kebab-case、≤64 字、須等於目錄名（其餘格式規則 validator 會擋，不用背）。
-- `mkdir skills/<name>`，放 `SKILL.md`（＋需要時 `scripts/`、`references/`）。
+## Step 2 — 寫 SKILL.md 與 references
 
-## Step 2 — 寫 SKILL.md
+照 standards.md 的結構、寫作風格與產出物標準寫：SKILL.md 寫流程，大塊的範本與標準
+放 references；步驟的驗證能寫成指令就寫成指令，並要求執行後看到輸出才算通過。
 
-frontmatter 只要兩欄：
+## Step 3 — 觸發測試
 
-```yaml
----
-name: <name>                 # = 目錄名
-description: <做什麼 + 何時用>。Triggers - "<中文觸發句>"、"<english trigger>"、"/<name>"。
----
-```
+描述欄位是唯一的自動觸發機制（機制與寫法見 standards.md 的「描述欄位」節），
+寫完必測：
 
-**description 決定 skill 會不會被選中**，是最關鍵的一欄：
-- 第三人稱、≤1024 字，講 what + when，結尾 `Triggers -` 列具體中英觸發句。
-- 「稍微 pushy」= 把使用時機寫寬、觸發句寫多（模型傾向 under-trigger）。
-  例：「開發者要寫或修這些文件時用」勝過「可用於文件撰寫」。
+1. 準備八到十二句使用者講法：真實講法、換句話說的變形、不含關鍵詞的講法，
+   以及至少三句容易誤觸發的相鄰任務當負對照。
+2. 環境能開 subagent 時：spawn 兩個獨立的 subagent，挑最小的可用模型，
+   prompt 只給「已安裝 skill 的名稱與描述清單＋逐句判斷該用哪個 skill 或 none」，
+   兩個都答對才算過。不能開時：自己逐句判斷並記下理由，交付回報註明為自我判定，
+   建議之後在能開 subagent 的環境重測。
+3. 漏接的句子，把它用的詞補進 description；誤觸發的，收窄適用範圍的描述。
+   改完重測。
 
-**body**（≤500 行，超過就拆進 `references/`）：
-- 寫到「讀完即可執行」：步驟依執行順序排、給可照抄的範本/指令、結尾放完成定義。
-  **結構照本檔與 repo 既有 skill**（開頭心智模型 → Step 1..N → 完成定義）。
-- **弱模型相容（必讀）**：團隊執行模型能力參差，skill 要寫到最弱的模型也走得完 ——
-  現在去讀 [references/weak-model-rules.md](references/weak-model-rules.md)，
-  五條硬規則（低自由度、封閉分流、機器 gate、進度 checklist、未定義=停）逐條套用。
-- 只寫模型不知道的事（專案慣例、格式、字面值）；通識解釋、行銷句、版本沿革都不放。
-- prose 中文，專有名詞英文＋首次出現一句解釋。
-- 引用只深一層（`references/X.md`），不要 `../`。
-- `scripts/`：純 stdlib、零相依、錯誤訊息清楚；不可引用 skill 目錄外的檔
-  （安裝時只複製 skill 目錄）。
+## Step 4 — 自檢
 
-## Step 3 — 註冊進 marketplace（必做，否則裝不到）
+照 standards.md 的清單逐項做：寫作風格掃描零命中、引用與數量一致、
+SKILL.md 500 行內、references 只有一層。
 
-`.claude-plugin/marketplace.json`（**純 JSON，不能有註解**）要改**兩處**：
+## Step 5 — 試跑與驗收
 
-**① `plugins` 陣列加自身項目**（照既有條目的欄位風格；`category`/`keywords` 自由字串）：
-```json
-{
-  "name": "<name>",
-  "source": "./",
-  "strict": false,
-  "description": "<frontmatter description 的英譯（濃縮版即可）>",
-  "author": { "name": "tienyulin" },
-  "keywords": ["..."],
-  "category": "workflow",
-  "skills": ["./skills/<name>"]
-}
-```
+skill 讀起來通順不等於執行得起來：
 
-**② 把 `"./skills/<name>"` 加進既有 bundle plugin（`"name": "kungfu"` 那個條目）的
-`skills` 陣列**——它長這樣，只動它的 `skills`（bundle 的 description 刻意不枚舉成員
-名單，不用改）：
-```json
-{
-  "name": "kungfu",
-  "source": "./",
-  "description": "Bundle — installs this repo's own skills at once (…)",
-  "skills": ["./skills/wiki-doc-author", "./skills/sop-to-spec", "./skills/<name>"]
-}
-```
-Claude 成員裝的是 bundle ＋ marketplace auto-update：skill 進 bundle、merge 進 main，
-下次開 session 自動拿到。**不設 `version` 欄** —— 沒有它，git commit SHA 就是
-版本，每個 commit 都算新版；設了反而要手動 bump，漏 bump = 收不到更新。
+- 環境能開 subagent 時：用最小的可用模型試跑一個貼近真實的任務——它跑得起來，
+  其他模型都跑得起來。親自驗收產出：
+  宣稱通過的檢查要求貼指令的逐字輸出，不收一句「已通過」。
+- 不能開時：自己照新 skill 從頭執行同樣的任務，嚴格照字面走、不靠寫作時的
+  記憶補位；每個檢查實際執行並保留輸出。交付回報註明為自我驗證。
 
-這步接的是 **Claude 通道**（marketplace + validator gate）。skill 是**跨 agent** 的：
-只要它在 `skills/` 下，`skills-sync` 就 skill-drop 進各 agent 原生讀的目錄、不必另外註冊：
-Gemini／Codex／OpenCode → `~/.agents/skills`（共讀一份），Cline → `~/.cline/skills`。
+試跑發現漏掉某條規則時：能改成機器檢查就改；不能就把規則移到犯錯位置旁
+（放進範本，不留在遠處的說明）。修完再試跑，直到產出可以直接交付。
 
-## Step 4 — 驗證
-
-```bash
-# 1) 離線 validator（頂替需外網的官方 skills-ref；含 marketplace 註冊/bundle/version/
-#    envrun 同步檢查）。經 envrun 跑 = 用本 repo 的 devcontainer（沒起且有 CLI 會自動起）
-bash skills/skill-author/scripts/envrun.sh python3 skills/skill-author/scripts/validate_skill.py <name>   # 或不帶參數驗全部
-```
-envrun exit 2（起不了容器）時的**唯一例外**：validator 本身純 stdlib，可直接
-`python3 skills/skill-author/scripts/validate_skill.py` host 直跑；black/mypy 等其他工具鏈
-指令不適用此例外——照 envrun 印出的選項原樣轉述給使用者選（只轉述，不代跑）。
-
-2) 本地安裝實測（**這步只驗 Claude 通道**——其他 agent 不經 marketplace，skill 進
-`skills/` 後由 `skills-sync` skill-drop 到各 agent，Step 3 註冊即足夠，不必另測）—— **先查這台機器
-有沒有已註冊的同名 marketplace**：
-```bash
-claude plugin marketplace list | grep kungfu
-```
-- **已註冊**（團隊成員機器的常態）→ **跳過實測**：不要 add/remove —— remove 會把
-  使用者正在用的 bundle 連 plugins 一起拔掉。validator + PR CI 已足夠。
-- **未註冊**（乾淨環境）→ 實測後移除（中途失敗也要跑最後一行，別把設定殘留在 user scope）：
-```bash
-claude plugin marketplace add "$PWD"
-claude plugin install <name>@kungfu    # <name>@<marketplace.json 頂層 name>
-claude plugin list | grep -A3 <name>            # Status 行應為 enabled（不在名稱同一行）
-claude plugin marketplace remove kungfu   # 會連同其 plugins 一起移除
-```
-
-## 完成定義
-
-validator 擋的（跑 `validate_skill.py <name>` 全綠即代表）：
-- [ ] 目錄名 = frontmatter `name`（kebab/長度）
-- [ ] description 有 `Triggers -` 觸發句
-- [ ] marketplace.json 兩處都改（自身 plugin ＋ bundle `skills`）、無 `version` 欄
-
-自查的（validator 不驗語意）：
-- [ ] description 第三人稱、what+when、觸發句中英都有
-- [ ] body 讀完即可執行；≤500 行（validator 只警告，超過就拆 references/）
-- [ ] 弱模型五規則過（weak-model-rules.md）：關鍵步驟有逐字可抄物或機器 gate、
-      判斷點封閉分流、多步驟有進度 checklist、有「未定義=停」護欄
-- [ ] scripts 純 stdlib、不引用 skill 目錄外的檔
-- [ ] 乾淨環境才做的 install 實測（已註冊 marketplace 的機器跳過，見 Step 4）
+交付回報：skill 檔案清單、觸發測試結果與方式、試跑結論與方式。
