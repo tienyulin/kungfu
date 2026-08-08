@@ -1,15 +1,15 @@
-# kungfu-lite
+# kungfu
 
-輕量版 agent skills：`SKILL.md`＋必要的 `references/*.md`，
+團隊 agent skills：`SKILL.md`＋必要的 `references/*.md`，
 **無 plugin 架構、無 pre-commit、無 marketplace**；唯一的 script 是
-`setup` 附的十幾行 [sync.sh](skills/setup/scripts/sync.sh)（skills 安裝與
-每日自動更新）。完整版（含機器 lint、pre-commit、marketplace）
-在 [kungfu](https://github.com/tienyulin/kungfu)。
+`setup` 附的 [sync.sh](skills/setup/scripts/sync.sh)（skills 安裝與
+每日自動更新）。舊版（plugin、agent-rules hooks、python 工具鏈、
+marketplace）保留在 [legacy branch](https://github.com/tienyulin/kungfu/tree/legacy)。
 
 ## 安裝
 
 ```bash
-npx -y skills add tienyulin/kungfu-lite -g --all
+npx -y skills add tienyulin/kungfu -g --all
 ```
 
 （`-g` 裝到使用者層級：所有 agent 共用 `~/.agents/skills/` 的正本，
@@ -18,7 +18,7 @@ setup 的自動更新也以這個位置為準。）
 只裝其中幾個：
 
 ```bash
-npx skills add tienyulin/kungfu-lite --skill doc-author
+npx skills add tienyulin/kungfu --skill doc-author
 ```
 
 ## Skills
@@ -49,7 +49,8 @@ npx skills add tienyulin/kungfu-lite --skill doc-author
    之後在清單加新來源、更新任何 skill、甚至新裝一個 agent，
    push 完隔天所有機器自動就是新的，不用另行通知。
 
-## 與 kungfu 完整版的差異
+## 與 legacy 版的差異
 
-- 檢查全部改成 SKILL.md 內的 grep/手動清單，不附 python script
-- 無 pre-commit / hook 接法，無 marketplace / bundle，直接 `npx skills add`
+- 檢查全部改成 SKILL.md 內的 grep/手動清單，不附 python 工具鏈
+- 無 plugin / marketplace / bundle，直接 `npx skills add`；
+  守則與 hook 的接線由 `setup` 的 sync.sh 完成
