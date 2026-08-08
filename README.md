@@ -89,7 +89,7 @@ skills 的安裝走 `npx skills`，凡是它認得的 agent（數十家）都會
 | Claude Code | import 行 | ✓ |
 | Codex | symlink | ✓ |
 | Gemini CLI | symlink | ✓ |
-| OpenCode | symlink | —（無指令型 hook，由其他家的全域更新帶到） |
+| OpenCode | symlink | ✓（產生 plugin 檔） |
 | Cline | 複製（它的 UI 不列 symlink） | ✓ |
 
 ## 更新與維護

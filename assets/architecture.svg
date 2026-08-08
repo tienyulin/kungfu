@@ -1,0 +1,196 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1520 1000" font-family="Helvetica Neue, Arial, sans-serif">
+  <defs>
+    <marker id="ab" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#3b82f6"/>
+    </marker>
+    <marker id="ao" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#f97316"/>
+    </marker>
+    <marker id="ag" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#22c55e"/>
+    </marker>
+    <filter id="sh" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <rect width="1520" height="1000" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="760" y="52" text-anchor="middle" font-size="28" font-weight="700" fill="#0f172a">Kungfu System Architecture</text>
+  <text x="760" y="78" text-anchor="middle" font-size="14" fill="#64748b">Skill installation · Rules wiring · Daily auto-sync</text>
+
+  <!-- ============ LEFT PANEL: Mechanics ============ -->
+  <rect x="40" y="120" width="250" height="580" rx="10" fill="#fef2f2" stroke="#fca5a5" filter="url(#sh)"/>
+  <text x="60" y="150" font-size="15" font-weight="700" fill="#b91c1c">Mechanics</text>
+  <g font-size="12" fill="#334155">
+    <text x="60" y="180" font-weight="600">Throttling</text>
+    <text x="60" y="198">A stamp file limits sync to</text>
+    <text x="60" y="214">once per 24 hours</text>
+    <text x="60" y="244" font-weight="600">Idempotent convergence</text>
+    <text x="60" y="262">Re-runs converge to the same</text>
+    <text x="60" y="278">state; wired items report ok</text>
+    <text x="60" y="308" font-weight="600">Lossless merging</text>
+    <text x="60" y="326">settings.json / config.toml are</text>
+    <text x="60" y="342">read, modified, written back;</text>
+    <text x="60" y="358">existing keys are kept</text>
+    <text x="60" y="388" font-weight="600">Conflict safety</text>
+    <text x="60" y="406">Pre-existing files and foreign</text>
+    <text x="60" y="422">scripts are never touched —</text>
+    <text x="60" y="438">reported as CONFLICT</text>
+    <text x="60" y="468" font-weight="600">Detection boundary</text>
+    <text x="60" y="486">Only agents whose directory</text>
+    <text x="60" y="502">exists get wired; nothing is</text>
+    <text x="60" y="518">created for absent agents</text>
+    <text x="60" y="548" font-weight="600">Known limitation</text>
+    <text x="60" y="566">Eve / PromptScript have no</text>
+    <text x="60" y="582">user-level install — skipped</text>
+    <text x="60" y="598">(CLI reports ✗, not an error)</text>
+  </g>
+
+  <!-- ============ MAIN FLOW ============ -->
+
+  <!-- Maintainer -->
+  <rect x="480" y="110" width="320" height="64" rx="10" fill="#dbeafe" stroke="#3b82f6" filter="url(#sh)"/>
+  <text x="640" y="137" text-anchor="middle" font-size="15" font-weight="700" fill="#1e40af">Maintainer</text>
+  <text x="640" y="158" text-anchor="middle" font-size="12" fill="#334155">edit skills · rules · sources → git push</text>
+
+  <path d="M640,174 L640,206" stroke="#3b82f6" stroke-width="2" marker-end="url(#ab)"/>
+
+  <!-- GitHub repo -->
+  <rect x="400" y="210" width="480" height="118" rx="10" fill="#dbeafe" stroke="#3b82f6" filter="url(#sh)"/>
+  <text x="640" y="236" text-anchor="middle" font-size="15" font-weight="700" fill="#1e40af">GitHub — tienyulin/kungfu (single source of truth)</text>
+  <rect x="420" y="250" width="200" height="60" rx="7" fill="#ffffff" stroke="#93c5fd"/>
+  <text x="520" y="273" text-anchor="middle" font-size="12" font-weight="600" fill="#1e40af">skills/kungfu-*</text>
+  <text x="520" y="292" text-anchor="middle" font-size="11" fill="#64748b">sop · spec · doc · skill-author</text>
+  <rect x="640" y="250" width="220" height="60" rx="7" fill="#ffffff" stroke="#93c5fd"/>
+  <text x="750" y="270" text-anchor="middle" font-size="12" font-weight="600" fill="#1e40af">kungfu-setup</text>
+  <text x="750" y="286" text-anchor="middle" font-size="10.5" fill="#64748b">sync.sh · agents.json</text>
+  <text x="750" y="301" text-anchor="middle" font-size="10.5" fill="#64748b">skill-sources.txt · AGENTS.md</text>
+
+  <path d="M640,328 L640,368" stroke="#3b82f6" stroke-width="2" marker-end="url(#ab)"/>
+  <text x="654" y="352" font-size="11.5" fill="#3b82f6">npx -y skills add tienyulin/kungfu -g --all</text>
+
+  <!-- Store -->
+  <rect x="400" y="372" width="480" height="110" rx="10" fill="#dcfce7" stroke="#22c55e" filter="url(#sh)"/>
+  <text x="640" y="398" text-anchor="middle" font-size="15" font-weight="700" fill="#15803d">Store — ~/.agents/skills/ (shared canonical copy)</text>
+  <rect x="420" y="410" width="140" height="56" rx="7" fill="#ffffff" stroke="#86efac"/>
+  <text x="490" y="433" text-anchor="middle" font-size="12" font-weight="600" fill="#15803d">kungfu-* ×5</text>
+  <text x="490" y="450" text-anchor="middle" font-size="10.5" fill="#64748b">team skills</text>
+  <rect x="570" y="410" width="150" height="56" rx="7" fill="#ffffff" stroke="#86efac"/>
+  <text x="645" y="433" text-anchor="middle" font-size="12" font-weight="600" fill="#15803d">external skills</text>
+  <text x="645" y="450" text-anchor="middle" font-size="10.5" fill="#64748b">superpowers · karpathy</text>
+  <rect x="730" y="410" width="130" height="56" rx="7" fill="#ffffff" stroke="#86efac"/>
+  <text x="795" y="433" text-anchor="middle" font-size="12" font-weight="600" fill="#15803d">AGENTS.md</text>
+  <text x="795" y="450" text-anchor="middle" font-size="10.5" fill="#64748b">working rules</text>
+
+  <!-- store -> agents arrows -->
+  <g stroke="#22c55e" stroke-width="1.8">
+    <path d="M640,482 L640,502" fill="none"/>
+    <path d="M400,502 L880,502" fill="none"/>
+    <path d="M400,502 L400,528" fill="none" marker-end="url(#ag)"/>
+    <path d="M520,502 L520,528" fill="none" marker-end="url(#ag)"/>
+    <path d="M640,502 L640,528" fill="none" marker-end="url(#ag)"/>
+    <path d="M760,502 L760,528" fill="none" marker-end="url(#ag)"/>
+    <path d="M880,502 L880,528" fill="none" marker-end="url(#ag)"/>
+  </g>
+  <text x="654" y="497" font-size="11.5" fill="#16a34a">rules wiring + shared skill reads</text>
+
+  <!-- Agents row -->
+  <g>
+    <rect x="345" y="532" width="110" height="88" rx="10" fill="#f3e8ff" stroke="#a855f7" filter="url(#sh)"/>
+    <text x="400" y="556" text-anchor="middle" font-size="12.5" font-weight="700" fill="#7e22ce">Claude Code</text>
+    <text x="400" y="576" text-anchor="middle" font-size="10.5" fill="#475569">rules: import line</text>
+    <text x="400" y="592" text-anchor="middle" font-size="10.5" fill="#475569">hook: ✓</text>
+
+    <rect x="465" y="532" width="110" height="88" rx="10" fill="#f3e8ff" stroke="#a855f7" filter="url(#sh)"/>
+    <text x="520" y="556" text-anchor="middle" font-size="12.5" font-weight="700" fill="#7e22ce">Codex</text>
+    <text x="520" y="576" text-anchor="middle" font-size="10.5" fill="#475569">rules: symlink</text>
+    <text x="520" y="592" text-anchor="middle" font-size="10.5" fill="#475569">hook: ✓</text>
+
+    <rect x="585" y="532" width="110" height="88" rx="10" fill="#f3e8ff" stroke="#a855f7" filter="url(#sh)"/>
+    <text x="640" y="556" text-anchor="middle" font-size="12.5" font-weight="700" fill="#7e22ce">Gemini CLI</text>
+    <text x="640" y="576" text-anchor="middle" font-size="10.5" fill="#475569">rules: symlink</text>
+    <text x="640" y="592" text-anchor="middle" font-size="10.5" fill="#475569">hook: ✓</text>
+
+    <rect x="705" y="532" width="110" height="88" rx="10" fill="#f3e8ff" stroke="#a855f7" filter="url(#sh)"/>
+    <text x="760" y="556" text-anchor="middle" font-size="12.5" font-weight="700" fill="#7e22ce">OpenCode</text>
+    <text x="760" y="576" text-anchor="middle" font-size="10.5" fill="#475569">rules: symlink</text>
+    <text x="760" y="592" text-anchor="middle" font-size="10.5" fill="#475569">hook: ✓ (plugin)</text>
+
+    <rect x="825" y="532" width="110" height="88" rx="10" fill="#f3e8ff" stroke="#a855f7" filter="url(#sh)"/>
+    <text x="880" y="556" text-anchor="middle" font-size="12.5" font-weight="700" fill="#7e22ce">Cline</text>
+    <text x="880" y="576" text-anchor="middle" font-size="10.5" fill="#475569">rules: copy</text>
+    <text x="880" y="592" text-anchor="middle" font-size="10.5" fill="#475569">hook: ✓</text>
+  </g>
+
+  <!-- agents -> daily sync -->
+  <g stroke="#f97316" stroke-width="1.8">
+    <path d="M400,620 L400,646" fill="none"/>
+    <path d="M520,620 L520,646" fill="none"/>
+    <path d="M640,620 L640,646" fill="none"/>
+    <path d="M760,620 L760,646" fill="none"/>
+    <path d="M880,620 L880,646" fill="none"/>
+    <path d="M400,646 L880,646" fill="none"/>
+    <path d="M640,646 L640,666" fill="none" marker-end="url(#ao)"/>
+  </g>
+  <text x="654" y="662" font-size="11.5" fill="#ea580c">session-start hook (first session of the day)</text>
+
+  <!-- Daily sync box -->
+  <rect x="400" y="670" width="480" height="92" rx="10" fill="#ffedd5" stroke="#f97316" filter="url(#sh)"/>
+  <text x="640" y="696" text-anchor="middle" font-size="15" font-weight="700" fill="#c2410c">Daily auto-sync — sync.sh</text>
+  <text x="640" y="718" text-anchor="middle" font-size="11.5" fill="#475569">stamp throttle → converge rules &amp; hooks → install/update every listed source</text>
+  <text x="640" y="736" text-anchor="middle" font-size="11.5" fill="#475569">the list includes this repo: sync.sh, definitions, and rules update themselves</text>
+
+  <!-- sync loop back to GitHub -->
+  <path d="M880,716 L940,716 L940,269 L884,269" stroke="#f97316" stroke-width="2" fill="none" marker-end="url(#ao)"/>
+  <text x="952" y="500" font-size="11.5" fill="#ea580c" transform="rotate(-90 952 500)">daily pull — whole fleet fresh next day</text>
+
+  <!-- ============ RIGHT PANELS ============ -->
+
+  <!-- Responsibilities -->
+  <rect x="1010" y="120" width="470" height="230" rx="10" fill="#eff6ff" stroke="#93c5fd" filter="url(#sh)"/>
+  <text x="1030" y="150" font-size="15" font-weight="700" fill="#1d4ed8">Component Responsibilities</text>
+  <g font-size="12" fill="#334155">
+    <text x="1030" y="178"><tspan font-weight="600">GitHub repo</tspan> — single source of truth; edit here only</text>
+    <text x="1030" y="202"><tspan font-weight="600">sync.sh</tspan> — the only script: install, wiring, updates</text>
+    <text x="1030" y="226"><tspan font-weight="600">agents.json</tspan> — per-agent wiring (new agent = one entry)</text>
+    <text x="1030" y="250"><tspan font-weight="600">skill-sources.txt</tspan> — install list (new source = one line)</text>
+    <text x="1030" y="274"><tspan font-weight="600">AGENTS.md</tspan> — working rules, resident in every session</text>
+    <text x="1030" y="298"><tspan font-weight="600">store</tspan> — user-level canonical copy; agents symlink in</text>
+    <text x="1030" y="322"><tspan font-weight="600">hook</tspan> — one line per agent, calls sync.sh at session start</text>
+  </g>
+
+  <!-- Execution flow -->
+  <rect x="1010" y="370" width="470" height="230" rx="10" fill="#f0fdf4" stroke="#86efac" filter="url(#sh)"/>
+  <text x="1030" y="400" font-size="15" font-weight="700" fill="#15803d">Daily Execution Flow</text>
+  <g font-size="12" fill="#334155">
+    <text x="1030" y="428">1. First session of the day fires the hook</text>
+    <text x="1030" y="452">2. sync.sh checks the stamp: ran within 24 h → exit</text>
+    <text x="1030" y="476">3. Converge rules and hooks (ok / linked / CONFLICT)</text>
+    <text x="1030" y="500">4. npx skills add per source: install new, refresh existing</text>
+    <text x="1030" y="524">5. Store overwritten with the latest, incl. sync.sh itself</text>
+    <text x="1030" y="548">6. Every agent reads the same store — fresh next day</text>
+  </g>
+
+  <!-- Notes -->
+  <rect x="1010" y="620" width="470" height="185" rx="10" fill="#faf5ff" stroke="#d8b4fe" filter="url(#sh)"/>
+  <text x="1030" y="650" font-size="15" font-weight="700" fill="#7e22ce">Notes</text>
+  <g font-size="12" fill="#334155">
+    <text x="1030" y="678">· Script changes lag one round: a run executes the old copy</text>
+    <text x="1030" y="702">· Cline rules are copied (its UI ignores symlinks)</text>
+    <text x="1030" y="726">· Hand-edits in the store get overwritten — edit the repo</text>
+    <text x="1030" y="750">· The OpenCode hook is a generated JS plugin file</text>
+    <text x="1030" y="774">· CONFLICT never touches the original; the user decides</text>
+  </g>
+
+  <!-- Legend -->
+  <g font-size="11.5" fill="#475569">
+    <path d="M395,935 L435,935" stroke="#3b82f6" stroke-width="2" marker-end="url(#ab)"/>
+    <text x="445" y="939">install flow (push · install)</text>
+    <path d="M610,935 L650,935" stroke="#22c55e" stroke-width="2" marker-end="url(#ag)"/>
+    <text x="660" y="939">wiring &amp; shared reads (rules · skills)</text>
+    <path d="M885,935 L925,935" stroke="#f97316" stroke-width="2" marker-end="url(#ao)"/>
+    <text x="935" y="939">daily sync flow (hook · sync)</text>
+  </g>
+</svg>

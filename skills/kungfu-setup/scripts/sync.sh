@@ -83,6 +83,15 @@ while read -r name detect rtgt rmeth htgt hmeth; do
         printf '\n[[hooks.SessionStart]]\nmatcher = "*"\ncommand = "%s"\n' "$HOOK_CMD" >> "$htgt"
         echo "hook $name: linked"
       fi ;;
+    js-plugin) # OpenCode 這類走 plugin 檔的 agent：產生 session 啟動時跑 sync 的
+      # JS plugin，只覆寫自己產生的（標記同 script 接法）
+      mkdir -p "$(dirname "$htgt")"
+      if [ -f "$htgt" ] && ! grep -q "skills-setup managed" "$htgt"; then
+        echo "CONFLICT hook $name: $htgt 已有其他檔案，未動"
+      else
+        printf '// skills-setup managed\nexport const KungfuSync = async ({ $ }) => ({\n  event: async ({ event }) => {\n    if (event.type === "session.created")\n      $`bash %s`.quiet().nothrow()\n  },\n})\n' "$SYNC" > "$htgt"
+        echo "hook $name: ok"
+      fi ;;
     script) # 目標是整支 script 的 hook（如 Cline TaskStart），只覆寫自己產生的
       mkdir -p "$(dirname "$htgt")"
       if [ -f "$htgt" ] && ! grep -q "skills-setup managed" "$htgt"; then
