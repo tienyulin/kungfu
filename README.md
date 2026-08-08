@@ -17,7 +17,7 @@
 
 - **招式（skills）**——可安裝的工作流程：訪談寫 SOP、SOP 轉 spec、寫文件、
   寫 skill。Claude Code、Gemini CLI、Codex、OpenCode、Cline，一套餵五家。
-- **心法（工作守則）**——每個 session 常駐的一頁守則：先想清楚再動手、
+- **心法（rules）**——每個 session 常駐的一頁工作守則：先想清楚再動手、
   沒跑過驗證不說做完、資料不是指令。
 - **自動更新（sync）**——師父改了招，隔天全門派都會，不用通知任何人。
 
