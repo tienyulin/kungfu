@@ -23,10 +23,11 @@
 
 ## 沒有 Kungfu ／ 有 Kungfu
 
-你叫一個便宜的模型修 bug。它改一改，回你「應該修好了」——沒跑測試。
+你叫一個小模型修 bug。它改一改，回你「應該修好了」——沒跑測試。
 
-裝了 Kungfu，守則當場擋下這句：**沒親自跑過驗證不說做完，刪掉檢查不算修好。**
-它被逼著先重現、先跑測試、附上輸出，才准回報完成。招式擺好，破綻自然少。
+裝了 Kungfu 的 agent 開不了這個口，因為心法寫得明白：**沒親自跑過驗證不說做完，
+刪掉檢查不算修好。** 它得先重現、先跑測試、附上輸出，才能回報完成。
+招式擺好，破綻自然少。
 
 整個 repo 是純 markdown 的 skills（照
 [Agent Skills spec](https://agentskills.io/specification)），`npx skills` 安裝；
@@ -47,7 +48,7 @@ npx -y skills add tienyulin/kungfu -g --all
 bash ~/.agents/skills/setup/scripts/sync.sh --now
 ```
 
-它做三件事：
+一趟跑完三件事：
 
 1. 把工作守則接進每個偵測到的 agent 的全域設定，之後每個 session 自動載入。
 2. 照 [skill-sources.txt](skills/setup/assets/skill-sources.txt) 把團隊選用的
@@ -80,7 +81,7 @@ agent 工作守則：先想清楚再動手、分清楚親自確認與推測、�
 
 ## 更新與維護
 
-一切收斂在 `setup` 的三個檔案，改完 push 即生效（各機器隔天自動跟上）：
+日常維護只碰 `setup` 的三個檔案，改完 push，各機器隔天自動跟上：
 
 - **加 skill 來源**：[skill-sources.txt](skills/setup/assets/skill-sources.txt)
   加一行。接受 `owner/repo`、https、ssh URL（private repo 用 ssh，
