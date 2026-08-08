@@ -89,7 +89,8 @@ agent 工作守則：先想清楚再動手、分清楚親自確認與推測、�
 - **支援新 agent**：[agents.json](skills/kungfu-setup/assets/agents.json) 加一項
   （偵測目錄、工作守則接法、hook 接法）；接法不在既有值域才需要動 sync.sh。
 - **改工作守則**：直接改 [AGENTS.md](skills/kungfu-setup/assets/AGENTS.md)——
-  各 agent 的全域檔是 symlink 或 import，更新即全機生效。
+  各 agent 的全域檔是 symlink 或 import 的即時生效，走複製的（如 Cline）
+  由每日 sync 帶到。
 
 要寫新的 skill，對 agent 說「用 kungfu-skill-author 幫我寫一個⋯」；
 撰寫標準（結構、描述欄位、寫作風格、測試方法）在
