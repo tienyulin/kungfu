@@ -7,7 +7,7 @@
 # 輸出格式：<項目> <agent>: ok（已接好）| linked（本次接上）| skip | CONFLICT。
 set -u
 here="$(cd "$(dirname "$0")" && pwd)"
-STORE="$HOME/.agents/skills/setup"
+STORE="$HOME/.agents/skills/kungfu-setup"
 RULES="$STORE/assets/AGENTS.md"
 SYNC="$STORE/scripts/sync.sh"
 HOOK_CMD="bash $SYNC >/dev/null 2>&1 &"

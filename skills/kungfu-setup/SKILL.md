@@ -1,5 +1,5 @@
 ---
-name: setup
+name: kungfu-setup
 description: 一次完成本機的 agent 環境設定：把團隊工作守則接到各 agent 的全域設定讓每個 session 自動載入、安裝團隊選用的外部 skill repo，並接上讓 skills 保持最新的自動更新 hook。使用者第一次設定環境、要 setup、init、裝工作守則、安裝團隊 skills、設定自動更新，或覺得裝好的 skills 過期想更新時使用。
 ---
 
@@ -35,7 +35,7 @@ description: 一次完成本機的 agent 環境設定：把團隊工作守則接
    ```
 
    （`--now` 略過節流。hook 之後每天跑的是 store 裡的同一支：
-   `~/.agents/skills/setup/scripts/sync.sh`。）
+   `~/.agents/skills/kungfu-setup/scripts/sync.sh`。）
 2. 轉述輸出：`ok`／`linked` 是接好的，`skip` 是本機未安裝的 agent，
    `FAILED:` 是安裝失敗的來源（附錯誤原文）。`CONFLICT` 逐條列給使用者
    決定；使用者決定後照其指示手動處理，再重跑一次 sync.sh 收斂。

@@ -1,6 +1,6 @@
 ---
-name: sop-author
-description: 透過訪談把粗略的需求描述整理成合規的 SOP，產出到 docs/sops/ 供 sop-to-spec 轉成規格；業務判斷只來自受訪者，沒有答案的項目標「假設，待確認」。使用者要寫 SOP、做 SOP 訪談、把需求整理成 SOP，或 sop-to-spec 判定輸入不合格時使用。
+name: kungfu-sop-author
+description: 透過訪談把粗略的需求描述整理成合規的 SOP，產出到 docs/sops/ 供 kungfu-sop-to-spec 轉成規格；業務判斷只來自受訪者，沒有答案的項目標「假設，待確認」。使用者要寫 SOP、做 SOP 訪談、把需求整理成 SOP，或 kungfu-sop-to-spec 判定輸入不合格時使用。
 ---
 
 # SOP 訪談
@@ -21,30 +21,30 @@ description: 透過訪談把粗略的需求描述整理成合規的 SOP，產出
 你的角色是訪談者與記錄者，不是需求的作者。業務判斷只能來自使用者：他沒說的
 不要替他決定，問了沒答的照範本標「（假設，待確認）」。
 
-## 規範來源（先讀，與 sop-to-spec 共用）
+## 規範來源（先讀，與 kungfu-sop-to-spec 共用）
 
-- 撰寫指南：[../sop-to-spec/references/sop-authoring-guide.md](../sop-to-spec/references/sop-authoring-guide.md)
-- 空白範本：[../sop-to-spec/references/sop-template.md](../sop-to-spec/references/sop-template.md)
+- 撰寫指南：[../kungfu-sop-to-spec/references/sop-authoring-guide.md](../kungfu-sop-to-spec/references/sop-authoring-guide.md)
+- 空白範本：[../kungfu-sop-to-spec/references/sop-template.md](../kungfu-sop-to-spec/references/sop-template.md)
 
-路徑不存在表示 sop-to-spec 未安裝，停下請使用者先安裝，不要憑記憶重建範本。
+路徑不存在表示 kungfu-sop-to-spec 未安裝，停下請使用者先安裝，不要憑記憶重建範本。
 
 ## 流程
 
 | Step | 內容 |
 |------|------|
-| 1 判定素材 | 讀指南與範本。判斷使用者給的是：(a) 粗略描述 (b) 不合規文件 (c) 已合規的 SOP。是 (c) 就告知「已合格，可直接用 sop-to-spec 轉 spec」並結束 |
+| 1 判定素材 | 讀指南與範本。判斷使用者給的是：(a) 粗略描述 (b) 不合規文件 (c) 已合規的 SOP。是 (c) 就告知「已合格，可直接用 kungfu-sop-to-spec 轉 spec」並結束 |
 | 2 吸收素材 | 把使用者已提供的資訊原樣填進範本（措辭可整理，語意不加料）。描述裡混了多個功能，就按「一個功能一份檔、同組放同資料夾」拆成多份草稿，拆法先跟使用者確認 |
 | 3 訪談補齊 | 每份草稿照範本的節順序，把還空著的節逐一問完。用日常語言提問（問法與例子照範本的提示行）；同一節的問題一起問，不要一次全倒出來；追問到可執行為止（「出錯怎麼辦」答「再看看」就追問「擋下？照做？找誰處理？」）。選填節要問過「有沒有」才能省略——「範圍外」必問一次（問法：「有沒有相關、但這次不做的事？」）。問了沒答的，標「（假設，待確認：<暫行假設>）」，假設取較嚴格的方向 |
 | 4 產出 | 寫到 `docs/sops/<組名>/<功能>.md`（組名跟使用者確認，資料夾不存在就建）。刪掉範本裡所有 `> 提示` 行 |
 | 5 自檢 | 逐份檢查三件事：(1) 必要節齊全——做什麼、誰可以用、輸入（或明寫「無」）、輸出、步驟且每步有「怎麼做」（逐步點名確認）、做了之後能復原嗎、同一個對象能重複做嗎、可能出什麼錯、測試例子；(2) 測試例子覆蓋——成功至少一個，「開始前先確認」「可能出什麼錯」與各步驟的「出錯怎麼辦」每條都有對應例子；(3) 選填節逐節記錄「保留」或「省略（第幾輪問過、PM 說沒有）」——說不出哪一輪問的就是沒問過，回 Step 3 補問 |
-| 6 確認交付 | 請使用者過目：「照你說的整理的，特別看標『假設，待確認』的地方」。他拍板的每一項，改完後全文搜尋對應標記，確認清到零。明確說可以才算交付。要轉 spec 就指路 `sop-to-spec`，不在本 skill 裡直接轉 |
+| 6 確認交付 | 請使用者過目：「照你說的整理的，特別看標『假設，待確認』的地方」。他拍板的每一項，改完後全文搜尋對應標記，確認清到零。明確說可以才算交付。要轉 spec 就指路 `kungfu-sop-to-spec`，不在本 skill 裡直接轉 |
 
 ## 交付回報（Step 6 照抄填空）
 
 ```
 SOP READY: <路徑清單，一檔一行>
 ASSUMED: <標「假設，待確認」的格數，0 最好>
-NEXT: 確認無誤後用 sop-to-spec 轉 spec
+NEXT: 確認無誤後用 kungfu-sop-to-spec 轉 spec
 ```
 
 ## 邊界

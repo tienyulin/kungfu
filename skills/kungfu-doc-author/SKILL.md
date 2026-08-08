@@ -1,9 +1,9 @@
 ---
-name: doc-author
+name: kungfu-doc-author
 description: 幫一個 repo 寫兩份文件：README.md 是給使用者的使用文件，單檔自足、可整份上傳文件平台；docs/ARCHITECTURE.md 是給維護者與 AI 的架構文件。HTTP API 專案另從 code 匯出 openapi.json。使用者要寫、補或更新 repo 文件、README、使用文件、架構文件，或 openapi.json 過期、與 code 不一致時使用，新舊專案都適用。
 ---
 
-# doc-author
+# kungfu-doc-author
 
 開工前把進度清單抄進回覆，完成一步勾一步；遇到本 skill 與 references 都沒定義的
 情況，停下來問使用者。

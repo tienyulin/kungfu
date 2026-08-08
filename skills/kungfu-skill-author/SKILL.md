@@ -1,5 +1,5 @@
 ---
-name: skill-author
+name: kungfu-skill-author
 description: 依團隊標準撰寫或改寫 agent skill：SKILL.md 加必要的 references，文字自然、描述欄位通過觸發測試、自檢機器化、試跑通過才交付。使用者要寫新的 skill、建 skill、改 skill、review skill 品質時使用。
 ---
 
