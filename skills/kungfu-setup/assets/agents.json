@@ -1,5 +1,5 @@
 {
-  "comment": "各 agent 的接線定義，sync.sh 逐項讀。路徑用 ~ 開頭。新增 agent 加一項即可；rules_method 與 hook_method 不在既有值域時才需要改 sync.sh。rules_method：import＝檔尾加 @路徑 引入行、symlink＝指向 store 的守則正本、copy＝複製一份（UI 不列 symlink 的 agent 用，每日 sync 保持同步；目標檔名須為本 skill 專屬，會被無條件覆蓋）。hook_method：json＝settings.json 的 hooks.SessionStart 無損合併、json-named＝同 json 且 hook 多 name 欄、toml＝config.toml 檔尾加 [[hooks.SessionStart]]、script＝產生可執行 script（如 Cline TaskStart）、none＝該 agent 無指令型 hook，跳過。",
+  "comment": "各 agent 的接線定義，sync.sh 逐項讀。路徑用 ~ 開頭。新增 agent 加一項即可；rules_method 與 hook_method 不在既有值域時才需要改 sync.sh。rules_method：import＝檔尾加 @路徑 引入行、symlink＝指向 store 的守則正本、copy＝複製一份（UI 不列 symlink 的 agent 用，每日 sync 保持同步；目標檔名須為本 skill 專屬，會被無條件覆蓋）。hook_method：json＝settings.json 的 hooks.SessionStart 無損合併、json-named＝同 json 且 hook 多 name 欄、toml＝config.toml 檔尾加 [[hooks.SessionStart]]、script＝產生可執行 script（如 Cline TaskStart）、js-plugin＝產生 session 啟動時跑 sync 的 JS plugin 檔（如 OpenCode）、none＝該 agent 無任何 hook 機制，跳過。",
   "agents": [
     {
       "name": "claude",
@@ -30,8 +30,8 @@
       "detect": "~/.config/opencode",
       "rules_target": "~/.config/opencode/AGENTS.md",
       "rules_method": "symlink",
-      "hook_target": "-",
-      "hook_method": "none"
+      "hook_target": "~/.config/opencode/plugin/kungfu-sync.js",
+      "hook_method": "js-plugin"
     },
     {
       "name": "cline",
